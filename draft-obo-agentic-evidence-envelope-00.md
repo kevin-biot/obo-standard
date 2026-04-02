@@ -198,9 +198,15 @@ by a central registry. It is accumulated from tamper-evident evidence
 records of prior transactions. A target agent verifies the evidence
 chain, not a reputation score.
 
-**Corridor-agnostic.** The OBO envelope does not mandate a specific
-routing or corridor protocol. Profiles define how OBO binds to specific
-corridor implementations (aARP, direct HTTPS, local offline).
+**Routing-agnostic.** OBO does not depend on any specific routing,
+corridor, or capability-discovery protocol. It operates equally over
+aARP governed corridors, A2A agent card discovery, direct HTTPS, or
+any other transport. The evidence envelope records what happened and
+who was accountable — it does not specify how the agent was located or
+how the capability surface was negotiated. Routing mechanisms advertise
+what an agent can do; OBO seals what it was authorised to do and what
+it actually did. These are different layers and OBO does not collapse
+them.
 
 **Payment is Stage 3, not Stage 1.** Authorization is not established
 at intent time via a pre-issued token. It deepens as the interaction
@@ -212,6 +218,16 @@ complete Stage 1 → Stage 2 → Stage 3 journey.
 live authorization server. The Evidence Envelope MUST be sealable
 without network connectivity. This enables consumer-side and device-local
 agents that cannot perform online re-resolution at execution time.
+
+**Intent is sealed because it will be disputed.** In any contested
+transaction — a chargeback, a regulatory inquiry, a liability question —
+the first question is: what did the principal actually intend? The
+`intent_hash` in the Evidence Envelope is SHA-256 of the normalised
+intent at the moment of execution. It binds the sealed record to the
+specific governing purpose, making retrospective reframing by any party
+impossible. The `why_ref` extends this further: it traces the intent to
+the upstream human-approved rationale that authorised it. Disputes about
+intent are resolved by evidence. OBO is the evidence.
 
 **Delegation origin travels; it does not re-root.** In a multi-agent
 chain, the `principal_id` of the originating human and the `why_ref`
@@ -241,7 +257,8 @@ and only when, they appear in all capitals.
 | Target | The service or agent receiving the intent and executing the action. |
 | OBO Credential | The portable, pre-transaction artefact carried by the agent declaring its authority to act. |
 | OBO Evidence Envelope | The sealed, per-transaction artefact recording what happened. |
-| Intent | A normalised natural-language expression of what the principal wishes to accomplish. |
+| Intent | The normalised expression of what the principal wishes to accomplish, sealed in the evidence record at transaction time. Intent is a legal construct: it defines the scope of the agent's authority and is the primary evidence in any dispute about whether the agent's actions were authorised. It is distinct from the tasks the agent performed — tasks are the mechanical execution; intent is the governing purpose that authorises the task set. Sealing the intent at transaction time makes retrospective reframing impossible. |
+| Task | A discrete action or step performed by the agent in service of the intent. Tasks are within scope when they fall within the intent's authorised class and namespace; they are out of scope when they exceed it. Task-level evidence is the domain of profiles (e.g. SAPP for payment tasks); OBO seals the governing intent that authorises the task set. |
 | Intent Class | A governed category of intent mapped to an action class and scope boundary. |
 | Action Class | A severity classification of the action implied by the intent (read-only through irreversible). |
 | Corridor | A governed, evidence-chained channel between an originating agent and a target. |
