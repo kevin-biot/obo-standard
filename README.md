@@ -160,6 +160,32 @@ envelopes where the actual class exceeds the declared ceiling.
 
 ---
 
+## How OBO fits with other work
+
+Several serious efforts are tackling overlapping parts of the agentic
+trust problem. OBO is the **evidence layer** — it does not replace any
+of them.
+
+| Standard / protocol | Layer | What it solves | What it leaves open |
+|---|---|---|---|
+| [AAuth](https://github.com/dickhardt/AAuth) (Dick Hardt, IETF draft) | Authorization flow | How an agent authenticates and gets authorised dynamically, without pre-registered clients or browser redirects. Async HTTP, `purpose` parameter, five requirement levels. | Post-transaction tamper-evident evidence. What the agent did, sealed for offline replay by any party. |
+| OAuth 2.0 / RFC 8693 Token Exchange | Authorization | Delegated access tokens, scopes, live AS | Requires live authorisation server at verification time. No per-transaction evidence record. |
+| W3C Verifiable Credentials | Identity claims | Cryptographic credential presentation | Per-transaction evidence of bounded execution. What happened, not just who acted. |
+| A2A agent protocols | Tool surface discovery | Enumerating what an agent can call | Proving what it actually called, within what scope, with what outcome. |
+| **OBO** | **Evidence** | **Sealed pre- and post-transaction record. Offline verifiable. DNS as the only shared infrastructure.** | The authorization flow itself — use AAuth, OAuth, or your own mechanism to acquire delegation authority. OBO seals the proof of what happened. |
+
+AAuth and OBO are the most directly complementary: AAuth answers "can
+this agent act?" via a dynamic authorization flow; OBO answers "what did
+this agent do, and can anyone prove it without calling a server?" A
+regulated corridor could use AAuth for admission and OBO for the
+tamper-evident evidence chain.
+
+Dick Hardt's `purpose` parameter (agent-declared intent at the protocol
+level) and OBO's `intent_phrase` + `intent_hash` (intent sealed into the
+evidence record) are the same instinct from two directions.
+
+---
+
 ## Status and roadmap
 
 | Phase | Description | Status |
