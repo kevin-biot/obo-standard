@@ -59,7 +59,41 @@ Link to or inline credential and envelope examples for this profile.
 | Profile | Domain | Jurisdiction / Scheme | Status | Conformant examples |
 |---|---|---|---|---|
 | [payments-mastercard-vi.md](payments-mastercard-vi.md) | Payments | Mastercard Verifiable Intent + PSD3 (EU) | Draft, non-normative | [payment-lifecycle/](../examples/envelopes/payment-lifecycle/) · [regulated-why-ref.json](../examples/envelopes/regulated-why-ref.json) |
+| [payments-swift-iso20022.md](payments-swift-iso20022.md) | Payments | SWIFT correspondent banking + ISO 20022 | Draft, non-normative — **contributors invited** | [envelopes/swift-correspondent/](../examples/envelopes/swift-correspondent/) *(in progress)* |
 
 Profiles map OBO fields to regulatory contexts. The **conformant examples**
 column links to concrete JSON artefacts that instantiate each profile —
 they are the living proof that the field mappings work end-to-end.
+
+---
+
+## Open contribution invitations
+
+### SWIFT / ISO 20022 profile
+
+The `payments-swift-iso20022.md` profile is the first draft of OBO
+applied to correspondent banking — the original multi-hop, cross-
+jurisdiction, no-shared-AS problem. Contributions explicitly sought from:
+
+- **SWIFT member institution operations teams** — field mapping
+  validation, `SplmtryData` extension guidance, gpi Tracker integration
+- **ISO 20022 working group participants** — ontology compilation into
+  `pact.iso20022.payments.core` PACT pack (see §7 of the profile)
+- **Correspondent banking practitioners** — nostro/vostro agent scope,
+  sanctions screening integration, RTGS corridor guidance
+
+The ISO 20022 open OWL/RDF model is the upstream source for a PACT
+pack that makes ISO 20022 ontology runtime-safe for agents. If you work
+on ISO 20022 ontology or schema, this is where PACT and ISO 20022
+directly intersect.
+
+### New jurisdiction profiles
+
+| Gap | What's needed |
+|---|---|
+| Healthcare / NHS | OBO field mapping to HL7 FHIR delegation, NHS DSP toolkit |
+| UAE / CBUAE | Payment regulation 2021, DIFC/ADGM agent rules |
+| US ACH / Fedwire | Nacha rules, Fedwire RTGS, CHIPS |
+| EU AI Act high-risk | Full `why_ref` chain requirements for in-scope systems |
+
+To contribute a profile, use the template at the bottom of this file.

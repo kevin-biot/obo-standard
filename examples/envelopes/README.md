@@ -10,6 +10,7 @@ conforms to one or more [profiles](../../profiles/).
 | [basic.json](basic.json) | *(base spec)* | Travel booking, single step, outcome allow | open |
 | [regulated-why-ref.json](regulated-why-ref.json) | [payments-mastercard-vi](../../profiles/payments-mastercard-vi.md) | SEPA credit transfer, action class C, full `why_ref` chain | regulated |
 | [payment-lifecycle/](payment-lifecycle/) | [payments-mastercard-vi](../../profiles/payments-mastercard-vi.md) | Full payment lifecycle: authorised → captured → declined / chargeback → resolved | regulated |
+| [swift-correspondent/](swift-correspondent/) | [payments-swift-iso20022](../../profiles/payments-swift-iso20022.md) | Cross-border SWIFT pacs.008: London → Frankfurt → New York → Dubai, UETR-threaded, camt.025 confirmation | regulated |
 
 ## payment-lifecycle/ — what it demonstrates
 

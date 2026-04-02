@@ -1,0 +1,45 @@
+{
+  "_comment": "OBO Evidence Envelope — HSBC London accepts pacs.008 and forwards into SWIFT network. Same UETR as trace_id. prior_evidence_ref chains to instruction envelope. Illustrative example only. Not legal advice.",
+  "obo_version": "1.0",
+  "envelope_id": "env_swift_accepted_20260403_0002",
+  "credential_ref": "cred_treasury_agent_20260403_0001",
+  "credential_hash": "sha256:b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
+  "agent_id": "agent.treasury.corp.example.uk",
+  "operator_id": "corp.example.uk",
+  "intent_phrase": "SWIFT pacs.008 accepted and forwarded by HSBC London USD 5000 corr_swift_8473",
+  "action_class": "C",
+  "outcome": "allow",
+  "reason_codes": [
+    "ontology:payments.credit_transfer.swift.pacs008.forwarded",
+    "policy:sending_bank.compliance_check.passed"
+  ],
+  "sealed_at": "2026-04-03T09:14:45Z",
+  "trace_id": "123e4567-e89b-12d3-a456-426614174000",
+  "envelope_hash": "sha256:b2f3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3",
+  "envelope_signature": "Ed25519:aHNia19hY2NlcHRlZF9zaWduYXR1cmVfdjE",
+  "prior_evidence_ref": "env_swift_instruction_20260403_0001",
+  "corridor_ref": "payments-swift.corridor.lane2.example",
+  "corridor_admission_tier": "regulated",
+  "corridor_predicate_digest": "sha256:e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5",
+  "why_ref": "https://rtgf.corp.example.uk/rationale/cfo-approval-rtgf-token-abc456",
+  "swift_evidence": {
+    "message_type": "pacs.008",
+    "message_id": "msg-20260403-HSBC-001",
+    "uetr": "123e4567-e89b-12d3-a456-426614174000",
+    "instruction_id": "INSTR-20260403-001",
+    "end_to_end_id": "E2E-CORP-20260403-001",
+    "sending_bic": "HBUKGB4BXXX",
+    "receiving_bic": "EBILAEAD",
+    "amount_minor": 500000,
+    "currency": "USD",
+    "value_date": "2026-04-04",
+    "correspondent_chain": [
+      { "bic": "HBUKGB4BXXX", "role": "sending_bank",        "jurisdiction": "GB" },
+      { "bic": "DEUTDEDBFRA", "role": "correspondent_bank_1", "jurisdiction": "DE" },
+      { "bic": "CHASUS33XXX", "role": "correspondent_bank_2", "jurisdiction": "US" },
+      { "bic": "EBILAEAD",    "role": "receiving_bank",       "jurisdiction": "AE" }
+    ],
+    "liability_profile": "swift_iso20022_v1",
+    "evidence_bundle_ref": "bundle-swift-20260403-002"
+  }
+}
