@@ -96,4 +96,4 @@ directly intersect.
 | US ACH / Fedwire | Nacha rules, Fedwire RTGS, CHIPS |
 | EU AI Act high-risk | Full `why_ref` chain requirements for in-scope systems |
 
-To contribute a profile, use the template at the bottom of this file.
+To contribute a profile, use the [template above](#profile-template).
