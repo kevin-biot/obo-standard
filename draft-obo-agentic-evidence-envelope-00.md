@@ -534,6 +534,16 @@ execution of the transaction turn. This section explains precisely what
 that claim represents, what it does not represent, and why the
 accountability model is nonetheless sound.
 
+**OBO is mechanism-agnostic for model identity.** The protocol does not
+mandate how a model identity claim is produced — only that it is sealed
+in the evidence envelope and bound to the operator's accountability
+chain. Implementations MUST NOT require any proprietary, licensed, or
+patented technology to produce or verify a `model_identity_ref` claim.
+Any mechanism that produces a stable identifier or digest for the model
+in use — deployment manifest hash, TEE enclave report, open
+fingerprinting technique, or simple operator declaration — is a
+conformant source for this field.
+
 #### 8.5.1 What the sealed claim is
 
 A `model_identity_ref` in a signed evidence envelope is an
@@ -557,21 +567,38 @@ verifiable proof that a specific set of neural network weights executed
 a specific forward pass on a specific input. This is a fundamental
 limit of current AI infrastructure, not a gap specific to OBO.
 
-Several techniques have been proposed to narrow this gap — structural
-output distribution fingerprinting [Coslett 2026], trusted execution
-environments (TEE) for model inference, and supply-chain attestation of
-model artifacts. Each of these approaches establishes one level of
-evidence (measurement result, enclave identity, artifact hash) but all
-ultimately terminate in an assertion made by some party who signed it.
-The verification chain does not escape the assertion model; it relocates
-where the assertion is made.
+Several technique classes have been proposed to narrow this gap:
 
-Consider the analogy: a licensed tradesperson certifies that a specific
+- **Structural fingerprinting**: measuring the geometry of a model's
+  internal activation distributions or output distributions during a
+  forward pass to produce a stable identity digest. Published research
+  demonstrates this can distinguish models across architecture families
+  without weight access, including via API-only regimes. Some
+  implementations of this technique are subject to patent protection;
+  OBO does not reference or require any specific implementation.
+- **Trusted execution environments (TEE)**: running model inference
+  inside a hardware enclave and producing a signed attestation report.
+  The report binds the enclave identity, not the model weights directly.
+- **Supply-chain attestation**: signing the model artifact at build time
+  and verifying the artifact hash at deployment. Establishes which file
+  was loaded; does not establish which weights were evaluated per turn.
+
+Each of these approaches establishes one level of evidence but all
+ultimately terminate in an assertion made by some party who signed it —
+the measurement operator, the enclave issuer, or the build pipeline.
+The verification chain does not escape the assertion model; it relocates
+where the assertion is made. Critically, each approach also requires an
+**enrolled reference baseline**: someone must certify what the authentic
+model's fingerprint, enclave identity, or artifact hash is. That
+enrollment is itself an assertion.
+
+This is not a flaw. It reflects how accountability works in every
+regulated domain. A licensed tradesperson certifies that a specific
 procedure was performed using specific tools. That certification is
 signed, legally binding, and creates accountability. It is not a video
-recording of every instrument used. The accountability model works not
-because the internal computation is proven, but because a named legal
-entity has made a signed claim and can be held to it.
+recording of every instrument used. The accountability model works
+because a named legal entity made a signed claim and can be held to it
+— not because the internal computation was proven.
 
 #### 8.5.3 Why the accountability model is sound within these limits
 
@@ -598,7 +625,7 @@ computationally that this model ran?"* but *"is there a named,
 accountable legal entity who has signed a claim that this model ran,
 and can I hold them to that claim if it proves false?"* OBO answers yes
 to the second question. No current general-purpose system answers yes to
-the first.
+the first without relying on a trusted assertion at some layer.
 
 #### 8.5.4 Threat: operator substitution of model without updating assertion
 
@@ -608,7 +635,8 @@ envelopes will contain a stale or false model identity claim. This is a
 breach of the operator's obligations under the governance pack, not a
 failure of the OBO protocol.
 
-Mitigations available within the OBO framework:
+Mitigations available within the OBO framework — all implementable
+without proprietary technology:
 
 - **Governance pack binding**: the `governance_framework_ref` (PACT
   pack) specifies the ontology and execution contract under which the
@@ -617,13 +645,13 @@ Mitigations available within the OBO framework:
   the model identity claim.
 - **Corridor monitoring**: corridors operating under regulated tiers MAY
   require periodic re-attestation of model identity claims and SHOULD
-  treat stale claims as a corridor policy violation.
-- **External verification**: operators using techniques such as
-  structural output fingerprinting [Coslett 2026] or TEE-based model
-  attestation may include the resulting evidence digest in
-  `model_identity_ref` as a supplementary claim. This does not eliminate
-  the assertion model but provides an additional evidence layer that a
-  regulator or auditor may weigh.
+  treat stale or unverifiable claims as a corridor policy violation.
+- **Supplementary evidence digest**: operators MAY include in
+  `model_identity_ref` a digest produced by any open fingerprinting
+  technique, TEE attestation report, or deployment manifest signature.
+  The choice of technique is the operator's; OBO seals and attributes
+  whatever digest is provided. No licensed implementation is required or
+  preferred.
 
 #### 8.5.5 Relationship to draft-klrc-aiagent-auth §7 and §14
 
@@ -640,7 +668,7 @@ can independently verify internal computation. The per-turn evidence
 architecture DOP uses (one signed attestation per pipeline turn,
 chained via `prev_attestation_hash`) demonstrates that turn-level model
 identity attestation is implementable and composable with existing
-workload identity chains.
+workload identity chains using only open standards.
 
 The threat cannot be eliminated by protocol means given current AI
 infrastructure. It can be made **attributable**: a named legal entity
@@ -648,6 +676,12 @@ makes a signed claim, that claim is sealed in a tamper-evident record,
 and the entity is accountable if the claim proves false. That is what
 OBO provides, and it is consistent with how accountability is
 established in every other regulated domain.
+
+OBO intentionally does not specify, endorse, or require any particular
+model identity measurement technique. The evidence envelope is the
+accountability layer. The measurement mechanism is the operator's choice
+and the corridor's policy — both of which can be satisfied with open,
+unencumbered technology.
 
 ---
 
