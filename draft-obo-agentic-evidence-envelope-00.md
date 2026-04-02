@@ -213,6 +213,18 @@ live authorization server. The Evidence Envelope MUST be sealable
 without network connectivity. This enables consumer-side and device-local
 agents that cannot perform online re-resolution at execution time.
 
+**Delegation origin travels; it does not re-root.** In a multi-agent
+chain, the `principal_id` of the originating human and the `why_ref`
+of their approved rationale are carried unchanged through every hop.
+No intermediate agent in the chain has authority to substitute a new
+principal or issue a new root rationale. When human-in-the-loop
+intervention is required at any point in a multi-agent chain, the human
+to consult is always the originating principal — the one identified in
+the credential that started the chain. This is not a deployment policy
+choice left to implementations. It is a structural property of OBO's
+credential model: authority traces to a human at the root of the
+delegation tree, and that root does not move.
+
 ---
 
 ## 2. Terminology
@@ -409,6 +421,39 @@ For orchestrated multi-step transactions (e.g. book + pay + confirm):
 4. The `action_class` in each step envelope MUST be within the
    credential's `action_classes`. A single write-bearing step in a
    plan constrains the entire plan.
+
+#### 5.4.1 Multi-agent chains and the originating human
+
+When a transaction passes through multiple agents — a user agent
+delegating to a booking agent delegating to a payment agent — the same
+accountability principle applies at every hop:
+
+- The `principal_id` in every credential in the chain MUST trace to the
+  originating human who initiated the transaction. Intermediate agents
+  MUST NOT issue credentials that substitute a different principal.
+- The `why_ref` rationale carried by the originating credential is the
+  authority root for the entire chain. Sub-credentials and derived
+  credentials in the chain reference the same rationale root; they do
+  not create new ones.
+- Each agent in the chain is identified by its own `agent_id` and
+  operated by its own `operator_id`, making per-hop accountability clear.
+  But the chain of human authority — the `principal_id` and `why_ref` —
+  does not change as the delegation travels.
+
+**Human-in-the-loop in multi-agent chains.** When any step in a
+multi-agent chain requires human confirmation, the human to consult is
+the `principal_id` of the originating credential — the person who
+started the chain. This is not an open question for deployments to
+resolve case-by-case. The OBO credential model makes it a structural
+invariant: authority originates with a named human, and that human
+remains the authority root regardless of how many agents the delegation
+passes through.
+
+This design is intentional. Chains where each agent re-delegates to the
+next and creates a new authority root obscure accountability and create
+gaps that regulators cannot audit. OBO does not prohibit multi-agent
+architectures, but it requires that human authority at the root of the
+chain remain traceable and unchanged throughout.
 
 ---
 
