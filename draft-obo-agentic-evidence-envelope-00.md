@@ -873,6 +873,45 @@ accountability layer. The measurement mechanism is the operator's choice
 and the corridor's policy — both of which can be satisfied with open,
 unencumbered technology.
 
+### 8.6 Cross-Domain Trust Bootstrapping
+
+A verifier receiving an OBO Credential from an agent it has never
+previously interacted with needs to answer two questions: is the
+operator's signing key trustworthy, and is the governance framework the
+operator claims in force?
+
+OBO answers both questions through DNS, without requiring out-of-band
+trust anchor exchange, federation metadata endpoints, or pre-configured
+certificate authorities between the parties. The operator publishes:
+
+- `_obo-key.<operator-domain>` — the signing key or key digest used to
+  sign OBO Credentials (sub-profile D.1)
+- `_obo-gov.<operator-domain>` — a digest of the governance framework
+  the operator is committed to (sub-profile D.2)
+
+Any verifier with DNS access can resolve these records and verify the
+credential signature and governance binding without any prior
+relationship with the operator. The trust root is DNS, which is
+universally accessible and DNSSEC-signable. See Appendix D for the full
+DNS Anchoring Profile.
+
+**Replay prevention at first-contact.** OBO addresses credential replay
+through two independent mechanisms that do not require shared session
+state between domains:
+
+1. `expires_at` — every OBO Credential carries an expiry. Verifiers
+   MUST reject credentials past their expiry. Short-lived credentials
+   (minutes to hours) are RECOMMENDED for cross-domain transactions.
+
+2. The nullifier sink (`_obo-null.<operator-domain>`, sub-profile D.3)
+   — the operator publishes a Merkle root of revoked credential IDs.
+   Verifiers MAY check the nullifier root for high-value or regulated
+   transactions where replay risk is material.
+
+These two mechanisms together bound both the replay window (expiry) and
+enable explicit revocation (nullifier) without requiring the verifier
+and issuer to share session infrastructure.
+
 ---
 
 ## 9. Privacy Considerations
