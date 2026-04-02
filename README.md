@@ -187,6 +187,90 @@ envelopes where the actual class exceeds the declared ceiling.
 
 ---
 
+## How it works today — and where OBO fits
+
+This is how the open internet already works. No changes required
+downstream.
+
+### The existing model — anonymous user, travel site, Amadeus
+
+A user visits a travel site anonymously. They refuse to register.
+The travel site finds flights and hotels and completes the booking:
+
+```
+User (anon)  ──→  travel site  ──→  Amadeus API       (site's own creds)
+                               ──→  hotel booking API  (site's own creds)
+                               ──→  payment PSP        (site's own creds)
+```
+
+The user is anonymous to Amadeus, the hotel, and the PSP. The travel
+site is the accountable entity — it holds the relationships, the
+contracts, and the credentials. This model works. It has worked for
+twenty-five years. OBO does not change it.
+
+### Add an agent — one new layer, nothing downstream changes
+
+The user asks their agent to plan the same trip:
+
+```
+User (anon)
+     │
+     │  delegates to agent
+     ▼
+Agent carries OBO Credential
+  — who sent me (operator_id)
+  — what I'm allowed to do (action_classes A+B)
+  — under whose governance (governance_framework_ref → PACT pack)
+  — expires in 1 hour
+     │
+     │  approaches travel site
+     ▼
+Travel site verifies OBO Credential via DNS
+  — no registration required
+  — no prior relationship required
+  — no shared AS required
+  — DNS lookup: _obo-key._domainkey.<operator>  →  Ed25519 public key
+  — credential valid: proceed
+     │
+     ├──→  Amadeus API       (site's own creds — UNCHANGED)
+     ├──→  hotel booking API (site's own creds — UNCHANGED)
+     └──→  payment PSP       (site's own creds — UNCHANGED)
+                │
+                ▼
+     OBO Evidence Envelope sealed
+       — what the agent did, within what scope
+       — tamper-evident, offline-verifiable
+       — accountability traces to operator (legal entity)
+```
+
+**The travel site → Amadeus leg has no OBO in it and needs none.**
+The OBO layer sits entirely at the first contact boundary — between
+the agent and the travel site. Everything behind it is unchanged.
+
+This is the "no shared infrastructure" claim made concrete: Amadeus
+does not need to know OBO exists. The hotel API does not need to know
+OBO exists. The PSP does not need to know OBO exists. The travel site
+resolves one DNS record and gets the answer to all four questions.
+
+### What changes at payment finalisation
+
+When the PSP processes the payment, the OBO Evidence Envelope is
+already sealed. The accountability chain is:
+
+```
+PSP payment  ←  travel site (accountable, legal entity)
+                     ←  OBO Credential (operator issued, DNS-verifiable)
+                              ←  principal_id (the delegating human)
+                                       ←  why_ref (RTGF rationale token)
+```
+
+If a dispute opens, the travel site produces the sealed evidence
+envelope. The operator (a legal entity) is accountable — not the
+agent, which has no legal standing. This is how payment networks
+have always worked. OBO extends it to agents without breaking it.
+
+---
+
 ## Legal accountability — agents are instruments, not persons
 
 This is not a theoretical concern. It is a liability problem that will
