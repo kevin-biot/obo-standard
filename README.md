@@ -36,6 +36,17 @@ no common authorisation server with any of them. A healthcare agent crossing
 NHS and a private clinic crosses jurisdictions. A payment agent initiating a
 SEPA transfer and settling in a different currency crosses regulatory regimes.
 
+**Correspondent banking is the oldest version of this problem.** HSBC London
+sends a SWIFT pacs.008 to Deutsche Bank Frankfurt, which forwards to JPMorgan
+New York, which settles at Emirates NBD Dubai. Four jurisdictions. Four legal
+entities. No shared authorisation server. No prior relationship between the
+originating corporate and the receiving bank. SWIFT solved the message format.
+It did not solve the evidence problem: who authorised the instruction, under
+what governance, to what scope, and can any party in the chain prove it offline
+without calling the originator? That is precisely what OBO Evidence Envelopes
+address — and why SWIFT member institutions have been invited to contribute to
+the [ISO 20022 profile](profiles/payments-swift-iso20022.md).
+
 In every one of those cases, existing standards fail at question 4:
 
 - **OAuth** answers 1 and 2 — but requires a live authorisation server both
@@ -179,11 +190,23 @@ envelopes where the actual class exceeds the declared ceiling.
 
 ## Profiles
 
+Base envelope profile types:
+
 - **Regulated lane** — adds `why_ref` rationale chain for EU AI Act / PSD3 compliance
 - **Local / offline** — credential verifiable without network access
 - **Corridor-bound** — corridor co-signs the evidence envelope
 - **Multi-step** — each step has its own envelope; steps chain via `prior_evidence_ref`
 - **DNS anchoring** — operator key, governance pack, nullifier root, domain control proof
+
+Named jurisdiction and scheme profiles (with conformant JSON examples):
+
+| Profile | Scenario | Examples |
+|---|---|---|
+| [payments-mastercard-vi](profiles/payments-mastercard-vi.md) | Mastercard Verifiable Intent, SEPA credit transfer, PSD3 | [payment-lifecycle/](examples/envelopes/payment-lifecycle/) |
+| [payments-swift-iso20022](profiles/payments-swift-iso20022.md) | SWIFT pacs.008, four-bank correspondent chain, UETR threading | [swift-correspondent/](examples/envelopes/swift-correspondent/) |
+
+Contributions invited: NHS, UAE CBUAE, US ACH, cross-border RTGS.
+See [profiles/README.md](profiles/README.md).
 
 ---
 
