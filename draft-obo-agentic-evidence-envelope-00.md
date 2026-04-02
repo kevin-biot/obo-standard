@@ -432,6 +432,8 @@ OBO-REQ-002: An OBO Credential MAY contain the following fields:
 | `why_ref` | object | Upstream rationale authority reference for regulated lanes. See Section 5.1. |
 | `offline_verifiable` | boolean | When true, the credential MUST be verifiable without network access. Signing key MUST be embedded or pre-distributed. |
 | `corridor_binding` | string | Identifier of the corridor this credential is bound to, when corridor-specific issuance applies. |
+| `delegation_depth` | object | Present only in explicit multi-hop delegation chains. Contains `current` (integer, this credential's depth from the origin, starting at 0) and `max` (integer, the chain ceiling set by the originating credential). A credential with `current == max` MUST NOT be used to issue sub-credentials. Each derived credential MUST carry the same `max` and `current` incremented by one. `scope_constraints` MUST NOT widen relative to the parent credential at any hop. |
+| `parent_credential_ref` | string | The `obo_credential_id` of the credential from which this credential was derived. Required when `delegation_depth.current > 0`. Enables verifiers to walk the chain and detect scope widening or revocation of any ancestor. |
 
 ### 3.3 Signing
 
@@ -702,6 +704,17 @@ An OBO Credential is portable and may be replayed. Mitigations:
   specific corridor, preventing cross-corridor replay.
 - The `credential_digest_ref` in the evidence envelope detects
   credential substitution after the fact.
+
+**Cascade revocation in delegation chains.** When `delegation_depth`
+and `parent_credential_ref` are present, revocation of a credential
+MUST be treated as revocation of all credentials that carry it as a
+`parent_credential_ref`, transitively. A verifier that checks the
+nullifier sink (`_obo-null`) for a credential in a chain MUST also
+check every ancestor credential referenced by `parent_credential_ref`
+up to the origin. A chain is valid only if every member is valid.
+
+This property applies only to credentials that carry `delegation_depth`.
+Base credentials (single-hop, no delegation chain) are unaffected.
 
 ### 8.2 Intent Manipulation
 
