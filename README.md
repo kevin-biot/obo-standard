@@ -309,16 +309,36 @@ the cross-org, cross-border agentic trust problem:
 RTGF  — Regulatory Token Governance Framework
         Why was this agent authorised? Human-approved rationale chain,
         jurisdiction-mapped, anchored in DNS. The why_ref root.
-        [ RFC activity — forthcoming ]
+        github.com/kevin-biot/rtgf  [ RFC activity — forthcoming ]
+
+        ↓  rationale compiles into a bounded execution contract
+
+PACT  — Pack-based Agentic Contract for Trust
+        What concepts and actions are admissible? Classical ontologies
+        (OWL, open-world inference) are unsafe for agent execution —
+        an agent can reason itself into actions never authorised.
+        PACT compiles ontologies into bounded, signed, time-valid packs:
+        scoped vocabulary (SKOS), closed-world validation (SHACL),
+        intent mappings, Ed25519-signed manifest, revocation epochs.
+        Structural prompt-injection defence: out-of-scope requests
+        fail closed regardless of JSON validity.
+        github.com/kevin-biot/pact-public  [ specification published ]
+
+        ↓  pack reference carried in credential
+
+OBO   — On Behalf Of  ← this standard
+        Pre-transaction: who, authorised for what, under whose governance
+        (governance_framework_ref → PACT pack).
+        Post-transaction: what happened, within what scope, tamper-evident.
+
+        ↓  routed through governed corridors
 
 aARP  — Agentic Authorization and Routing Protocol
         Which corridor should this agent use? Proof-based admission,
         DNS-published predicates, route evidence sealed per hop.
         [ draft in progress ]
 
-OBO   — On Behalf Of  ← this standard
-        Pre-transaction: who, authorised for what, under whose governance.
-        Post-transaction: what happened, within what scope, tamper-evident.
+        ↓  payment steps settled with evidence anchoring
 
 SAPP  — Secure Agent Payment Protocol
         Payment settlement for Lane² corridors. Signs PSP receipts,
@@ -328,13 +348,24 @@ SAPP  — Secure Agent Payment Protocol
 ```
 
 These standards are independent and additive — each can be adopted
-alone. Together they close the full loop: rationale → credential →
-routing → evidence → settlement.
+alone. Together they close the full loop:
 
-OBO is the evidence layer that connects all of them. A `why_ref` in
-an OBO Credential points to an RTGF rationale token. A `corridor_ref`
-points to an aARP corridor. A `stage3_ref` points to a SAPP settlement
-receipt. The chain is tamper-evident end to end.
+```
+rationale (RTGF)  →  execution contract (PACT)  →  credential + evidence (OBO)
+                  →  routing (aARP)  →  settlement (SAPP)
+```
+
+The OBO fields that connect them:
+
+| OBO field | Points to |
+|---|---|
+| `why_ref` | RTGF rationale token — the human-approved authorisation root |
+| `governance_framework_ref` | PACT pack — the bounded ontology execution contract |
+| `intent_namespace` | PACT pack domain (e.g. `urn:obo:ns:payments`) |
+| `corridor_ref` | aARP corridor — the governed routing layer |
+| `stage3_ref` | SAPP settlement receipt — the payment anchor |
+
+The chain is tamper-evident end to end.
 
 ---
 
