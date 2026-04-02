@@ -3,6 +3,12 @@
 **draft-lane2-obo-agentic-evidence-envelope-00**
 Status: Working Draft · Seeking contributors and implementation experience
 
+> **Trust anchor: DNS.** No central registry. No approved network. No live
+> authorisation server at verification time. Operator signing keys, governance
+> pack digests, corridor admission predicates, and nullifier epoch roots are
+> all published as DNS TXT records — the same infrastructure pattern DKIM has
+> used for email trust for twenty years.
+
 ---
 
 ## The problem in thirty seconds
@@ -22,7 +28,7 @@ No existing standard answers all four. OAuth requires a live authorisation serve
 W3C Verifiable Credentials cover identity claims but not per-transaction evidence.
 A2A agent protocols enumerate tool surfaces without proving bounded execution.
 
-OBO answers all four with two artefacts:
+OBO answers all four with two artefacts and one trust anchor:
 
 ```
 OBO Credential        — carried by the agent before the transaction
@@ -30,10 +36,16 @@ OBO Credential        — carried by the agent before the transaction
 
 OBO Evidence Envelope — sealed by the agent after the transaction
                         answers: what happened, within what scope, tamper-evident
+
+DNS TXT records       — the only shared infrastructure required
+                        operator key  →  _obo-key._domainkey.<operator>
+                        governance    →  _obo-gov.<version>.<operator>
+                        corridor gate →  _obo-crq.<corridor-id>.<corridor>
+                        nullifier     →  _obo-null.<epoch>.<corridor>
 ```
 
-Both artefacts are verifiable offline, without a live authorisation server, using
-DNS as the only shared infrastructure.
+Both artefacts are verifiable offline, without contacting any central service,
+by anyone who can resolve DNS.
 
 ---
 
