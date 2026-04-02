@@ -403,6 +403,14 @@ authentication using whatever credentials it holds for that service. The
 agent does not receive, store, or present raw API keys or equivalent
 secrets.
 
+OBO credentials are transport-agnostic. They are application-layer
+artifacts carried in HTTP headers or request bodies. TLS termination
+by network intermediaries — load balancers, API gateways, WAF proxies,
+service mesh sidecars — does not affect OBO credential validity.
+The corridor validates the OBO credential at the application layer
+regardless of the transport topology between the agent and the corridor
+endpoint.
+
 ### 3.1 Required Fields
 
 OBO-REQ-001: An OBO Credential MUST contain the following fields:
