@@ -353,8 +353,8 @@ payment network.
 
 ## 9. Relationship to SAPP
 
-This profile draws on work originally developed in the SAPP (Structured
-Agentic Payment Proof) evidence framework, which identified the operational
+This profile draws on work originally developed in the SAPP (Secure Agent
+Payment Protocol) evidence framework, which identified the operational
 evidence gap around the Verifiable Intent specification. The `vi_evidence`
 extension fields in this profile map directly to the six missing operational
 objects identified in that work.
