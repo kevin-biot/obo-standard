@@ -1,0 +1,16 @@
+; OBO Corridor Admission Predicate — Tier: open
+; draft-obo-agentic-evidence-envelope-00 Appendix E / aARP ADR-077
+;
+; An open corridor accepts any agent with a valid OBO Credential
+; in the declared namespace and within the action class ceiling.
+; No domain proof required. No RTGF token required.
+;
+; Replace:
+;   <corridor-id>      — unique identifier for this corridor (e.g. travel-global)
+;   <corridor-domain>  — corridor operator domain
+;   <intent-namespace> — intent namespace this corridor accepts
+
+_obo-crq.<corridor-id>.<corridor-domain>  300  IN  TXT  "v=obo1-crq; tier=open; ns=<intent-namespace>; action-class-max=B"
+
+; Example — global open travel corridor:
+; _obo-crq.travel-global.corridor.example.com  300  IN  TXT  "v=obo1-crq; tier=open; ns=urn:obo:ns:travel; action-class-max=B"

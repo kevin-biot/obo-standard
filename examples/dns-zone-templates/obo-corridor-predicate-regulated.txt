@@ -1,0 +1,25 @@
+; OBO Corridor Admission Predicate — Tier: regulated
+; draft-obo-agentic-evidence-envelope-00 Appendix E / aARP ADR-077
+;
+; A regulated corridor requires the agent's operator to hold a valid
+; RTGF token from the named issuer. This proves the operator has completed
+; a human-reviewed regulatory rationale pipeline for the declared namespace.
+; No central whitelist. Proof-based membership.
+;
+; Replace:
+;   <corridor-id>      — unique identifier for this corridor
+;   <corridor-domain>  — corridor operator domain
+;   <intent-namespace> — intent namespace (e.g. urn:obo:ns:payments)
+;   <rtgf-issuer>      — domain of the RTGF token issuer
+;                        (resolves to _obo-rtgf.<epoch>.<rtgf-issuer> TXT)
+
+_obo-crq.<corridor-id>.<corridor-domain>  300  IN  TXT  "v=obo1-crq; tier=regulated; ns=<intent-namespace>; rtgf-required=true; rtgf-issuer=<rtgf-issuer>; action-class-max=C"
+
+; Example — EU PSD3 payments regulated corridor:
+; _obo-crq.payments-psd3.corridor.eu.example.com  300  IN  TXT  "v=obo1-crq; tier=regulated; ns=urn:obo:ns:payments; rtgf-required=true; rtgf-issuer=rtgf.regulator.eu.example; action-class-max=C"
+
+; RTGF issuer Merkle root record (published by RTGF operator):
+; _obo-rtgf.2026-04.rtgf.regulator.eu.example  3600  IN  TXT  "root=sha256:<merkle-root>; epoch=2026-04"
+;
+; Admission gate verifies RTGF token inclusion proof against this root.
+; No live RTGF endpoint required. Revocation propagates via epoch root update.

@@ -1,0 +1,24 @@
+; OBO DNS Anchoring Profile — Sub-profile D.1: Operator Signing Key
+; draft-obo-agentic-evidence-envelope-00 Appendix D.3
+;
+; Publish the operator's Ed25519 signing key in DNS following the DKIM pattern.
+; The domain component of the issuer_id in the OBO Credential resolves to this record.
+;
+; Replace:
+;   <operator-domain>     — your operator domain (e.g. ai.example.com)
+;   <base64url-public-key> — base64url-encoded Ed25519 public key (no padding)
+;
+; DNSSEC signing is REQUIRED for regulated lane use.
+; Recommended TTL: 300 seconds (5 minutes) for production key material.
+
+_obo-key._domainkey.<operator-domain>  300  IN  TXT  "v=obo1; k=ed25519; p=<base64url-public-key>"
+
+; Example (replace with real key):
+; _obo-key._domainkey.ai.example.com  300  IN  TXT  "v=obo1; k=ed25519; p=MCowBQYDK2VwAyEA..."
+
+; Key rotation:
+; 1. Generate new keypair
+; 2. Publish new record at _obo-key._domainkey2.<operator-domain> (or version suffix)
+; 3. Issue new credentials signed with new key, referencing new record
+; 4. After all old credentials expire, remove old record
+; Old credentials remain verifiable until their expires_at passes.

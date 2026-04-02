@@ -1,0 +1,27 @@
+; OBO Corridor Admission Predicate — Tier: domain-gated
+; draft-obo-agentic-evidence-envelope-00 Appendix E / aARP ADR-077
+;
+; A domain-gated corridor requires the agent to prove control of a domain
+; with the declared suffix. The ccTLD IS the jurisdiction registry.
+; No central membership authority. No whitelist.
+;
+; Phase 1 (today): agent proves domain control via Ed25519 signature over
+;   corridor nonce. Corridor checks agent_id domain suffix from OBO Credential.
+;
+; Phase 2 (gnark PLONK): agent proves suffix WITHOUT revealing full domain.
+;   Provides privacy for operators who do not wish to disclose their domain
+;   to competitors in the same corridor.
+;
+; Replace:
+;   <corridor-id>      — unique identifier for this corridor
+;   <corridor-domain>  — corridor operator domain
+;   <intent-namespace> — intent namespace
+;   <domain-suffix>    — required domain suffix (e.g. .ae, .nhs.uk, .gov)
+
+_obo-crq.<corridor-id>.<corridor-domain>  300  IN  TXT  "v=obo1-crq; tier=domain-gated; ns=<intent-namespace>; domain-suffix=<domain-suffix>; action-class-max=B"
+
+; Example — UAE travel corridor, .ae agents only:
+; _obo-crq.travel-uae.corridor.ae  300  IN  TXT  "v=obo1-crq; tier=domain-gated; ns=urn:obo:ns:travel; domain-suffix=.ae; action-class-max=B"
+;
+; Example — NHS UK corridor, .nhs.uk agents only:
+; _obo-crq.clinical-nhs.corridor.nhs.uk  300  IN  TXT  "v=obo1-crq; tier=domain-gated; ns=urn:obo:ns:healthcare; domain-suffix=.nhs.uk; action-class-max=C"

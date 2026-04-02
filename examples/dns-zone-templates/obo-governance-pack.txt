@@ -1,0 +1,25 @@
+; OBO DNS Anchoring Profile — Sub-profile D.2: Governance Pack Digest
+; draft-obo-agentic-evidence-envelope-00 Appendix D.4
+;
+; Publish the canonical SHA-256 digest of the current governance pack.
+; The governance_framework_ref in OBO Credentials resolves to this record.
+; Pack revocation is achieved by removing this DNS record — no live endpoint needed.
+;
+; Replace:
+;   <operator-domain>  — your operator domain
+;   <pack-version>     — version string matching governance_framework_ref (e.g. v1, v1.2.3)
+;   <hex-digest>       — SHA-256 hex digest of canonical pack JSON
+;   <issued-epoch>     — Unix epoch seconds when this pack was published
+;   <expires-epoch>    — Unix epoch seconds when this pack expires
+;
+; DNSSEC signing is REQUIRED for regulated lane use.
+
+_obo-gov.<pack-version>.<operator-domain>  3600  IN  TXT  "sha256=<hex-digest>; issued=<issued-epoch>; expires=<expires-epoch>"
+
+; Example:
+; _obo-gov.v1.ai.example.com  3600  IN  TXT  "sha256=abc123def456...; issued=1743552000; expires=1759276800"
+
+; Pack revocation:
+; Remove this DNS record. Verifiers resolving the governance_framework_ref
+; will find no record and MUST fail-closed for regulated lanes.
+; Open lane verifiers MAY emit a warning and continue with degraded trust.

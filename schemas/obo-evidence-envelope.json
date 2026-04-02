@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://obo-standard.org/schemas/obo-evidence-envelope/v0.1",
+  "title": "OBO Evidence Envelope",
+  "description": "Sealed per-transaction artefact recording what the agent did, within what scope, and under what governance. Defined in draft-obo-agentic-evidence-envelope-00 §4.",
+  "type": "object",
+  "required": [
+    "evidence_id",
+    "obo_credential_ref",
+    "credential_digest_ref",
+    "principal_id",
+    "agent_id",
+    "intent_hash",
+    "intent_class",
+    "action_class",
+    "outcome",
+    "policy_snapshot_ref",
+    "governance_framework_ref",
+    "sealed_at",
+    "evidence_digest"
+  ],
+  "properties": {
+    "evidence_id": {
+      "type": "string",
+      "description": "Stable, globally unique identifier for this evidence record.",
+      "examples": ["urn:obo:ev:2026:e9f8g7h6"]
+    },
+    "obo_credential_ref": {
+      "type": "string",
+      "description": "The obo_credential_id of the credential under which this transaction occurred.",
+      "examples": ["urn:obo:cred:2026:a1b2c3d4"]
+    },
+    "credential_digest_ref": {
+      "type": "string",
+      "description": "The credential_digest of the credential at time of transaction. Detects post-issuance credential tampering.",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "principal_id": {
+      "type": "string",
+      "description": "Repeated from credential for standalone verifiability."
+    },
+    "agent_id": {
+      "type": "string",
+      "description": "Repeated from credential for standalone verifiability."
+    },
+    "intent_hash": {
+      "type": "string",
+      "description": "SHA-256 of the canonical normalised intent phrase. Binds the evidence to the specific intent that was admitted.",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "intent_class": {
+      "type": "string",
+      "description": "The governed intent class to which the intent was mapped.",
+      "examples": ["urn:obo:ns:travel:accommodation-booking", "urn:obo:ns:payments:credit-transfer"]
+    },
+    "action_class": {
+      "type": "string",
+      "description": "The action class of the executed action. MUST be within the action_classes declared in the credential.",
+      "enum": ["A", "B", "C", "D"]
+    },
+    "outcome": {
+      "type": "string",
+      "description": "Transaction outcome.",
+      "enum": ["allow", "deny", "escalate", "error"]
+    },
+    "policy_snapshot_ref": {
+      "type": "string",
+      "description": "Reference to the policy snapshot under which the action was evaluated.",
+      "examples": ["urn:policy:lane2:travel:v1.2.3"]
+    },
+    "governance_framework_ref": {
+      "type": "string",
+      "description": "Repeated from credential. Enables standalone verification without credential lookup.",
+      "examples": ["urn:pack:lane2:travel:sha256:abc123"]
+    },
+    "sealed_at": {
+      "type": "integer",
+      "description": "Unix epoch seconds at which this envelope was sealed.",
+      "examples": [1743552300]
+    },
+    "evidence_digest": {
+      "type": "string",
+      "description": "SHA-256 of the canonical JSON serialisation of this envelope (excluding this field). Format: sha256:<hex>.",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "corridor_ref": {
+      "type": "string",
+      "description": "Identifier of the corridor through which the intent was routed."
+    },
+    "corridor_admission_tier": {
+      "type": "string",
+      "description": "The corridor admission tier under which this agent was admitted.",
+      "enum": ["open", "domain-gated", "regulated", "sovereign"]
+    },
+    "corridor_predicate_digest": {
+      "type": "string",
+      "description": "SHA-256 of the _obo-crq TXT record content at admission time. Binds evidence to the exact predicate under which admission was granted.",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "target_id": {
+      "type": "string",
+      "description": "Identifier of the target service or agent."
+    },
+    "stage3_ref": {
+      "type": "string",
+      "description": "Reference to the Stage 3 completion event (payment transaction ID, signature ref, consent receipt ID)."
+    },
+    "why_ref": {
+      "type": "object",
+      "description": "Upstream rationale authority reference for regulated lanes.",
+      "required": ["rationale_id", "rationale_digest", "derivation_digest"],
+      "properties": {
+        "rationale_id": { "type": "string" },
+        "rationale_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "derivation_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      }
+    },
+    "route_proof_ref": {
+      "type": "string",
+      "description": "Reference to the routing proof from the corridor."
+    },
+    "prior_evidence_ref": {
+      "type": "string",
+      "description": "Reference to a prior evidence envelope in a multi-step transaction chain."
+    }
+  },
+  "additionalProperties": false
+}
