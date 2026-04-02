@@ -383,6 +383,26 @@ The OBO Credential is carried by the agent. It is issued before the
 transaction and is valid for a declared period or scope. It is
 cryptographically signed by the operator or an authorised issuer.
 
+OBO credentials are pull-issued. The agent authenticates to the
+credential issuer using its runtime identity (mTLS client certificate,
+client credentials grant, PACT attestation, or equivalent) and receives
+a signed credential in response. No inbound channel, callback URI, or
+listening socket is required on the agent. Deployments that cannot
+accept inbound connections — CLI tools, container workloads, scheduled
+jobs, bots operating behind NAT — are fully supported without
+modification to this specification. Callback-based OAuth flows
+(Authorization Code Grant, CIBA) are not precluded, but are not assumed
+and are not required.
+
+The translation between an OBO credential and legacy downstream
+authentication mechanisms (API keys, service account tokens, OAuth
+access tokens for third-party services) is a corridor gateway concern,
+not a credential protocol concern. The agent presents its OBO credential
+to the corridor; the corridor's tool execution layer handles downstream
+authentication using whatever credentials it holds for that service. The
+agent does not receive, store, or present raw API keys or equivalent
+secrets.
+
 ### 3.1 Required Fields
 
 OBO-REQ-001: An OBO Credential MUST contain the following fields:
