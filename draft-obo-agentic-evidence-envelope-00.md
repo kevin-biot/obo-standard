@@ -483,6 +483,7 @@ OBO-REQ-011: An OBO Evidence Envelope MAY contain the following fields:
 | `why_ref` | object | Upstream rationale authority reference for regulated lanes. See Section 5.1. |
 | `route_proof_ref` | string | Reference to the routing proof from the corridor (e.g. aARP route decision hash). |
 | `prior_evidence_ref` | string | Reference to a prior evidence envelope in a multi-step transaction chain. |
+| `approval_evidence` | object | Multi-party human approval record for high-impact operations. See Section 4.4. |
 
 ### 4.3 Integrity
 
@@ -499,6 +500,60 @@ OBO-REQ-014: The `action_class` in the evidence envelope MUST be within
 the `action_classes` declared in the referenced OBO Credential. A
 verifier MUST reject an evidence envelope where this constraint is
 violated.
+
+### 4.4 Approval Evidence (Multi-Party HITL)
+
+For Class C and Class D operations — irreversible writes and systemic
+actions — a corridor MAY require that the evidence envelope carry a
+sealed approval record. This section defines the portable structure for
+that record. The approval *policy* (whether multi-party approval is
+required, which roles must approve, what assurance level is sufficient)
+is deployment-defined and out of scope. The evidence *structure* is
+defined here so that approval records are interoperable across
+deployments.
+
+The `approval_evidence` object, when present, MUST contain:
+
+| Field | Type | Description |
+|---|---|---|
+| `operation_binding` | string | SHA-256 digest of the canonical serialisation of the action payload or policy snapshot that was approved. Binds the approval to the exact operation, not a description of it. |
+| `threshold` | object | `{"required": N, "obtained": M}` where `M >= N`. The number of independent approvals required and obtained. |
+| `valid_from` | integer | Unix epoch seconds: earliest time at which execution under this approval is permitted. |
+| `valid_until` | integer | Unix epoch seconds: latest time at which execution under this approval is permitted. |
+| `approvals` | array | One entry per approver. See below. |
+
+Each entry in `approvals` MUST contain:
+
+| Field | Type | Description |
+|---|---|---|
+| `approver_ref` | string | Identifier of the approving human (same scheme as `principal_id`). |
+| `role_class` | string | The role or function of the approver (deployment-defined; e.g. `"finance-controller"`, `"ciso"`). |
+| `assurance_level` | string | Authentication assurance level at approval time (e.g. `"AAL2"`, `"AAL3"` per NIST SP 800-63). |
+| `mfa_method` | string | MFA method used (e.g. `"fido2"`, `"totp"`, `"sms"`). |
+| `approved_at` | integer | Unix epoch seconds at which this approver confirmed. |
+
+The `approval_evidence` object MAY additionally contain:
+
+| Field | Type | Description |
+|---|---|---|
+| `segregation_required` | boolean | When true, no approver in `approvals` may be the same identity as `principal_id` or any other approver. Corridors MUST enforce this constraint when the field is true. |
+
+**Fail-closed rule.** When a corridor requires `approval_evidence` for
+a Class C or D action and the envelope presents one, the corridor MUST
+verify:
+
+1. `operation_binding` matches the digest of the actual action payload
+   being executed.
+2. `obtained >= required` in `threshold`.
+3. `valid_from <= now <= valid_until`.
+4. If `segregation_required` is true, all approver identities are
+   distinct and none equals `principal_id`.
+5. Each `approver_ref` has not been revoked or suspended.
+
+If any check fails, the corridor MUST reject the operation. The agent
+does not participate in the approval flow. Approval is obtained by the
+corridor or an upstream policy authority and sealed into the envelope
+before execution reaches the agent.
 
 ---
 
@@ -934,6 +989,30 @@ state between domains:
 These two mechanisms together bound both the replay window (expiry) and
 enable explicit revocation (nullifier) without requiring the verifier
 and issuer to share session infrastructure.
+
+### 8.7 High-Impact Operations and Approval Evidence
+
+For Class C (irreversible write) and Class D (systemic) operations,
+generic approval — a single human acknowledged a notification — is
+insufficient for regulated and high-stakes deployments. The approval
+record must be independently verifiable: who approved, at what
+assurance level, within what time window, and whether the approvers
+were independent of each other and of the principal.
+
+OBO defines a portable `approval_evidence` structure (Section 4.4) for
+this purpose. The approval *policy* (mandatory MFA tier, required role
+classes, n-of-m threshold, operation windows, segregation of duties)
+remains deployment-defined and out of scope for this specification.
+The evidence *structure* is standardised so that a verifier receiving
+an evidence envelope from any OBO-conformant deployment can inspect and
+validate the approval record using the same fields.
+
+The agent does not initiate or participate in the approval flow. Approval
+is obtained by the corridor or an upstream policy authority prior to
+execution, and sealed into the evidence envelope. If the corridor
+requires `approval_evidence` and it is absent, expired, underthreshold,
+or fails segregation checks, the corridor MUST reject the operation
+before execution. There is no fallback path.
 
 ---
 
