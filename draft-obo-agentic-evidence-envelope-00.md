@@ -966,6 +966,82 @@ processing high-volume regulated corridors SHOULD consider whether
 nullifier disclosure creates a linkability risk and whether the D.4b
 circuit is appropriate for their deployment.
 
+### 9.8 Cross-domain activity correlation
+
+Stable agent identifiers appearing across multiple domains enable
+cross-domain activity correlation — the same concern raised for
+WIMSE/SPIFFE workload identifiers. This concern applies differently
+depending on whether the agent represents a legal entity or a natural
+person, and the two cases must not be conflated.
+
+#### 9.8.1 Operator agents: correlation is the accountability mechanism
+
+When an agent represents an operator — a company, a regulated PSP,
+a licensed service provider — cross-domain correlation of that agent's
+`operator_id` and `agent_id` is not a privacy problem. It is the
+accountability model working as designed.
+
+A company's network traffic is correlatable across the internet today.
+A company's representative signs in at a visitor desk and is
+identified. A corporate card transaction is attributed to the issuing
+entity. In each case, the legal entity accepts identifiability as the
+price of operating in a regulated environment. The same applies to
+operator agents: the operator's domain is public by design, anchored
+in DNS, and intentionally consistent across all transactions that
+operator's agents conduct.
+
+OBO does not support anonymous operators. An operator who cannot be
+identified cannot accept legal accountability for their agent's
+actions. Correlation of `operator_id` across domains is a feature of
+the accountability model, not a flaw in its privacy posture. Treating
+it as a privacy problem confuses the accountability layer with the
+personal privacy layer.
+
+#### 9.8.2 Consumer agents: correlation reveals personal behaviour
+
+When an agent represents a natural person — a consumer whose personal
+agent books travel, consults medical services, and initiates payments
+— the privacy calculus is different. A stable `agent_id` appearing at
+Ryanair, a hotel, a hospital, and a payment provider within a day
+reveals a personal behaviour profile that the individual did not
+directly disclose to any of those parties.
+
+OBO addresses this through `principal_id` pseudonymisation (§9.2) and
+short-lived credentials. The `principal_id` need not be the person's
+legal name or internal identifier — it is a pseudonymous delegation
+anchor tied to the specific operator relationship. The operator knows
+the mapping; the target does not.
+
+Consumer agent deployments in regulated corridors SHOULD use:
+- Short credential lifetimes to limit the correlation window
+- Pseudonymous `principal_id` values scoped to the operator relationship
+- Opaque `agent_id` sub-identifiers that do not encode personal context
+
+Full pairwise identifiers — unique per target organisation — are
+feasible for `agent_id` sub-identifiers at the cost of operational
+complexity (each pair requires a separate credential). Pairwise
+`operator_id` values are not feasible: the operator must be
+consistently identifiable for legal accountability.
+
+#### 9.8.3 The resolution boundary
+
+The question "can an agent prove properties without revealing full
+identity?" has a bounded answer in the OBO model:
+
+- An agent can prove **scope** (`intent_class`, `action_classes`) without
+  revealing the full principal identity — the credential carries these
+  fields independently.
+- An agent can prove **governance** (`governance_framework_ref`,
+  `corridor_ref`) without revealing internal organisational detail.
+- An agent **cannot** prove operator accountability without revealing the
+  operator — accountability requires a resolvable legal entity.
+
+The operator identity boundary is not a gap. It is the architectural
+choice that makes legal accountability possible. Anonymous agents
+cannot be accountable agents. Any framework that offers full agent
+anonymity in regulated corridors must resolve this contradiction
+separately — OBO does not attempt to.
+
 ---
 
 ## 10. Acknowledgements and Design Philosophy
