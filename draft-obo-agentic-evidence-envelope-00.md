@@ -186,6 +186,114 @@ OBO is intent-first: the originating agent declares what it intends,
 not what it is capable of. The target determines whether that intent
 class is within its acceptance parameters.
 
+### 1.5 Evidence, Authorisation, and Intent Are Not Separable
+
+Several current frameworks in the agentic trust space treat evidence as
+a separable concern — a logging requirement to be addressed by deployment
+teams, a format to be defined in a future document, an audit trail whose
+structure is explicitly out of scope. This section explains why that
+treatment is architecturally incorrect and legally untenable.
+
+#### 1.5.1 What the law actually requires
+
+Legal standards that govern consequential transactions do not permit the
+evidence layer to be deferred or left unspecified. Selected examples:
+
+- **PSD2 (EU) Article 74**: liability in disputed payment transactions
+  rests on the party who authorised the transaction. Establishing that
+  liability requires tamper-evident evidence of the authorisation act,
+  the identity of the authorising party, and the scope of what was
+  authorised. Format is not optional — the evidence must be producible
+  to a regulator or court by any party to the chain.
+
+- **EU AI Act Article 12**: high-risk AI systems must maintain logs
+  sufficient to enable appropriate oversight and post-hoc audit. The
+  logs must capture the AI system's inputs and outputs. An agent
+  operating in a regulated context is a high-risk AI system; its
+  evidence chain is a compliance obligation, not a deployment choice.
+
+- **eIDAS 2.0**: electronic transactions and qualified signatures require
+  evidence of the authentication act, the intent expressed, and the
+  binding of that intent to the outcome. Evidence format is part of the
+  conformance requirement.
+
+- **GDPR Article 7**: where processing is based on consent, the
+  controller must be able to demonstrate that consent was given. For
+  agents acting on a principal's behalf, that demonstration requires
+  sealed evidence of the delegation, the scope, and the outcome.
+
+- **Payment network rules (Mastercard, Visa, SWIFT)**: dispute
+  resolution requires the complete chain from authorisation to
+  settlement. An acquirer or issuer that cannot produce this chain loses
+  the dispute by default. "The audit log format was out of scope" is not
+  a recognised defence.
+
+The pattern is consistent: where transactions have legal or regulatory
+consequences, evidence format is not optional. It is a conformance
+requirement imposed by the legal system, not a preference of the
+implementer.
+
+#### 1.5.2 Why the components must be interlinked
+
+Authentication, authorisation, intent, and evidence are not independent
+layers that can be specified separately and composed later. Each element
+of a complete accountability chain references and seals the others:
+
+```
+Principal intent
+  → sealed in the OBO Credential (intent_namespace, action_classes)
+  → carried by the agent to the target
+  → verified against DNS-anchored operator key
+
+Authorisation act
+  → credential_digest_ref in the Evidence Envelope binds the outcome
+    to the credential that authorised it
+  → why_ref traces the authorisation to the human-approved rationale
+
+Execution outcome
+  → intent_hash binds the Evidence Envelope to the specific intent
+    that was admitted
+  → action_class in the envelope must not exceed the credential ceiling
+  → prior_evidence_ref chains multi-step transactions into a
+    tamper-evident sequence
+
+Accountability
+  → operator_id in both artefacts identifies the legal entity
+    responsible for the agent's actions
+  → all fields hashed and signed; any modification invalidates
+    the chain
+```
+
+Each reference is cryptographic. Removing any element — treating
+evidence as separable, leaving intent undefined, omitting the
+authorisation anchor — breaks the chain. A broken chain cannot be
+produced to a court, a regulator, or a counterparty in a dispute. It is
+not a weaker chain. It is no chain at all.
+
+#### 1.5.3 The cost of deferral
+
+When an authentication and authorisation framework declares evidence
+format out of scope, the practical consequence is not that evidence is
+handled elsewhere. It is that:
+
+1. Each deployment invents its own evidence format, making cross-party
+   verification impossible.
+2. The evidence cannot be verified by a counterparty who was not party
+   to the original deployment agreement.
+3. The evidence cannot be verified offline, after the fact, by a
+   regulator who was not present at transaction time.
+4. Disputes cannot be resolved without a live service operated by the
+   original parties — precisely the parties with the most to gain from
+   an ambiguous record.
+
+OBO's design starts from the opposite premise: the evidence format is
+the specification. The authentication and authorisation fields exist to
+make the evidence verifiable. The two artefacts — OBO Credential and
+OBO Evidence Envelope — are not separate concerns. They are the two
+sides of a single accountability record, specified together so that any
+party, anywhere, can verify the complete chain from principal intent to
+transaction outcome without contacting anyone.
+
 ### 1.6 Design Principles
 
 **Intent first.** The primitive is a normalised intent, not a tool
