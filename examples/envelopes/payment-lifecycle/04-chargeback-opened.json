@@ -1,0 +1,87 @@
+{
+  "_comment": "OBO Evidence Envelope — chargeback_opened. Returns to corr_order_8472 (the successful payment). Issued 3 days later by issuer dispute hub. prior_evidence_ref chains back to capture. Illustrative example only. Not legal advice.",
+  "obo_version": "1.0",
+  "envelope_id": "env_chargeback_20260404_0004",
+  "credential_ref": "cred_vi_pay_20260402_0001",
+  "credential_hash": "sha256:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+  "agent_id": "dispute.agent11.issuer.eu.example",
+  "operator_id": "issuer.eu.example",
+  "intent_phrase": "open chargeback for txn_20260401_91331 EUR 12.99 corr_order_8472",
+  "action_class": "C",
+  "outcome": "allow",
+  "reason_codes": [
+    "ontology:payments.dispute.chargeback.opened",
+    "policy:cardholder_dispute_initiated"
+  ],
+  "sealed_at": "2026-04-04T08:02:45Z",
+  "trace_id": "7cf92f3577b34da6a3ce929d0e0e7777",
+  "envelope_hash": "sha256:18ebc2ab0f3e59c725dc8507d2af1908fd5889ecac358f3ac5f7e3f346f9e2bc",
+  "envelope_signature": "Ed25519:Y2hhcmdlYmFja19zaWduYXR1cmVfZXhhbXBsZV92MQ",
+  "prior_evidence_ref": "env_pay_captured_20260401_0002",
+  "corridor_ref": "payments-psd3.corridor.eu.example",
+  "corridor_admission_tier": "regulated",
+  "corridor_predicate_digest": "sha256:d3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4",
+  "why_ref": "https://rtgf.regulator.eu.example/rationale/rtgf-token-abc123",
+  "vi_evidence": {
+    "chain_mode": "autonomous",
+    "vi_chain_refs": {
+      "chain_mode": "autonomous",
+      "l1_hash": "14b2017f67a59c5126d0d3151dce0f6d2fd0d9f8d227a8d9b93f2b52d6dd0d61",
+      "l2_hash": "ad68f34a840eebde37cd7dff2f9abdd86685a4f7da9d1b60db3d6f0a01dbfe77",
+      "l2_sd_hash": "1a6f5ec384aa583e70d66cf6d14eb4ef36f16f411f34ce43922e4f0f6ad8f11a",
+      "l3a_hash": "9d499e7f82a9e10d0a7a6ddb06be5f80af4a1d260f71f034f54f513c8c0d2c27",
+      "l3b_hash": "6ed58bb6ed0f4e2b7c43b0bd7be4e25f72a334f4ab42d6e6fb2e17b6f99a5f2a",
+      "l3_sd_hash": "2f9ef7aa09177fc9d1afee84c4f8c25cc7cb88df4632adf5d60cf349e4f4db38",
+      "disclosure_set_hash": "7a121f75216d44f70b1f6d7c8ed40f4ddf9a2807cbf40bb63f91bdd03189bd8e",
+      "signing_key_ref": "did:example:agent-pay42-key-1#k1"
+    },
+    "counterparty_verification": {
+      "verifier_id": "issuer_dispute_hub_eu",
+      "verifier_role": "psp",
+      "decision": "accepted",
+      "policy_ref": "vi_dispute_policy_psd3_v1",
+      "receipt_hash": "2d5f9a1c087258664615d50e89e54a55654a7e81e5e95daabe3e6404a7dd0e12"
+    },
+    "authorization_context": {
+      "mode": "sca",
+      "sca_method": "possession+inherence",
+      "user_auth_assurance": "aal2_plus",
+      "user_auth_event_ref": "auth_evt_8472_01",
+      "auth_artifact_ref": "auth_artifact_ref_device_attestation"
+    },
+    "delegation_context": {
+      "delegator_ref": "user_anon_001",
+      "delegate_agent_ref": "dispute.agent11.issuer.eu.example",
+      "delegation_proof_hash": "33b53f4c3f585eb5e2458d8e90d874b249f90e2141ac6f75f856709f8fa8f3d1",
+      "delegation_scope_hash": "5f9cd3f5702867ad4e8f2d2f4df3617ac4bf8aa9831b6679df61f02d1ea7c80a",
+      "liability_profile": "eu_psd3_vi_v1"
+    },
+    "transaction_binding": {
+      "alg": "sha256",
+      "binding_hash": "af43f9be05dc1f634060f5d580f1c8c8e9b9ce505f4b6514c6d3088e61f29c65",
+      "bound_fields": [
+        "transaction_id",
+        "amount_minor",
+        "currency",
+        "payee_id",
+        "merchant_id",
+        "nonce",
+        "checkout_hash",
+        "event_time"
+      ]
+    },
+    "dispute_readiness": {
+      "evidence_bundle_ref": "bundle_20260404_0004",
+      "immutable_log_anchor": "merkle_root:18ebc2ab0f3e59c725dc8507d2af1908fd5889ecac358f3ac5f7e3f346f9e2bc",
+      "retention_until": "2031-04-01T00:00:00Z"
+    }
+  },
+  "_lifecycle": {
+    "event_type": "chargeback_opened",
+    "correlation_id": "corr_order_8472",
+    "idempotency_key": "idem_cbk_91331_01",
+    "delegation_chain_id": "dlg_vi_chain_20260401_a1",
+    "span_id": "40f067aa0ba902bb",
+    "parent_span_id": "20f067aa0ba902b9"
+  }
+}
