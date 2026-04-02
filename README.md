@@ -3,32 +3,35 @@
 **draft-lane2-obo-agentic-evidence-envelope-00**
 Status: Working Draft · Seeking contributors and implementation experience
 
-> **Trust anchor: DNS.** No central registry. No approved network. No live
-> authorisation server at verification time. Operator signing keys, governance
-> pack digests, corridor admission predicates, and nullifier epoch roots are
-> all published as DNS TXT records — the same infrastructure pattern DKIM has
-> used for email trust for twenty years.
-
 ---
 
-## The problem in thirty seconds
+## The problem
 
 An agent acts on behalf of a person to book a flight, initiate a payment, or
 instruct a healthcare service. The target — an airline, a bank, a clinic — has
 never met this agent before. No shared infrastructure. No prior relationship.
 
-The target asks four questions:
+The target needs to answer four questions before it acts:
 
 1. **Who are you, and who sent you?**
 2. **What are you authorised to do?**
 3. **What did you actually do?**
 4. **Can I prove all of this to a regulator after the fact, without calling anyone?**
 
-No existing standard answers all four. OAuth requires a live authorisation server.
-W3C Verifiable Credentials cover identity claims but not per-transaction evidence.
-A2A agent protocols enumerate tool surfaces without proving bounded execution.
+No existing standard answers all four:
 
-OBO answers all four with two artefacts and one trust anchor:
+- **OAuth** answers 1 and 2 — but requires a live authorisation server at
+  verification time. No server, no verification.
+- **W3C Verifiable Credentials** answer 1 — but cover identity claims, not
+  per-transaction evidence of what happened and what scope was exercised.
+- **A2A agent protocols** enumerate tool surfaces — but do not prove bounded
+  execution or produce tamper-evident post-transaction records.
+
+---
+
+## The solution
+
+OBO answers all four questions with two artefacts:
 
 ```
 OBO Credential        — carried by the agent before the transaction
@@ -36,16 +39,22 @@ OBO Credential        — carried by the agent before the transaction
 
 OBO Evidence Envelope — sealed by the agent after the transaction
                         answers: what happened, within what scope, tamper-evident
-
-DNS TXT records       — the only shared infrastructure required
-                        operator key  →  _obo-key._domainkey.<operator>
-                        governance    →  _obo-gov.<version>.<operator>
-                        corridor gate →  _obo-crq.<corridor-id>.<corridor>
-                        nullifier     →  _obo-null.<epoch>.<corridor>
 ```
 
-Both artefacts are verifiable offline, without contacting any central service,
-by anyone who can resolve DNS.
+Both artefacts are verifiable **offline, without contacting any central
+service**, by anyone who can resolve DNS.
+
+> **Trust anchor: DNS.** Operator signing keys, governance pack digests,
+> corridor admission predicates, and nullifier epoch roots are published as
+> DNS TXT records — the same infrastructure pattern DKIM has used for email
+> trust for twenty years. No CA. No registry. No approved network.
+>
+> ```
+> operator key  →  _obo-key._domainkey.<operator>
+> governance    →  _obo-gov.<version>.<operator>
+> corridor gate →  _obo-crq.<corridor-id>.<corridor>
+> nullifier     →  _obo-null.<epoch>.<corridor>
+> ```
 
 ---
 
@@ -90,10 +99,9 @@ Full field definitions, optional fields, and profiles are in the
 
 ---
 
-## Trust without shared infrastructure
+## DNS anchoring — how verification works
 
-OBO Credentials are verified against signing keys published in DNS —
-the same pattern DKIM has used for email signing for twenty years:
+OBO Credentials are verified against signing keys published in DNS:
 
 ```
 _obo-key._domainkey.<operator-domain>   TXT
@@ -101,11 +109,12 @@ _obo-key._domainkey.<operator-domain>   TXT
 ```
 
 No authorisation server contact required at verification time.
-No CA. No registry. DNS only.
+No CA. No registry. DNS only. This is precisely the DKIM pattern —
+proven at internet scale for twenty years.
 
 See [Appendix D](draft-obo-agentic-evidence-envelope-00.md#appendix-d-dns-anchoring-profile)
-for the full DNS Anchoring Profile including governance pack digest anchoring,
-nullifier epoch roots, and agent domain control proofs.
+for the full DNS Anchoring Profile: key publication, governance pack
+digest anchoring, nullifier epoch roots, and agent domain control proofs.
 
 ---
 
