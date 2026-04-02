@@ -389,7 +389,87 @@ internal SAPP-specific structures.
 
 ---
 
-## 10. Open Questions for Contributors
+## 10. RAR Integration for Regulated Payment Corridors
+
+RFC 9396 Rich Authorization Requests (RAR) is an OAuth extension that
+allows an OAuth client to include a structured `authorization_details`
+object in an authorization request to an AS. Instead of requesting
+broad scopes (`payment:write`), the client requests a precisely bounded
+authorization object: amount, currency, payee, IBAN, SCA mode.
+
+RAR is widely deployed in regulated payment infrastructure. Berlin
+Group's NextGenPSD2, UK Open Banking, and several national PSD2
+implementations use RAR as the mechanism for expressing payment
+authorization detail to the bank's AS. If a payment corridor's AS is
+RAR-capable, it will expect an `authorization_details` object when
+the corridor requests authorization for a Class B or C payment action.
+
+**Where RAR fits in the OBO model**
+
+RAR operates inside the corridor — specifically at the point where the
+corridor's internal AS issues the execution credential for the
+downstream payment system (see §5.5 of the base spec: execution
+credentials are obtained locally by the corridor, not forwarded from
+the agent). The OBO Credential and OBO Evidence Envelope are
+unaffected. The agent presents its OBO Credential to the corridor;
+the corridor uses RAR internally to authorize against the bank's AS;
+the resulting payment authorization is captured in `authorization_context`
+within the `vi_evidence` extension.
+
+```
+Agent
+  |-- OBO Credential (action_class C, intent_hash) --> Corridor
+                                                           |
+                                                     RAR request:
+                                                     authorization_details
+                                                     { type: "payment_initiation",
+                                                       instructedAmount: {...},
+                                                       creditorAccount: {...} }
+                                                           |
+                                                        Bank AS
+                                                           |
+                                                     Access token (scoped)
+                                                           |
+                                                     Payment execution
+                                                           |
+                                              OBO Evidence Envelope sealed
+                                              (authorization_context captures
+                                               SCA result, assurance level)
+```
+
+**Field correspondence**
+
+| RAR `authorization_details` field | OBO / vi_evidence equivalent | Notes |
+|---|---|---|
+| `type: "payment_initiation"` | `action_class: C` | OBO class captures severity; RAR type names the operation |
+| `instructedAmount` | `transaction_binding.bound_fields` (amount_minor, currency) | Exact amount sealed in transaction binding |
+| `creditorAccount` | `transaction_binding.bound_fields` (payee_id) | Payee identity sealed |
+| `remittanceInformationUnstructured` | `intent_phrase` | OBO intent phrase captures the human-readable instruction |
+| SCA context returned by AS | `authorization_context.sca_method`, `user_auth_assurance` | OBO seals the SCA result in the evidence envelope |
+
+**What this means for implementors**
+
+A payment corridor that uses a RAR-capable AS SHOULD:
+
+1. Map the OBO Credential's `scope_constraints` (if present) into the
+   RAR `authorization_details` object when constructing the AS request.
+2. Map the OBO Credential's `intent_hash` into a corridor-defined field
+   in `authorization_details` if the AS supports it — preserving the
+   sealed intent reference through the OAuth flow.
+3. Capture the AS's authorization response (SCA result, assurance level,
+   token expiry) in `vi_evidence.authorization_context` before sealing
+   the OBO Evidence Envelope.
+
+The RAR flow is corridor-internal infrastructure. It does not appear in
+the OBO Credential or OBO Evidence Envelope as OAuth tokens or AS
+references — only the outcomes (SCA method applied, assurance level
+achieved) are sealed in the evidence. This preserves the OBO envelope's
+portability across corridors that do and do not use OAuth AS
+infrastructure.
+
+---
+
+## 11. Open Questions for Contributors
 
 1. **Scheme chargeback choreography:** Should the profile specify how the
    `dispute_readiness` fields map to Mastercard chargeback reason codes? This
