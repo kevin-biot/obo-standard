@@ -7,21 +7,35 @@ Status: Working Draft · Seeking contributors and implementation experience
 
 ## The problem
 
-An agent acts on behalf of a person to book a flight, initiate a payment, or
-instruct a healthcare service. The target — an airline, a bank, a clinic — has
-never met this agent before. No shared infrastructure. No prior relationship.
+A person asks their agent to plan a trip: book a flight, reserve a hotel,
+get concert tickets, arrange a car, initiate the payment. Five organisations.
+Possibly three countries. None of them have ever met this agent before.
+No shared infrastructure. No common authorisation server. No prior relationship.
 
-The target needs to answer four questions before it acts:
+Each of those five organisations needs to answer the same four questions
+before they act on the agent's instruction:
 
 1. **Who are you, and who sent you?**
 2. **What are you authorised to do?**
 3. **What did you actually do?**
 4. **Can I prove all of this to a regulator after the fact, without calling anyone?**
 
-No existing standard answers all four:
+**The single-organisation case is already solved.** When one company controls
+everything — its own AS, its own agents, its own APIs — OAuth, WIMSE, and
+SPIFFE work well. That is not the growth area.
 
-- **OAuth** answers 1 and 2 — but requires a live authorisation server at
-  verification time. No server, no verification.
+**The growth area is cross-organisation, cross-border, no shared AS.** A
+travel agent booking on Ryanair, Booking.com, Ticketmaster, and Hertz has
+no common authorisation server with any of them. A healthcare agent crossing
+NHS and a private clinic crosses jurisdictions. A payment agent initiating a
+SEPA transfer and settling in a different currency crosses regulatory regimes.
+
+In every one of those cases, existing standards fail at question 4:
+
+- **OAuth** answers 1 and 2 — but requires a live authorisation server both
+  parties trust. When there is no shared AS, there is no verification.
+- **WIMSE / SPIFFE** provide strong workload identity within a trust domain —
+  but a trust domain boundary is exactly what cross-org agentic commerce crosses.
 - **W3C Verifiable Credentials** answer 1 — but cover identity claims, not
   per-transaction evidence of what happened and what scope was exercised.
 - **A2A agent protocols** enumerate tool surfaces — but do not prove bounded
@@ -42,12 +56,16 @@ OBO Evidence Envelope — sealed by the agent after the transaction
 ```
 
 Both artefacts are verifiable **offline, without contacting any central
-service**, by anyone who can resolve DNS.
+service**, by anyone who can resolve DNS — including organisations that
+have never met the agent, share no infrastructure with its operator,
+and are in a different jurisdiction.
 
-> **Trust anchor: DNS.** Operator signing keys, governance pack digests,
-> corridor admission predicates, and nullifier epoch roots are published as
-> DNS TXT records — the same infrastructure pattern DKIM has used for email
-> trust for twenty years. No CA. No registry. No approved network.
+> **DNS as the universal trust anchor.** Every organisation on the
+> internet can resolve DNS. No shared AS required. No pre-registration.
+> No approved network. Operator signing keys, governance pack digests,
+> corridor admission predicates, and nullifier epoch roots are published
+> as DNS TXT records — the same infrastructure pattern DKIM has used for
+> email trust for twenty years.
 >
 > ```
 > operator key  →  _obo-key._domainkey.<operator>
@@ -55,6 +73,9 @@ service**, by anyone who can resolve DNS.
 > corridor gate →  _obo-crq.<corridor-id>.<corridor>
 > nullifier     →  _obo-null.<epoch>.<corridor>
 > ```
+>
+> Ryanair does not need a trust relationship with your agent's operator.
+> It needs DNS. That is already solved.
 
 ---
 
@@ -165,17 +186,23 @@ envelopes where the actual class exceeds the declared ceiling.
 Several serious efforts are tackling agentic trust. They are doing
 valuable work. They share a foundational assumption that OBO does not:
 **a live authorization server or identity infrastructure is available
-and reachable at the moment the agent acts.**
+and trusted by all parties.**
 
-That assumption holds for most enterprise and open-web deployments.
-It breaks for the hardest cases: two agents that have never met, no
-shared infrastructure, offline or latency-sensitive environments,
-regulated contexts where authorization scope must be pre-committed
-and auditable back to a human decision, cross-border corridors with
-no common AS.
+That assumption holds when one organisation controls the AS — internal
+enterprise automation, single-platform agent deployments, API-to-API
+within a trust domain. Those cases are well served by OAuth, WIMSE,
+SPIFFE, and the frameworks below.
 
-OBO is built for those cases. The comparison is honest about where
-the lines are.
+It breaks for the growth area: **cross-organisation, cross-border,
+no shared AS.** An agent booking a flight, hotel, concert, and car
+across four organisations in two countries has no common AS with any
+of them. A healthcare agent crossing NHS and a private clinic crosses
+jurisdictions. A payment agent in a regulated corridor needs
+authorization scope pre-committed and auditable back to a human
+decision — not negotiated at runtime by the agent itself.
+
+OBO is built for those cases. DNS is the only shared infrastructure
+assumed. The comparison is honest about where the lines are.
 
 ### The shared mental model in existing work
 
