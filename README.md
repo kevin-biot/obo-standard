@@ -163,26 +163,60 @@ envelopes where the actual class exceeds the declared ceiling.
 ## How OBO fits with other work
 
 Several serious efforts are tackling overlapping parts of the agentic
-trust problem. OBO is the **evidence layer** — it does not replace any
-of them.
+trust problem. OBO overlaps with some, complements others, and differs
+on one structural point that matters in regulated contexts.
 
-| Standard / protocol | Layer | What it solves | What it leaves open |
-|---|---|---|---|
-| [AAuth](https://github.com/dickhardt/AAuth) (Dick Hardt, IETF draft) | Authorization flow | How an agent authenticates and gets authorised dynamically, without pre-registered clients or browser redirects. Async HTTP, `purpose` parameter, five requirement levels. | Post-transaction tamper-evident evidence. What the agent did, sealed for offline replay by any party. |
-| OAuth 2.0 / RFC 8693 Token Exchange | Authorization | Delegated access tokens, scopes, live AS | Requires live authorisation server at verification time. No per-transaction evidence record. |
-| W3C Verifiable Credentials | Identity claims | Cryptographic credential presentation | Per-transaction evidence of bounded execution. What happened, not just who acted. |
-| A2A agent protocols | Tool surface discovery | Enumerating what an agent can call | Proving what it actually called, within what scope, with what outcome. |
-| **OBO** | **Evidence** | **Sealed pre- and post-transaction record. Offline verifiable. DNS as the only shared infrastructure.** | The authorization flow itself — use AAuth, OAuth, or your own mechanism to acquire delegation authority. OBO seals the proof of what happened. |
+| Standard / protocol | Pre-transaction | Post-transaction | Trust model | Negotiation? |
+|---|---|---|---|---|
+| [AAuth](https://github.com/dickhardt/AAuth) (Dick Hardt, IETF draft) | ✅ Dynamic authorization flow — agent negotiates access at request time. `purpose` parameter. Five requirement levels. | ✗ No sealed evidence record | Live AS responds at verification time | **Yes** — scope determined at runtime |
+| OAuth 2.0 / RFC 8693 | ✅ Delegated access tokens and scopes | ✗ No per-transaction evidence | Live AS required | Yes — scopes negotiated |
+| W3C Verifiable Credentials | ✅ Identity and claims presentation | ✗ No bounded-execution evidence | Issuer + DID resolution | No |
+| A2A agent protocols | ✅ Tool surface discovery | ✗ No proof of what was called | Runtime discovery | **Yes** — tools and surfaces negotiated at runtime |
+| **OBO Credential** | ✅ Pre-issued delegation proof, carried by agent, offline verifiable via DNS | — | DNS-anchored Ed25519, no server | **No** — scope pre-committed at issuance |
+| **OBO Evidence Envelope** | — | ✅ Sealed, tamper-evident, portable across all parties | SHA-256 + Ed25519 sealed | No |
 
-AAuth and OBO are the most directly complementary: AAuth answers "can
-this agent act?" via a dynamic authorization flow; OBO answers "what did
-this agent do, and can anyone prove it without calling a server?" A
-regulated corridor could use AAuth for admission and OBO for the
-tamper-evident evidence chain.
+### The pre-commitment property
 
-Dick Hardt's `purpose` parameter (agent-declared intent at the protocol
-level) and OBO's `intent_phrase` + `intent_hash` (intent sealed into the
-evidence record) are the same instinct from two directions.
+The overlap between AAuth and OBO Credential is real — both answer
+"who is this agent and what are they authorised to do?" before a
+transaction. The approaches differ on one structural point:
+
+**Negotiation-based** (AAuth, A2A): the agent determines or expands
+its scope at runtime. Flexible. But in regulated contexts this creates
+risk: the agent can negotiate beyond what the human originally
+intended. Scope creep, action class escalation, and intent
+manipulation all become possible. The authorization is not
+tamper-evidently bound to the original human decision.
+
+**Pre-commitment** (OBO Credential): scope, intent namespace, and
+action class ceiling are sealed at issuance by the operator, bound to
+a `why_ref` rationale chain, and anchored in DNS. The agent cannot
+negotiate upward at runtime. A regulator can trace any transaction
+back to the human-approved rationale that authorised it.
+
+This is not a criticism of AAuth — it solves a genuine problem for
+dynamic, open-web agent interactions. It is a statement about what
+regulated corridors (PSD3, EU AI Act, healthcare) require: the
+authorization scope must be pre-committed, not runtime-negotiable.
+
+### Composition
+
+AAuth and OBO can work sequentially:
+
+```
+AAuth handles the dynamic negotiation
+       ↓
+output is an OBO Credential (pre-committed scope, DNS-anchored)
+       ↓
+agent carries OBO Credential into the corridor
+       ↓
+OBO Evidence Envelope seals what happened
+```
+
+Dick Hardt's `purpose` parameter and OBO's `intent_phrase` +
+`intent_hash` are the same instinct — agent-declared intent — from
+two directions. The difference is that OBO seals the intent into the
+evidence record so it cannot be retrospectively disputed.
 
 ---
 
