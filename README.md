@@ -20,6 +20,12 @@ before they act on the agent's instruction:
 3. **What did you actually do?**
 4. **Can I prove all of this to a regulator after the fact, without calling anyone?**
 
+OBO emerged from a working implementation, not a specification exercise.
+The fields exist because a real agentic pipeline required them when
+crossing organisational boundaries with no shared infrastructure. The
+gaps it fills are the gaps that appeared under load, not in a committee
+room.
+
 **The single-organisation case is already solved.** When one company controls
 everything — its own AS, its own agents, its own APIs — OAuth, WIMSE, and
 SPIFFE work well. That is not the growth area.
@@ -290,6 +296,45 @@ disputed by any party.
 | 4 | Jurisdiction profiles (PSD3, UAE, NHS) | 🔲 Seeking contributors |
 | 5 | D.4b suffix privacy circuit review | 🔲 Seeking cryptographic reviewers |
 | 6 | IETF submission | 🔲 After Phase 3–4 validation |
+
+---
+
+## Interlinked open standards
+
+OBO is one layer in a family of interlinked open standards that emerged
+from the same implementation work. Each addresses a distinct layer of
+the cross-org, cross-border agentic trust problem:
+
+```
+RTGF  — Regulatory Token Governance Framework
+        Why was this agent authorised? Human-approved rationale chain,
+        jurisdiction-mapped, anchored in DNS. The why_ref root.
+        [ RFC activity — forthcoming ]
+
+aARP  — Agentic Authorization and Routing Protocol
+        Which corridor should this agent use? Proof-based admission,
+        DNS-published predicates, route evidence sealed per hop.
+        [ draft in progress ]
+
+OBO   — On Behalf Of  ← this standard
+        Pre-transaction: who, authorised for what, under whose governance.
+        Post-transaction: what happened, within what scope, tamper-evident.
+
+SAPP  — Secure Agent Payment Protocol
+        Payment settlement for Lane² corridors. Signs PSP receipts,
+        verifies regulatory tokens, anchors Merkle evidence so aARP,
+        RTGF, and policy gates can deliver deterministic payments.
+        [ draft in progress ]
+```
+
+These standards are independent and additive — each can be adopted
+alone. Together they close the full loop: rationale → credential →
+routing → evidence → settlement.
+
+OBO is the evidence layer that connects all of them. A `why_ref` in
+an OBO Credential points to an RTGF rationale token. A `corridor_ref`
+points to an aARP corridor. A `stage3_ref` points to a SAPP settlement
+receipt. The chain is tamper-evident end to end.
 
 ---
 
