@@ -309,7 +309,7 @@ the cross-org, cross-border agentic trust problem:
 RTGF  — Regulatory Token Governance Framework
         Why was this agent authorised? Human-approved rationale chain,
         jurisdiction-mapped, anchored in DNS. The why_ref root.
-        github.com/kevin-biot/rtgf  [ RFC activity — forthcoming ]
+        github.com/kevin-biot/rtgf-open  [ publication imminent ]
 
         ↓  rationale compiles into a bounded execution contract
 
@@ -344,7 +344,7 @@ SAPP  — Secure Agent Payment Protocol
         Payment settlement for Lane² corridors. Signs PSP receipts,
         verifies regulatory tokens, anchors Merkle evidence so aARP,
         RTGF, and policy gates can deliver deterministic payments.
-        [ draft in progress ]
+        github.com/kevin-biot/sapp-profiles-public  [ publication imminent ]
 ```
 
 These standards are independent and additive — each can be adopted
