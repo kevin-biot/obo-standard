@@ -209,6 +209,29 @@ through the delegation authority to the sealed transaction evidence.
 
 ## 7. Examples
 
+### Conformant example files
+
+Five OBO Evidence Envelopes in
+[`examples/envelopes/payment-lifecycle/`](../examples/envelopes/payment-lifecycle/)
+trace a single agentic payment from authorisation through capture,
+decline, chargeback, and dispute resolution — all conforming to this
+profile:
+
+| File | Event | Outcome | Notes |
+|---|---|---|---|
+| [01-payment-authorized.json](../examples/envelopes/payment-lifecycle/01-payment-authorized.json) | `payment_authorized` | allow | SCA aal2_plus, autonomous VI chain |
+| [02-payment-captured.json](../examples/envelopes/payment-lifecycle/02-payment-captured.json) | `payment_captured` | allow | `prior_evidence_ref` → 01 |
+| [03-payment-declined.json](../examples/envelopes/payment-lifecycle/03-payment-declined.json) | `payment_declined` | deny | Separate order; risk threshold exceeded |
+| [04-chargeback-opened.json](../examples/envelopes/payment-lifecycle/04-chargeback-opened.json) | `chargeback_opened` | allow | `prior_evidence_ref` → 02; issuer dispute hub |
+| [05-dispute-resolved.json](../examples/envelopes/payment-lifecycle/05-dispute-resolved.json) | `dispute_resolved` | allow | `prior_evidence_ref` → 04; merchant prevailed |
+
+A regulated-corridor credential and single-step evidence envelope are
+also available:
+- [credentials/regulated-lane.json](../examples/credentials/regulated-lane.json)
+- [envelopes/regulated-why-ref.json](../examples/envelopes/regulated-why-ref.json)
+
+---
+
 ### 7.1 OBO Credential (VI autonomous mode, regulated corridor)
 
 ```json

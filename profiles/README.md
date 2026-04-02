@@ -56,6 +56,10 @@ Link to or inline credential and envelope examples for this profile.
 
 ## Existing profiles
 
-| File | Domain | Jurisdiction / Scheme | Status |
-|---|---|---|---|
-| [payments-mastercard-vi.md](payments-mastercard-vi.md) | Payments | Mastercard Verifiable Intent + PSD3 (EU) | Draft, non-normative |
+| Profile | Domain | Jurisdiction / Scheme | Status | Conformant examples |
+|---|---|---|---|---|
+| [payments-mastercard-vi.md](payments-mastercard-vi.md) | Payments | Mastercard Verifiable Intent + PSD3 (EU) | Draft, non-normative | [payment-lifecycle/](../examples/envelopes/payment-lifecycle/) · [regulated-why-ref.json](../examples/envelopes/regulated-why-ref.json) |
+
+Profiles map OBO fields to regulatory contexts. The **conformant examples**
+column links to concrete JSON artefacts that instantiate each profile —
+they are the living proof that the field mappings work end-to-end.
