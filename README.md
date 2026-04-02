@@ -382,16 +382,18 @@ assumed. The comparison is honest about where the lines are.
 
 ### The shared mental model in existing work
 
-| Standard / protocol | Mental model | What it solves well | What it leaves open |
-|---|---|---|---|
-| [AAuth](https://github.com/dickhardt/AAuth) — Dick Hardt, IETF draft | Agent as dynamic OAuth client. Async HTTP negotiation at the door. `purpose` parameter. | First-contact authorization without pre-registration. Open-web agent interactions. | Scope determined at runtime — negotiable, not pre-committed. No sealed post-transaction evidence. AS required. |
-| [draft-klrc-aiagent-auth](https://github.com/PieterKas/agent2agent-auth-framework) — IETF draft | Agent as workload. WIMSE + SPIFFE + OAuth unified stack. AIMS layered model. | Unified agent identity, credential lifecycle, cross-domain token chaining. Audit logs required. | Audit log **format explicitly out of scope**. Policy format out of scope. Compliance/jurisdiction out of scope. AS required. Runtime OAuth negotiation. |
-| OAuth 2.0 / RFC 8693 Token Exchange | API client getting a scoped token from a live AS. | Delegated access, scopes, token exchange. Mature, widely deployed. | Live AS required. No per-transaction sealed evidence. Scope negotiated not pre-committed. |
-| W3C Verifiable Credentials | Portable identity claims, DID-anchored. | Cryptographic credential presentation. Offline-capable identity. | No bounded-execution evidence. No per-transaction sealed record. |
-| A2A agent protocols | Agent as tool-calling API client. Capability discovery at runtime. | Enumerating what an agent can call. Tool surface negotiation. | Runtime negotiation — agent discovers and expands scope as it goes. No proof of bounded execution. |
+| Standard / protocol | Implementation state | Mental model | What it solves well | What it leaves open |
+|---|---|---|---|---|
+| [AAuth](https://github.com/dickhardt/AAuth) — Dick Hardt, IETF draft | Early draft. Requirements text. No reference implementation. | Agent as dynamic OAuth client. Async HTTP negotiation at the door. `purpose` parameter. | First-contact authorization without pre-registration. Open-web agent interactions. | Scope determined at runtime — negotiable, not pre-committed. No sealed post-transaction evidence. AS required. |
+| [draft-klrc-aiagent-auth](https://github.com/PieterKas/agent2agent-auth-framework) — IETF draft | Early draft. Abstract layer model and requirements text. No wire format specified. No reference implementation. | Agent as workload. WIMSE + SPIFFE + OAuth unified stack. AIMS layered model. | Unified agent identity, credential lifecycle, cross-domain token chaining. Audit logs required. | Audit log **format explicitly out of scope**. Wire format unspecified. Policy format out of scope. Compliance/jurisdiction out of scope. AS required. |
+| OAuth 2.0 / RFC 8693 Token Exchange | Mature RFC. Widely deployed. Multiple production implementations. | API client getting a scoped token from a live AS. | Delegated access, scopes, token exchange. Mature, widely deployed. | Live AS required. No per-transaction sealed evidence. Scope negotiated not pre-committed. |
+| W3C Verifiable Credentials | W3C Recommendation. Multiple implementations. | Portable identity claims, DID-anchored. | Cryptographic credential presentation. Offline-capable identity. | No bounded-execution evidence. No per-transaction sealed record. |
+| A2A agent protocols | Evolving. Protocol-level spec, no evidence standard. | Agent as tool-calling API client. Capability discovery at runtime. | Enumerating what an agent can call. Tool surface negotiation. | Runtime negotiation — agent discovers and expands scope as it goes. No proof of bounded execution. |
+| **OBO** — this standard | Working draft. Running Go reference implementation exercised end-to-end. JSON examples and DNS zone templates in this repository. | Pre-committed credential + sealed post-transaction evidence. DNS as universal trust anchor. | Cross-org, cross-border, no shared AS. Offline-verifiable by any party. Tamper-evident audit record specified and portable. | Early draft. Single reference implementation. Seeking independent implementations for IETF submission. |
 
-The pattern: **OAuth and API-centric thinking extended to agents.**
-Valuable. Necessary. Not sufficient for the hardest cases.
+The pattern for the first four: **OAuth and API-centric thinking extended to agents.**
+Valuable. Necessary. Not sufficient for the hardest cases. OBO is in the table
+because the comparison should be honest — including about where OBO itself sits.
 
 ### What OBO does differently
 
@@ -407,6 +409,7 @@ infrastructure except DNS.**
 | Rationale chain | Token `sub` claim | `why_ref` — traces authorization to human-approved rationale |
 | Jurisdiction/compliance | Out of scope | OBO profiles (PSD3, NHS, UAE…) |
 | Two agents, no prior relationship | Requires shared AS or federation | OBO Credential verifiable from DNS alone |
+| Reference implementation | None (AAuth, draft-klrc) or protocol-only (A2A) | Running Go implementation, end-to-end exercised |
 
 ### The audit gap — named explicitly
 
