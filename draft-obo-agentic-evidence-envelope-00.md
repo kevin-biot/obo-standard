@@ -855,7 +855,120 @@ unencumbered technology.
 
 ---
 
-## 9. Acknowledgements and Design Philosophy
+## 9. Privacy Considerations
+
+OBO credentials and evidence envelopes cross organisational boundaries
+by design. A target receiving an OBO Credential learns something about
+the originating operator. The question is how much — and whether what
+is revealed is the minimum necessary for the transaction or an
+inadvertent disclosure of internal organisational detail.
+
+### 9.1 The minimum disclosure principle
+
+OBO-REQ-040: Operators SHOULD construct credentials and evidence
+envelopes to disclose the minimum information necessary for the
+receiving party to verify the presented claims and admit or reject
+the intent.
+
+This is not merely a privacy preference. Excess disclosure in a
+credential that crosses an organisational boundary reveals internal
+structure — team names, department codes, role hierarchies, internal
+workflow identifiers — to counterparties who have no need of that
+information and no obligation to protect it. In regulated contexts,
+such disclosure may itself constitute a data protection violation.
+
+### 9.2 Identifier construction
+
+**`agent_id` and `operator_id`** are domain-scoped identifiers. The
+operator domain is intentionally public — it is the accountable legal
+entity whose key is anchored in DNS. The agent sub-identifier within
+that domain SHOULD be an opaque or role-scoped token that does not
+encode internal organisational structure.
+
+```
+Disclose less:  agent-7f3a.corp.example          (opaque token)
+Disclose more:  agent.finance-dept.team-alpha.corp.example
+                (reveals internal hierarchy to every counterparty)
+```
+
+**`principal_id`** identifies the delegating human. It SHOULD be a
+pseudonymous identifier tied to the delegation relationship, not an
+internal username, employee ID, or role title. The principal's legal
+identity is relevant to the operator; it is rarely relevant to the
+target service.
+
+### 9.3 Intent phrase minimization
+
+The `intent_phrase` is normalised before hashing and is visible to
+the target. It SHOULD convey the intent class and scope sufficient
+for admission decisions without embedding internal business process
+identifiers, workflow names, or system references.
+
+```
+Sufficient:  "initiate payment USD 5000 to supplier"
+Excessive:   "process Q1-2026 vendor invoice batch for APAC
+              procurement workflow ref INV-2026-00412"
+```
+
+The intent hash binds the evidence to the specific intent. The phrase
+itself does not need to contain internal identifiers to serve that
+function — the hash is the binding, not the text.
+
+### 9.4 Rationale reference opacity
+
+The `why_ref` field carries a pointer to the upstream human-approved
+rationale. The `rationale_id` within `why_ref` SHOULD be an opaque
+token issued by the RTGF or rationale authority — not a descriptive
+URI that reveals internal approval workflow identifiers to the target.
+
+The target does not need to know the internal structure of the
+rationale system. It needs to know that a valid rationale exists and
+is reachable. An opaque token satisfies that requirement; a descriptive
+URI leaks internal process detail.
+
+### 9.5 DNS-published corridor predicates
+
+`_obo-crq` DNS records publish corridor admission requirements. These
+records are publicly resolvable by any party. Operators constructing
+corridor admission predicates SHOULD be aware that the published
+requirements reveal the regulatory posture of the corridor — required
+compliance tiers, jurisdiction constraints, and governance framework
+references — to any observer who resolves the record.
+
+This disclosure is intentional and necessary for the DNS verification
+model to work. Operators SHOULD ensure that what is published reflects
+only the minimum admission requirements and does not embed internal
+policy identifiers beyond what verification requires.
+
+### 9.6 Evidence envelope sharing
+
+The OBO Evidence Envelope is an accountability record. In most
+transaction classes it is retained by the operator and produced only
+in the event of a dispute, regulatory inquiry, or audit. Operators
+MUST NOT routinely share evidence envelopes with counterparties beyond
+what is required by the corridor profile or applicable law.
+
+In regulated corridors where the evidence envelope is shared (for
+example, with a payment network or dispute arbitrator), the corridor
+profile SHOULD specify which fields are shared and under what data
+processing basis. Sharing an envelope that contains `principal_id` or
+`intent_phrase` with a counterparty constitutes personal data transfer
+in many jurisdictions and requires an appropriate lawful basis.
+
+### 9.7 The D.4b suffix privacy circuit
+
+Appendix D.4b describes a gnark PLONK zero-knowledge circuit for
+nullifier suffix privacy. When corridor admission requires proof that
+a nullifier epoch root is satisfied without revealing which specific
+nullifier was consumed, the ZK circuit provides this proof without
+disclosing the nullifier value to the corridor operator. Implementers
+processing high-volume regulated corridors SHOULD consider whether
+nullifier disclosure creates a linkability risk and whether the D.4b
+circuit is appropriate for their deployment.
+
+---
+
+## 10. Acknowledgements and Design Philosophy
 
 ### 9.1 Why an Open Standard
 
@@ -929,7 +1042,7 @@ of what upstream concept authority looks like when it is done well.
 
 ---
 
-## 10. IANA Considerations
+## 11. IANA Considerations
 
 This document requests no IANA actions at this time. A future revision
 may request registration of the `application/obo-credential+json` and
@@ -937,9 +1050,9 @@ may request registration of the `application/obo-credential+json` and
 
 ---
 
-## 10. References
+## 12. References
 
-### 10.1 Normative References
+### 12.1 Normative References
 
 - [RFC2119] Bradner, S., "Key words for use in RFCs to Indicate
   Requirement Levels", BCP 14, RFC 2119, March 1997.
@@ -948,7 +1061,7 @@ may request registration of the `application/obo-credential+json` and
 - [RFC8693] Jones, M. et al., "OAuth 2.0 Token Exchange", RFC 8693,
   January 2020.
 
-### 10.2 Informative References
+### 12.2 Informative References
 
 - [VC-DATA-MODEL] W3C, "Verifiable Credentials Data Model 2.0",
   https://www.w3.org/TR/vc-data-model-2.0/
