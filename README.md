@@ -187,6 +187,69 @@ envelopes where the actual class exceeds the declared ceiling.
 
 ---
 
+## Legal accountability — agents are instruments, not persons
+
+This is not a theoretical concern. It is a liability problem that will
+be resolved by courts unless standards get ahead of it.
+
+**The emerging dangerous pattern:**
+
+Several current agentic payment approaches — including Mastercard
+Verifiable Intent (VI) at its L3 autonomous mode — give agents their
+own private signing keys. The agent signs transactions independently.
+The payment network receives a cryptographic signature.
+
+When a dispute opens, the question becomes: who signed?
+
+*"An AI agent signed it."*
+
+That is not a legal answer. Agents are not legal persons. An agent
+cannot be summoned. An agent cannot testify. An agent cannot be held
+liable. The private key exists. The signature exists. The signer —
+as a legally accountable entity — does not exist.
+
+This creates a **liability black hole at payment finalisation** —
+the precise moment when legal accountability must crystallise. Courts
+will eventually resolve this. The resolution will not be clean, and
+it will not be quick. The users who transacted in the meantime carry
+the risk.
+
+This is not a criticism of Mastercard VI as a technical system.
+The VI delegation chain (L1 → L2 → L3) is serious, well-designed
+work. The liability gap is a consequence of L3 autonomous signing
+without a clear legal-entity accountability anchor — a gap that
+affects any approach that treats the agent as a signing principal
+rather than an instrument of a signing principal.
+
+**OBO's design is explicit about this:**
+
+The agent is never the accountable party. The agent carries
+credentials issued by an operator who is a legal entity.
+
+```
+operator_id   — the legal entity accountable for this agent's actions
+principal_id  — the human who delegated authority
+why_ref       — traces to the human-approved rationale (RTGF token)
+```
+
+The OBO Evidence Envelope records what the agent did. The
+accountability chain traces to the **operator** — a company, a
+regulated PSP, a legal person who can go to court, produce the sealed
+evidence record, and demonstrate: *"here is what our agent was
+authorised to do, here is what it did, here is the governance pack
+that defined the boundary, here is the human rationale that authorised
+it."*
+
+**The operator is the legal person. The agent is the instrument.**
+
+This is how payment networks have always worked. Visa and Mastercard
+hold merchants, acquirers, and issuers accountable — not the card
+terminal, not the POS software. OBO extends that proven accountability
+model to agents. L3 autonomous signing without a legal-entity anchor
+breaks it.
+
+---
+
 ## How OBO fits with other work
 
 Several serious efforts are tackling agentic trust. They are doing
