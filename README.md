@@ -355,6 +355,12 @@ rationale (RTGF)  →  execution contract (PACT)  →  credential + evidence (OB
                   →  routing (aARP)  →  settlement (SAPP)
 ```
 
+**Every layer is built and running as reference implementation code.**
+This is not a paper standard family. Each specification above has a
+working Go implementation that has been exercised end-to-end across
+the full chain. The specifications are the distillation of what the
+running code required — not the other way round.
+
 The OBO fields that connect them:
 
 | OBO field | Points to |
