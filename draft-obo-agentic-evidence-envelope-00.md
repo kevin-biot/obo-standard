@@ -667,6 +667,63 @@ class ceilings, not through credential re-issuance. This is the
 structural property that makes the originating human findable and
 auditable at every point in the chain.
 
+### 5.5 Multi-Hop Assertion Model
+
+Multi-agent chains involve three structurally distinct assertion types.
+Conflating them is the source of most multi-hop identity and
+authorization errors.
+
+**Identity assertion** — who the principal is. In OBO this is
+`principal_id`: a stable, pseudonymous identifier for the originating
+human. It travels with the credential but is minimised by design. Raw
+end-user identity assertions (session tokens, ID tokens, authentication
+receipts) MUST NOT be forwarded across agent hops unless the receiving
+agent is explicitly in scope for the identity domain that issued them
+and the principal has consented to that forwarding. The default is
+non-forwarding.
+
+**Delegation assertion** — what the agent is allowed to do on the
+principal's behalf for this action. In OBO this is the OBO Credential
+itself: `intent_namespace`, `action_classes`, `scope_constraints`,
+`why_ref`, and `expires_at`. The delegation assertion travels hop-by-hop
+and is the primary authorization input for each corridor. It must be:
+
+- *turn-by-turn*, not indefinite — `expires_at` bounds every hop
+- *narrow in scope* — action class and scope constraints MUST NOT widen
+  across hops (non-amplifying)
+- *audience-bound* — `corridor_binding` constrains where the credential
+  is valid
+- *fail-closed* — if the delegation assertion is absent, expired, or
+  outside the receiving corridor's policy ceiling, the action is denied
+
+**Execution assertion** — the credential used to call the target service
+or API. This is obtained locally by the receiving corridor or agent,
+not forwarded from the calling agent. Each corridor acquires its own
+execution credentials (service account, mTLS certificate, API token)
+for the downstream system it governs. The calling agent never receives
+or handles these credentials. This is the structural enforcement of
+least privilege: authority is delegated, execution is local.
+
+The operational pattern is:
+
+> *Authenticate at entry. Delegate per action. Execute locally.
+> Audit end-to-end.*
+
+Authentication happens once at the trust boundary where the principal
+enters the system. Every subsequent action is governed by a bounded
+delegation assertion. Every execution uses credentials local to the
+receiving corridor. Every hop produces an OBO Evidence Envelope. The
+end-to-end audit chain is assembled from per-hop envelopes linked by
+`prior_evidence_ref` and the shared `principal_id` and `why_ref`.
+
+**Cross-organisation chains.** There is no universal credential domain
+across all organisations and APIs. Cross-organisation execution cannot
+rely on token portability — it must rely on delegated authority. The
+OBO Credential is the portable delegation artifact; execution
+credentials remain local to each organisation's corridor. This is the
+only design that composes correctly across organisational trust
+boundaries without requiring a shared authorization server.
+
 ---
 
 ## 6. Verification
