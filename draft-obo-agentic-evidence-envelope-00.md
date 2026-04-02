@@ -600,6 +600,16 @@ gaps that regulators cannot audit. OBO does not prohibit multi-agent
 architectures, but it requires that human authority at the root of the
 chain remain traceable and unchanged throughout.
 
+OBO's model is an **invariant-chain model**, not a re-issuance model.
+The originating credential is issued once by the operator on behalf of
+the human principal. Downstream agents carry that credential's
+`principal_id` and `why_ref` forward — they do not issue new
+credentials that substitute a fresh principal or a new rationale root.
+Scope constraints narrow at each hop through corridor policy and action
+class ceilings, not through credential re-issuance. This is the
+structural property that makes the originating human findable and
+auditable at every point in the chain.
+
 ---
 
 ## 6. Verification
