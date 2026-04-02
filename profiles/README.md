@@ -56,4 +56,6 @@ Link to or inline credential and envelope examples for this profile.
 
 ## Existing profiles
 
-*None yet. First profile contribution welcome.*
+| File | Domain | Jurisdiction / Scheme | Status |
+|---|---|---|---|
+| [payments-mastercard-vi.md](payments-mastercard-vi.md) | Payments | Mastercard Verifiable Intent + PSD3 (EU) | Draft, non-normative |
