@@ -162,61 +162,93 @@ envelopes where the actual class exceeds the declared ceiling.
 
 ## How OBO fits with other work
 
-Several serious efforts are tackling overlapping parts of the agentic
-trust problem. OBO overlaps with some, complements others, and differs
-on one structural point that matters in regulated contexts.
+Several serious efforts are tackling agentic trust. They are doing
+valuable work. They share a foundational assumption that OBO does not:
+**a live authorization server or identity infrastructure is available
+and reachable at the moment the agent acts.**
 
-| Standard / protocol | Pre-transaction | Post-transaction | Trust model | Negotiation? |
-|---|---|---|---|---|
-| [AAuth](https://github.com/dickhardt/AAuth) (Dick Hardt, IETF draft) | ✅ Dynamic authorization flow — agent negotiates access at request time. `purpose` parameter. Five requirement levels. | ✗ No sealed evidence record | Live AS responds at verification time | **Yes** — scope determined at runtime |
-| OAuth 2.0 / RFC 8693 | ✅ Delegated access tokens and scopes | ✗ No per-transaction evidence | Live AS required | Yes — scopes negotiated |
-| W3C Verifiable Credentials | ✅ Identity and claims presentation | ✗ No bounded-execution evidence | Issuer + DID resolution | No |
-| A2A agent protocols | ✅ Tool surface discovery | ✗ No proof of what was called | Runtime discovery | **Yes** — tools and surfaces negotiated at runtime |
-| **OBO Credential** | ✅ Pre-issued delegation proof, carried by agent, offline verifiable via DNS | — | DNS-anchored Ed25519, no server | **No** — scope pre-committed at issuance |
-| **OBO Evidence Envelope** | — | ✅ Sealed, tamper-evident, portable across all parties | SHA-256 + Ed25519 sealed | No |
+That assumption holds for most enterprise and open-web deployments.
+It breaks for the hardest cases: two agents that have never met, no
+shared infrastructure, offline or latency-sensitive environments,
+regulated contexts where authorization scope must be pre-committed
+and auditable back to a human decision, cross-border corridors with
+no common AS.
 
-### The pre-commitment property
+OBO is built for those cases. The comparison is honest about where
+the lines are.
 
-The overlap between AAuth and OBO Credential is real — both answer
-"who is this agent and what are they authorised to do?" before a
-transaction. The approaches differ on one structural point:
+### The shared mental model in existing work
 
-**Negotiation-based** (AAuth, A2A): the agent determines or expands
-its scope at runtime. Flexible. But in regulated contexts this creates
-risk: the agent can negotiate beyond what the human originally
-intended. Scope creep, action class escalation, and intent
-manipulation all become possible. The authorization is not
-tamper-evidently bound to the original human decision.
+| Standard / protocol | Mental model | What it solves well | What it leaves open |
+|---|---|---|---|
+| [AAuth](https://github.com/dickhardt/AAuth) — Dick Hardt, IETF draft | Agent as dynamic OAuth client. Async HTTP negotiation at the door. `purpose` parameter. | First-contact authorization without pre-registration. Open-web agent interactions. | Scope determined at runtime — negotiable, not pre-committed. No sealed post-transaction evidence. AS required. |
+| [draft-klrc-aiagent-auth](https://github.com/PieterKas/agent2agent-auth-framework) — IETF draft | Agent as workload. WIMSE + SPIFFE + OAuth unified stack. AIMS layered model. | Unified agent identity, credential lifecycle, cross-domain token chaining. Audit logs required. | Audit log **format explicitly out of scope**. Policy format out of scope. Compliance/jurisdiction out of scope. AS required. Runtime OAuth negotiation. |
+| OAuth 2.0 / RFC 8693 Token Exchange | API client getting a scoped token from a live AS. | Delegated access, scopes, token exchange. Mature, widely deployed. | Live AS required. No per-transaction sealed evidence. Scope negotiated not pre-committed. |
+| W3C Verifiable Credentials | Portable identity claims, DID-anchored. | Cryptographic credential presentation. Offline-capable identity. | No bounded-execution evidence. No per-transaction sealed record. |
+| A2A agent protocols | Agent as tool-calling API client. Capability discovery at runtime. | Enumerating what an agent can call. Tool surface negotiation. | Runtime negotiation — agent discovers and expands scope as it goes. No proof of bounded execution. |
 
-**Pre-commitment** (OBO Credential): scope, intent namespace, and
-action class ceiling are sealed at issuance by the operator, bound to
-a `why_ref` rationale chain, and anchored in DNS. The agent cannot
-negotiate upward at runtime. A regulator can trace any transaction
-back to the human-approved rationale that authorised it.
+The pattern: **OAuth and API-centric thinking extended to agents.**
+Valuable. Necessary. Not sufficient for the hardest cases.
 
-This is not a criticism of AAuth — it solves a genuine problem for
-dynamic, open-web agent interactions. It is a statement about what
-regulated corridors (PSD3, EU AI Act, healthcare) require: the
-authorization scope must be pre-committed, not runtime-negotiable.
+### What OBO does differently
+
+OBO starts from a different assumption: **there is no shared
+infrastructure except DNS.**
+
+| | OAuth/API-centric approaches | OBO |
+|---|---|---|
+| Trust root | Live authorization server | DNS TXT record — universally resolvable, no AS |
+| Agent scope | Negotiated at runtime | Pre-committed at credential issuance, sealed in DNS |
+| Evidence format | Audit logs — format undefined or implementation-specific | OBO Evidence Envelope — specified, portable, offline-verifiable by any party |
+| Offline verification | No | Yes — DNS only |
+| Rationale chain | Token `sub` claim | `why_ref` — traces authorization to human-approved rationale |
+| Jurisdiction/compliance | Out of scope | OBO profiles (PSD3, NHS, UAE…) |
+| Two agents, no prior relationship | Requires shared AS or federation | OBO Credential verifiable from DNS alone |
+
+### The audit gap — named explicitly
+
+draft-klrc-aiagent-auth states:
+
+> *"Deployments must maintain durable, tamper-evident audit logs
+> recording authenticated agent identifier, delegated subject,
+> accessed resource, requested action, authorization decision,
+> and timestamp."*
+
+Then: format out of scope.
+
+That requirement, with a specified portable wire format, is the OBO
+Evidence Envelope. The gap is named in the most authoritative current
+IETF draft in this space. OBO fills it.
+
+### The naming collision
+
+draft-klrc uses "OBO semantics" to mean RFC 8693 token exchange —
+a `sub` claim carrying the delegating principal. This is a token-level
+delegation hint. OBO (this standard) is a two-artefact evidence
+system: a pre-transaction credential and a post-transaction sealed
+envelope. The name overlap is coincidental; the scope is not the same.
 
 ### Composition
 
-AAuth and OBO can work sequentially:
+These efforts and OBO are not competing. They are layers:
 
 ```
-AAuth handles the dynamic negotiation
-       ↓
-output is an OBO Credential (pre-committed scope, DNS-anchored)
-       ↓
-agent carries OBO Credential into the corridor
-       ↓
-OBO Evidence Envelope seals what happened
+WIMSE / SPIFFE       →  agent identity and workload credentials
+AAuth / OAuth        →  dynamic authorization flow (agent gets permission)
+                              ↓
+                     output becomes an OBO Credential
+                     (pre-committed scope, DNS-anchored, offline-verifiable)
+                              ↓
+                     agent acts within corridor
+                              ↓
+OBO Evidence Envelope  →  sealed proof of what happened
+                           portable, offline-verifiable, indefinitely
 ```
 
-Dick Hardt's `purpose` parameter and OBO's `intent_phrase` +
-`intent_hash` are the same instinct — agent-declared intent — from
-two directions. The difference is that OBO seals the intent into the
-evidence record so it cannot be retrospectively disputed.
+Dick Hardt's `purpose` and OBO's `intent_phrase` + `intent_hash` are
+the same instinct from two directions. The difference: OBO seals the
+intent into a tamper-evident record that cannot be retrospectively
+disputed by any party.
 
 ---
 
