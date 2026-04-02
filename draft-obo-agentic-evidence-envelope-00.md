@@ -526,6 +526,129 @@ perform online revocation checks when network access is available.
 Offline verifiers MUST treat a `why_ref` with a known-revoked
 `rationale_id` as invalid when connectivity is restored.
 
+### 8.5 Model Identity: Attestation, Not Proof of Computation
+
+OBO Evidence Envelopes may carry a `model_identity_ref` field
+identifying the LLM or model that the operator asserts was used during
+execution of the transaction turn. This section explains precisely what
+that claim represents, what it does not represent, and why the
+accountability model is nonetheless sound.
+
+#### 8.5.1 What the sealed claim is
+
+A `model_identity_ref` in a signed evidence envelope is an
+**operator-attested assertion**. The operator — a legal entity
+identified by `operator_id` and bound by the governance pack referenced
+in `governance_framework_ref` — asserts that a named model was used
+during this transaction turn. That assertion is:
+
+- Sealed at transaction time, tamper-evident, and bound to the turn via
+  the envelope signature.
+- Traceable to a legal entity who can be held accountable for its
+  accuracy.
+- Verifiable by any party who can resolve the operator's DNS-anchored
+  signing key.
+
+#### 8.5.2 What the sealed claim is not
+
+The sealed claim is **not cryptographic proof of computation**. No
+currently deployed general-purpose system can provide externally
+verifiable proof that a specific set of neural network weights executed
+a specific forward pass on a specific input. This is a fundamental
+limit of current AI infrastructure, not a gap specific to OBO.
+
+Several techniques have been proposed to narrow this gap — structural
+output distribution fingerprinting [Coslett 2026], trusted execution
+environments (TEE) for model inference, and supply-chain attestation of
+model artifacts. Each of these approaches establishes one level of
+evidence (measurement result, enclave identity, artifact hash) but all
+ultimately terminate in an assertion made by some party who signed it.
+The verification chain does not escape the assertion model; it relocates
+where the assertion is made.
+
+Consider the analogy: a licensed tradesperson certifies that a specific
+procedure was performed using specific tools. That certification is
+signed, legally binding, and creates accountability. It is not a video
+recording of every instrument used. The accountability model works not
+because the internal computation is proven, but because a named legal
+entity has made a signed claim and can be held to it.
+
+#### 8.5.3 Why the accountability model is sound within these limits
+
+OBO's design is explicit about where accountability sits: with the
+**operator**, not the agent. The operator is a legal entity — a company,
+a regulated PSP, a licensed service provider — who:
+
+1. Deployed the agent and its underlying model.
+2. Issued or accepted the OBO Credential bounding the agent's scope.
+3. Sealed the Evidence Envelope asserting what occurred, including which
+   model was used.
+4. Is identified by `operator_id` and bound to a governance pack whose
+   digest is anchored in DNS.
+
+If a `model_identity_ref` claim is false — if the operator asserted
+model X was used when model Y actually ran — the legal consequences
+attach to the operator as the signing party. This is the same
+accountability structure used in payment networks, regulated professions,
+and supply-chain certifications: a named legal entity makes a signed
+assertion and is liable for its accuracy.
+
+The relevant question for a verifier or regulator is not *"can I prove
+computationally that this model ran?"* but *"is there a named,
+accountable legal entity who has signed a claim that this model ran,
+and can I hold them to that claim if it proves false?"* OBO answers yes
+to the second question. No current general-purpose system answers yes to
+the first.
+
+#### 8.5.4 Threat: operator substitution of model without updating assertion
+
+If an operator silently rotates the model behind a deployment without
+updating the `model_identity_ref` in subsequent evidence envelopes, the
+envelopes will contain a stale or false model identity claim. This is a
+breach of the operator's obligations under the governance pack, not a
+failure of the OBO protocol.
+
+Mitigations available within the OBO framework:
+
+- **Governance pack binding**: the `governance_framework_ref` (PACT
+  pack) specifies the ontology and execution contract under which the
+  agent operates. Model rotation that changes the agent's effective
+  behaviour may constitute a governance pack violation independently of
+  the model identity claim.
+- **Corridor monitoring**: corridors operating under regulated tiers MAY
+  require periodic re-attestation of model identity claims and SHOULD
+  treat stale claims as a corridor policy violation.
+- **External verification**: operators using techniques such as
+  structural output fingerprinting [Coslett 2026] or TEE-based model
+  attestation may include the resulting evidence digest in
+  `model_identity_ref` as a supplementary claim. This does not eliminate
+  the assertion model but provides an additional evidence layer that a
+  regulator or auditor may weigh.
+
+#### 8.5.5 Relationship to draft-klrc-aiagent-auth §7 and §14
+
+draft-klrc-aiagent-auth [KLRC 2026] identifies a related threat class:
+model substitution under valid agent credentials, where workload
+identity, artifact attestation, and API authentication all remain valid
+while the underlying model changes. The draft notes that §14 (Security
+Considerations) is reserved for future work.
+
+OBO's position is that this threat is real and correctly named, and that
+the appropriate response is to seal an operator-attested model identity
+claim in the per-turn evidence record — not to claim that the protocol
+can independently verify internal computation. The per-turn evidence
+architecture DOP uses (one signed attestation per pipeline turn,
+chained via `prev_attestation_hash`) demonstrates that turn-level model
+identity attestation is implementable and composable with existing
+workload identity chains.
+
+The threat cannot be eliminated by protocol means given current AI
+infrastructure. It can be made **attributable**: a named legal entity
+makes a signed claim, that claim is sealed in a tamper-evident record,
+and the entity is accountable if the claim proves false. That is what
+OBO provides, and it is consistent with how accountability is
+established in every other regulated domain.
+
 ---
 
 ## 9. Acknowledgements and Design Philosophy
