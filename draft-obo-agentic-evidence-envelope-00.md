@@ -135,10 +135,25 @@ that is the problem this specification solves.
 
 ### 1.4 The Two-Agent First Contact Problem
 
-The dominant case in agentic commerce is two agents that have no prior
-relationship, share no authorization infrastructure, and have never
-transacted before. Agent A (originating) approaches Agent B (target).
-Agent B faces a fundamental challenge:
+The traditional enterprise integration model assumes pre-established
+bilateral relationships: procurement processes, API onboarding, mTLS
+certificate exchange, OAuth client registration. Every external partner
+is known and credentialed before the first transaction runs. This works
+well for a fixed roster of known counterparties.
+
+Agentic systems at runtime scale make this assumption structurally
+impossible. An agent seeking a plumber, an FX desk, a hairdresser, a
+logistics provider, or a bank cannot have pre-registered OAuth
+credentials with every possible provider in advance. Agents discover
+counterparties at runtime — via aARP corridor routing, agent card
+advertisement, or capability discovery protocols — and must be able to
+transact on first contact, with no prior bilateral relationship, no
+shared authorization infrastructure, and no onboarding lead time.
+The first-contact case is not the edge case. It is the dominant case.
+
+This is the problem this specification addresses. Agent A (originating)
+approaches Agent B (target) for the first time. Agent B faces a
+fundamental challenge:
 
 > "Who are you? Who sent you? What are you allowed to do?
 > And if I proceed, how will I prove what actually happened?"
