@@ -105,7 +105,35 @@ server:
 This specification defines the minimum data structures that carry these
 five properties.
 
-### 1.3 The Two-Agent First Contact Problem
+### 1.3 Scope: When Existing Standards Are Sufficient
+
+An agent that exposes only an API surface and responds only to API
+calls is architecturally a microservice. The LLM or inference component
+inside it is an implementation detail — a smarter request parser — but
+the external pattern is unchanged. For this pattern, existing standards
+are fully sufficient: OAuth 2.0, mTLS, API keys, and platform workload
+identity (SPIFFE/SPIRE, Kubernetes service accounts, cloud provider
+workload identity) already solve authentication, authorization, and
+execution credential management. No new standards are required and OBO
+adds nothing for this case.
+
+OBO addresses a distinct problem: agents that communicate via governed
+intent across organisational and trust domain boundaries, where no
+shared authorization infrastructure exists between the parties. The
+caller expresses what they intend. The corridor decides whether that
+intent is admissible under a governance framework. The evidence of that
+decision must be portable, tamper-evident, and independently verifiable
+by any party after the fact — including regulators, dispute arbitrators,
+and counterparties who were not present at transaction time.
+
+If the question is "how does microservice A authenticate to microservice
+B, even if B has an LLM inside?" — the answer is OAuth or mTLS. If the
+question is "how does an agent acting for a principal cross an
+organisational trust boundary, express a governed intent, and produce
+evidence that is replayable without a live authorization server?" —
+that is the problem this specification solves.
+
+### 1.4 The Two-Agent First Contact Problem
 
 The dominant case in agentic commerce is two agents that have no prior
 relationship, share no authorization infrastructure, and have never
@@ -138,7 +166,7 @@ credential signature verifiable?
 If yes: proceed. If no: reject. No phone-home required. No central
 registry lookup required. This is the first contact trust floor.
 
-### 1.4 Minimal Trust and Progressive Deepening
+### 1.5 Minimal Trust and Progressive Deepening
 
 OBO provides a **trust floor**, not a trust ceiling. Accepting an OBO
 Credential does not mean the target fully trusts the originating agent.
@@ -186,7 +214,7 @@ OBO is intent-first: the originating agent declares what it intends,
 not what it is capable of. The target determines whether that intent
 class is within its acceptance parameters.
 
-### 1.5 Evidence, Authorisation, and Intent Are Not Separable
+### 1.6 Evidence, Authorisation, and Intent Are Not Separable
 
 Several current frameworks in the agentic trust space treat evidence as
 a separable concern — a logging requirement to be addressed by deployment
@@ -294,7 +322,7 @@ sides of a single accountability record, specified together so that any
 party, anywhere, can verify the complete chain from principal intent to
 transaction outcome without contacting anyone.
 
-### 1.6 Design Principles
+### 1.7 Design Principles
 
 **Intent first.** The primitive is a normalised intent, not a tool
 invocation list. The target service does not need to enumerate its
@@ -1599,7 +1627,7 @@ specify:
 - **Intent binding.** OAuth tokens carry scopes or `authorization_details`
   but do not seal the exact normalised intent phrase. OBO's `intent_hash`
   binds the evidence record to the specific action that was authorized,
-  making it a dispute anchor (§1.6).
+  making it a dispute anchor (§1.7).
 
 - **Cross-domain execution semantics.** RFC 8693 describes token exchange
   mechanics; it does not specify that receiving domains must mint local
