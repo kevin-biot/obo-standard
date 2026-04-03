@@ -349,6 +349,21 @@ choice left to implementations. It is a structural property of OBO's
 credential model: authority traces to a human at the root of the
 delegation tree, and that root does not move.
 
+**Agents execute under delegated authority; they do not originate it.**
+An agent is a workload that acts on behalf of a human or legal entity
+principal. Agents may be classified, risk-scored, attested, and
+registered for execution control purposes — but none of this confers
+legal standing on the agent itself. Legal authority originates with the
+`principal_id` (the human) and the `operator_id` (the accountable legal
+entity). The agent is a party in the evidence record, not an authority
+source. Authorization systems that evaluate agent identity for risk
+controls (scope ceiling, TTL, step-up requirements, attestation checks)
+are performing workload classification — a legitimate and necessary
+security function — but that classification does not transfer legal
+authority to the agent. The delegation chain always traces back to a
+human or legal entity. There is no mechanism in OBO by which an agent
+acquires independent legal standing.
+
 ---
 
 ## 2. Terminology
@@ -1132,6 +1147,13 @@ model, pipeline, or internal architecture the agent uses:
   fail closed. There is no fallback path that routes around the
   authorization boundary on behalf of an agent that has generated
   an unauthorized action.
+
+- Authorization MUST be re-evaluated at each effectful step. Session-level
+  authentication does not imply authorization for subsequent tool
+  invocations. Each action that produces an externally visible state
+  change — a write, a payment, a network call, a data release — requires
+  an independent authorization check at execution time. Global session
+  authorization does not carry forward to individual tool actions.
 
 - Evidence MUST bind the request, delegation artifact, policy context,
   and execution outcome. The evidence envelope is sealed after the
