@@ -987,7 +987,7 @@ delegation model but its verification model: every credential
 verification requires the authorization server to be live, reachable,
 and in a prior relationship with the verifier. In a world of millions
 of first-contact agent transactions this is a topology impossibility.
-The DNS Anchoring Profile (Appendix D) removes this runtime dependency:
+The DNS Anchoring Profile (Appendix E) removes this runtime dependency:
 the authorization server issues the credential once; DNS provides
 stateless, universally accessible key material for verification. The
 authorization server is not required at transaction time.
@@ -1226,14 +1226,14 @@ trust anchor exchange, federation metadata endpoints, or pre-configured
 certificate authorities between the parties. The operator publishes:
 
 - `_obo-key.<operator-domain>` — the signing key or key digest used to
-  sign OBO Credentials (sub-profile D.1)
+  sign OBO Credentials (sub-profile E.1)
 - `_obo-gov.<operator-domain>` — a digest of the governance framework
-  the operator is committed to (sub-profile D.2)
+  the operator is committed to (sub-profile E.2)
 
 Any verifier with DNS access can resolve these records and verify the
 credential signature and governance binding without any prior
 relationship with the operator. The trust root is DNS, which is
-universally accessible and DNSSEC-signable. See Appendix D for the full
+universally accessible and DNSSEC-signable. See Appendix E for the full
 DNS Anchoring Profile.
 
 **Replay prevention at first-contact.** OBO addresses credential replay
@@ -1244,7 +1244,7 @@ state between domains:
    MUST reject credentials past their expiry. Short-lived credentials
    (minutes to hours) are RECOMMENDED for cross-domain transactions.
 
-2. The nullifier sink (`_obo-null.<operator-domain>`, sub-profile D.3)
+2. The nullifier sink (`_obo-null.<operator-domain>`, sub-profile E.3)
    — the operator publishes a Merkle root of revoked credential IDs.
    Verifiers MAY check the nullifier root for high-value or regulated
    transactions where replay risk is material.
@@ -1433,15 +1433,15 @@ processing basis. Sharing an envelope that contains `principal_id` or
 `intent_phrase` with a counterparty constitutes personal data transfer
 in many jurisdictions and requires an appropriate lawful basis.
 
-### 9.7 The D.4b suffix privacy circuit
+### 9.7 The E.4b suffix privacy circuit
 
-Appendix D.4b describes a gnark PLONK zero-knowledge circuit for
+Appendix E.4b describes a gnark PLONK zero-knowledge circuit for
 nullifier suffix privacy. When corridor admission requires proof that
 a nullifier epoch root is satisfied without revealing which specific
 nullifier was consumed, the ZK circuit provides this proof without
 disclosing the nullifier value to the corridor operator. Implementers
 processing high-volume regulated corridors SHOULD consider whether
-nullifier disclosure creates a linkability risk and whether the D.4b
+nullifier disclosure creates a linkability risk and whether the E.4b
 circuit is appropriate for their deployment.
 
 ### 9.8 Cross-domain activity correlation
@@ -1570,8 +1570,8 @@ corridor protocols. Specifically:
   Envelope field semantics.
 - Operational experience with DNS-anchored key publication at scale
   (operators with DKIM deployment experience are especially welcome).
-- Review of the DNS Anchoring Profile (Appendix D), particularly the
-  D.4b gnark PLONK suffix privacy construction, which requires
+- Review of the DNS Anchoring Profile (Appendix E), particularly the
+  E.4b gnark PLONK suffix privacy construction, which requires
   independent cryptographic review before normative status.
 - Jurisdiction-specific profiles: parties operating regulated agent
   corridors in specific jurisdictions (payments, healthcare, legal)
@@ -1587,8 +1587,8 @@ real deployments, not one that is merely theoretically correct.
 
 The authors acknowledge the foundational work of Vishnu (IACR ePrint
 2025/2332) on DNS-anchored zk-SNARK proofs, which directly informed
-Appendix D of this specification. The gnark library (ConsenSys)
-provides the Go implementation path for the D.4b construction.
+Appendix E of this specification. The gnark library (ConsenSys)
+provides the Go implementation path for the E.4b construction.
 
 The design of the evidence chain is informed by the W3C PROV-O
 provenance ontology and the ISO 20022 business model as an example
@@ -1787,20 +1787,20 @@ mapping is:
 | `why_ref.*` | `WhyRefRationaleID/Digest/DerivationDigest` |
 | `evidence_digest` | `ContractHash` |
 
-## Appendix D. DNS Anchoring Profile
+## Appendix E. DNS Anchoring Profile
 
 *Status: Informative. This appendix describes an optional anchoring
-profile. Sub-profiles D.1 through D.3 are deployable with existing
-DNS tooling. Sub-profile D.4 references an experimental zk-SNARK
+profile. Sub-profiles E.1 through E.3 are deployable with existing
+DNS tooling. Sub-profile E.4 references an experimental zk-SNARK
 construction [PTX] and is flagged for discussion with contributors.*
 
 *Discussion note for contributors: The authors would welcome review
 of this appendix from parties with experience in DKIM key management,
 DNSSEC operational deployment, and zero-knowledge proof systems. The
-D.4 sub-profile in particular is an early design sketch and has not
+E.4 sub-profile in particular is an early design sketch and has not
 been security-reviewed independently of [PTX].*
 
-### D.1 Motivation
+### E.1 Motivation
 
 OAuth 2.0 and PKI-based verification models require the verifying
 party to have a live connection to an authorization server or CA at
@@ -1817,7 +1817,7 @@ cryptographic verifiability.
 The DNS Anchoring Profile defines four sub-profiles of increasing
 capability, each independently deployable.
 
-### D.2 Record Naming Convention
+### E.2 Record Naming Convention
 
 All OBO DNS records use underscore-prefixed names to avoid collision
 with operational DNS records, following the convention established by
@@ -1833,7 +1833,7 @@ DNSSEC signing of OBO records is RECOMMENDED. Verifiers SHOULD treat
 unsigned records as lower-assurance and MUST NOT treat them as
 equivalent to DNSSEC-signed records for regulated lane verification.
 
-### D.3 Sub-Profile D.1: Operator Signing Key (obo-dns-key)
+### E.3 Sub-Profile E.1: Operator Signing Key (obo-dns-key)
 
 An operator MAY publish its OBO Credential signing key in DNS,
 following the DKIM [RFC6376] key record pattern:
@@ -1862,7 +1862,7 @@ Field definitions:
 This sub-profile is deployable today using existing DNS infrastructure
 and Ed25519 tooling. It is the minimum DNS anchoring profile.
 
-### D.4 Sub-Profile D.2: Governance Pack Digest (obo-dns-gov)
+### E.4 Sub-Profile E.2: Governance Pack Digest (obo-dns-gov)
 
 An operator MAY publish the canonical digest of its current governance
 pack (ontology pack, policy snapshot) in DNS:
@@ -1891,7 +1891,7 @@ removing the TXT record causes all credentials referencing that pack
 version to fail DNS-gov verification, without requiring a live
 revocation endpoint.
 
-### D.5 Sub-Profile D.3: Credential Nullifier Epoch Root (obo-dns-null)
+### E.5 Sub-Profile E.3: Credential Nullifier Epoch Root (obo-dns-null)
 
 To support offline revocation checking without CRL distribution
 points, an operator MAY publish a Merkle root of credential nullifiers
@@ -1918,7 +1918,7 @@ at epoch rollover.
 This sub-profile is operational today. The Merkle tree construction
 is the same pattern used in certificate transparency logs [RFC6962].
 
-### D.6 Sub-Profile D.4: Agent Domain Control via zk-SNARK (obo-dns-ptx)
+### E.6 Sub-Profile E.4: Agent Domain Control via zk-SNARK (obo-dns-ptx)
 
 *This sub-profile references the experimental PTX construction [PTX]
 and is provided as an informative design sketch for contributor
@@ -1976,7 +1976,7 @@ identity. obo-dns-ptx binds the `agent_id` to a domain the agent
 demonstrably controls — without requiring a CA, an authorization
 server, or any pre-established relationship between the parties.
 
-### D.7 Corridor Mutual Verification (aARP binding)
+### E.7 Corridor Mutual Verification (aARP binding)
 
 A governed corridor such as aARP [aARP] faces a symmetric problem:
 the originating agent needs to verify the corridor's identity just as
@@ -2015,9 +2015,9 @@ The corridor verifies `why_ref.rationale_digest` against the
 published root at admission time. No live RTGF endpoint is required.
 The sovereign lane becomes verifiable with DNS access only.
 
-### D.8 DNS Anchoring Security Considerations
+### E.8 DNS Anchoring Security Considerations
 
-**DNSSEC requirement.** Sub-profiles D.1 through D.3 MUST use
+**DNSSEC requirement.** Sub-profiles E.1 through E.3 MUST use
 DNSSEC-signed records for regulated lane verification. An attacker
 with DNS spoofing capability can substitute a malicious key or
 governance pack digest. DNSSEC provides the freshness and integrity
@@ -2046,14 +2046,180 @@ required regardless of DNS anchoring profile.
 
 ---
 
-## Appendix F. Security Threat Model
+## Appendix F. DID Profile (Informative)
+
+*Status: Informative. This appendix describes how Decentralized
+Identifiers (DIDs) [W3C-DID] compose with OBO's identifier and trust
+anchor model. It is not normative — implementors may use DNS anchoring
+(Appendix E), DID-based anchoring, or both. The normative identifier
+requirements are in §5.4.*
+
+### F.1 DIDs as OBO Identifiers
+
+OBO's `principal_id`, `agent_id`, and `operator_id` fields accept any
+URI that uniquely and stably identifies the named party. W3C
+Decentralized Identifiers are valid values in all three fields. The
+following are conformant OBO credential fragments:
+
+```json
+{
+  "principal_id": "did:web:acme.com:principals:alice",
+  "agent_id":     "did:web:fintech.io:agents:pay-agent-v3",
+  "operator_id":  "did:web:fintech.io"
+}
+```
+
+When `signing_key_ref` references a DID with a fragment, the fragment
+identifies the specific verification method within the DID Document:
+
+```json
+{
+  "signing_key_ref": "did:web:fintech.io:agents:pay-agent-v3#key-1"
+}
+```
+
+No other spec change is required to use DIDs as identifiers. Existing
+DNS-scoped identifiers (`domain:sub-path` URNs) remain valid.
+
+### F.2 DID Method Profiles
+
+Not all DID methods are equivalent for OBO's operational model.
+This appendix defines guidance for three methods relevant to agentic
+deployments:
+
+#### F.2.1 did:web
+
+`did:web` resolves via HTTPS to a DID Document at a well-known path
+under the domain. `did:web:fintech.io` resolves to
+`https://fintech.io/.well-known/did.json`.
+
+**Relationship to DNS anchoring.** `did:web` is DNS-anchored by
+construction — it resolves through a domain that an organisation
+controls via DNS. It is therefore a natural extension of Appendix E's
+DNS anchoring model, not a replacement. The DID Document carries
+additional structure that DNS TXT records cannot: a machine-readable
+list of verification methods, service endpoints, and the controller
+relationship. Deployments that already publish `_obo-key` and `_obo-gov`
+TXT records MAY also publish a `did:web` DID Document; the two are
+complementary.
+
+**Verification path.** When `signing_key_ref` is a `did:web` URI,
+the verifier:
+
+1. Resolves the DID Document via HTTPS using the standard did:web
+   transformation.
+2. Locates the verification method identified by the fragment (e.g.
+   `#key-1`).
+3. Extracts the public key material (JWK or Multikey).
+4. Verifies the credential signature using the extracted key.
+5. Optionally cross-checks the domain against the `_obo-key` TXT record
+   from §8.6 for defence-in-depth.
+
+HTTPS certificate validation is required. A self-signed certificate
+MUST NOT be accepted as the sole assurance basis for Class C or D
+actions.
+
+**Controller assertion.** The `controller` field in the DID Document
+SHOULD match the `operator_id` domain, providing an additional binding
+between the signing agent and its operator.
+
+#### F.2.2 did:key
+
+`did:key` encodes the public key directly in the DID string. No
+external resolution is required — the verifier derives the key
+material from the DID string itself using the method-specific
+encoding (e.g. Multibase + Multicodec).
+
+**Use case.** Ephemeral, short-lived, or disposable agents — pipeline
+workers, single-use task executors, containerised function invocations
+— that do not warrant persistent identity infrastructure. The key IS the
+identifier; once the agent exits, the identity is abandoned.
+
+**Constraints.** `did:key` identifiers cannot be rotated or revoked.
+They MUST NOT be used as `principal_id` (a natural person or legal
+entity requires a persistent, revocable identifier). They MAY be used
+as `agent_id` when the agent's lifetime is bounded to a single
+transaction or pipeline run.
+
+```json
+{
+  "agent_id": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+  "expires_at": "2026-04-03T14:30:00Z"
+}
+```
+
+Short `expires_at` values (minutes) are strongly RECOMMENDED for
+`did:key` agents; the absence of revocation infrastructure means TTL
+is the only expiry mechanism.
+
+#### F.2.3 did:ebsi and EU / eIDAS 2.0 Contexts
+
+The European Blockchain Services Infrastructure (EBSI) defines
+`did:ebsi` for use within European digital identity frameworks,
+including EUDI Wallet credentials issued under eIDAS 2.0. Citizen
+wallet identifiers issued by a Qualified Trust Service Provider (QTSP)
+conform to `did:ebsi`.
+
+OBO's `principal_id` field accommodates `did:ebsi` identifiers
+without modification:
+
+```json
+{
+  "principal_id": "did:ebsi:2A9RkiYZJsBHT1nSB3HZAwHFme3Y2WMk7EAiSuZ5ARLH",
+  "operator_id":  "did:web:qtsp.example.eu"
+}
+```
+
+This composition means an OBO credential can bind a citizen's eIDAS
+2.0 wallet identity as `principal_id`, an organisation's QTSP-attested
+DID as `operator_id`, and an agent's `did:web` or `did:key` as
+`agent_id` — without any OBO field changes. A future eIDAS/OBO profile
+would define the assurance level mapping between EUDI Wallet credential
+types and OBO action classes (A/B/C/D), and the field correspondence
+with W3C Verifiable Credentials carried in the wallet.
+
+### F.3 DID Resolution Infrastructure
+
+The DNS anchoring model (Appendix E) requires only a DNS resolver —
+infrastructure present in every networked environment. `did:web`
+additionally requires HTTPS connectivity to the resolved domain.
+`did:key` requires no external infrastructure at all.
+
+Deployments that cannot guarantee HTTPS connectivity to `did:web`
+endpoints (air-gapped environments, highly restricted networks) SHOULD
+use DNS anchoring as the primary trust anchor and treat `did:web`
+as supplementary.
+
+Implementors SHOULD NOT adopt DID methods requiring distributed ledger
+resolution (`did:ion`, `did:indy`, `did:cheqd`) in OBO deployments
+unless the ledger infrastructure is already mandated by a sector
+regulatory requirement. DNS and `did:web` provide equivalent trust
+anchoring for the overwhelming majority of deployments with
+substantially lower operational overhead.
+
+### F.4 Summary: Trust Anchor Selection
+
+| Method | Resolution | Revocation | Use Case |
+|--------|-----------|------------|----------|
+| DNS `_obo-key` (Appendix E) | DNS only | `_obo-null` nullifier | Universal baseline |
+| `did:web` | DNS + HTTPS | DID Document deactivation + `_obo-null` | Orgs with existing DID infrastructure |
+| `did:key` | None (self-contained) | TTL only | Ephemeral agents, single-use execution |
+| `did:ebsi` | EBSI ledger + DID resolver | EBSI revocation registry | eIDAS 2.0 / EUDI Wallet contexts |
+
+Implementors SHOULD start with DNS anchoring and layer `did:web` when
+the organisation already maintains a DID Document for other purposes
+(Verifiable Credentials issuance, OpenID4VCI, etc.).
+
+---
+
+## Appendix G. Security Threat Model
 
 *Status: Informative. This appendix provides an attacker-oriented view
 of OBO's security properties. It is a companion to §8 Security
 Considerations. The normative requirements are in §8; this appendix
 explains the threat that each requirement defends against.*
 
-### F.1 DNS Spoofing and Trust Anchor Hijacking
+### G.1 DNS Spoofing and Trust Anchor Hijacking
 
 **Threat.** OBO roots trust in DNS to avoid central authorities. An
 attacker who hijacks DNS records could substitute a malicious signing
@@ -2067,9 +2233,9 @@ NOT accept them as the sole trust anchor for Class C or D actions.
 Short credential TTLs limit the window during which a hijacked key
 remains usable — once the operator detects the hijack and rotates the
 `_obo-key` record, outstanding credentials issued under the compromised
-key expire quickly. See §8.6 and Appendix D.
+key expire quickly. See §8.6 and Appendix E.
 
-### F.2 Credential Replay
+### G.2 Credential Replay
 
 **Threat.** OBO Credentials are portable artefacts. An intercepted
 credential could be re-presented by an attacker to a different corridor
@@ -2091,7 +2257,7 @@ These mechanisms compose: a corridor-bound, short-lived credential that
 has been nullified offers an attacker a replay window measured in
 minutes against a single target. See §8.1.
 
-### F.3 Action Class Escalation
+### G.3 Action Class Escalation
 
 **Threat.** An agent holding a Class A (read-only) credential attempts
 to execute a Class C (irreversible write) action — exceeding its
@@ -2107,7 +2273,7 @@ regardless of how the output was produced. The evidence envelope records
 the actual `action_class` executed; if it violates the credential
 constraint any verifier MUST reject the envelope. See §8.3 and §8.8.
 
-### F.4 Model Substitution
+### G.4 Model Substitution
 
 **Threat.** An operator claims in the evidence envelope that a
 well-audited, safety-tested model was used for a transaction, while
@@ -2126,7 +2292,7 @@ declared. The plumber analogy applies: a signed certification creates
 accountability without requiring the client to inspect the plumber's
 toolbox. See §8.5.
 
-### F.5 Intent Manipulation
+### G.5 Intent Manipulation
 
 **Threat.** An attacker or malfunctioning agent modifies the intent
 phrase after corridor admission but before execution, or after execution
@@ -2141,7 +2307,7 @@ hash does not match the admitted intent. Retrospective reframing by any
 party — operator, agent, or attacker — is cryptographically detectable.
 See §8.2.
 
-### F.6 Scope Amplification in Delegation Chains
+### G.6 Scope Amplification in Delegation Chains
 
 **Threat.** In a multi-agent chain (A → B → C), an intermediate agent
 issues a derived credential with broader action classes or looser scope
@@ -2157,7 +2323,7 @@ chain to detect scope widening or ancestral revocation. Scope narrows
 through corridor policy and action class ceilings, not through
 credential re-issuance. See §5.4.1, §3.2, §8.1.
 
-### F.7 Prompt Injection and LLM Logic Errors
+### G.7 Prompt Injection and LLM Logic Errors
 
 **Threat.** An adversary crafts input that causes the LLM inside an
 agent to generate an unauthorised or harmful action request. The
@@ -2175,7 +2341,7 @@ The agent's internal architecture (dual-model, guard evaluator, prompt
 filtering) is the operator's concern; the external authorization gate
 is the protocol's guarantee. See §8.8.
 
-### F.8 Cross-Domain Correlation of Consumer Principals
+### G.8 Cross-Domain Correlation of Consumer Principals
 
 **Threat.** An operator or corridor aggregates OBO Evidence Envelopes
 across multiple domains to build a behavioural profile of a natural
@@ -2192,7 +2358,7 @@ enterprise/operator agents (accountability requires identifiability)
 but is a legitimate privacy concern for consumer principals; §9.8
 handles both cases. Anonymous operators cannot be accountable operators.
 
-### F.10 LLM as Policy Judge
+### G.10 LLM as Policy Judge
 
 **Threat.** The agent's LLM is used as the authorization decision
 point — it "decides" whether an action is permitted based on its
@@ -2225,7 +2391,7 @@ request for an agent holding a Class A credential, the corridor rejects
 it. The corridor's decision is sealed in the evidence envelope. The
 LLM's output is not. See §1.9 and §8.8.
 
-### F.9 Cascade Revocation Gaps in Delegation Chains
+### G.9 Cascade Revocation Gaps in Delegation Chains
 
 **Threat.** A parent credential in a multi-hop chain is revoked, but
 verifiers only check the presented child credential against the
