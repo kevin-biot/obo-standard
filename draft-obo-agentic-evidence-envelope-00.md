@@ -2027,4 +2027,166 @@ required regardless of DNS anchoring profile.
 
 ---
 
+## Appendix F. Security Threat Model
+
+*Status: Informative. This appendix provides an attacker-oriented view
+of OBO's security properties. It is a companion to §8 Security
+Considerations. The normative requirements are in §8; this appendix
+explains the threat that each requirement defends against.*
+
+### F.1 DNS Spoofing and Trust Anchor Hijacking
+
+**Threat.** OBO roots trust in DNS to avoid central authorities. An
+attacker who hijacks DNS records could substitute a malicious signing
+key (`_obo-key`) or a fraudulent governance pack digest (`_obo-gov`),
+effectively impersonating a legitimate operator's identity and issuing
+credentials that verifiers would accept.
+
+**Structural defence.** DNSSEC signing of OBO records is RECOMMENDED.
+Verifiers MUST treat unsigned DNS records as lower-assurance and MUST
+NOT accept them as the sole trust anchor for Class C or D actions.
+Short credential TTLs limit the window during which a hijacked key
+remains usable — once the operator detects the hijack and rotates the
+`_obo-key` record, outstanding credentials issued under the compromised
+key expire quickly. See §8.6 and Appendix D.
+
+### F.2 Credential Replay
+
+**Threat.** OBO Credentials are portable artefacts. An intercepted
+credential could be re-presented by an attacker to a different corridor
+or target service to authorise actions the original principal did not
+intend, for as long as the credential remains valid.
+
+**Structural defence.** Three independent mechanisms bound replay risk:
+
+- `expires_at` is required on every credential; short-lived credentials
+  (minutes to hours) are RECOMMENDED, limiting the replay window to the
+  credential lifetime.
+- `corridor_binding` restricts a credential to a named corridor,
+  preventing cross-corridor use even if the credential itself is valid.
+- `_obo-null` nullifier sink allows operators to publish revoked
+  credential IDs; verifiers SHOULD check this for high-value or
+  regulated transactions.
+
+These mechanisms compose: a corridor-bound, short-lived credential that
+has been nullified offers an attacker a replay window measured in
+minutes against a single target. See §8.1.
+
+### F.3 Action Class Escalation
+
+**Threat.** An agent holding a Class A (read-only) credential attempts
+to execute a Class C (irreversible write) action — exceeding its
+delegated authority. Without a deterministic external gate, the agent
+could self-authorise the escalation.
+
+**Structural defence.** OBO makes the LLM output irrelevant to the
+authorization decision. The corridor — a deterministic policy engine
+external to the agent — checks `action_classes` in the credential
+against the requested action before execution. An LLM that generates an
+out-of-scope action request is rejected at the corridor boundary
+regardless of how the output was produced. The evidence envelope records
+the actual `action_class` executed; if it violates the credential
+constraint any verifier MUST reject the envelope. See §8.3 and §8.8.
+
+### F.4 Model Substitution
+
+**Threat.** An operator claims in the evidence envelope that a
+well-audited, safety-tested model was used for a transaction, while
+actually running a cheaper or more aggressive model. The operator
+benefits from the assurance reputation of the claimed model while
+bearing none of its constraints.
+
+**Structural defence.** OBO treats `model_identity_ref` as an
+operator-attested assertion, not a cryptographic proof of computation.
+The accountability mechanism is legal: the operator's identity
+(`operator_id`) is sealed in the evidence envelope alongside the model
+identity claim. If the claim is later proven false through audit, model
+measurement, or regulatory inquiry, the operator — a named, identifiable
+legal entity — is accountable under the governance framework they
+declared. The plumber analogy applies: a signed certification creates
+accountability without requiring the client to inspect the plumber's
+toolbox. See §8.5.
+
+### F.5 Intent Manipulation
+
+**Threat.** An attacker or malfunctioning agent modifies the intent
+phrase after corridor admission but before execution, or after execution
+but before the evidence envelope is sealed. The modified intent
+misrepresents what was actually authorised.
+
+**Structural defence.** The `intent_hash` in the evidence envelope is a
+SHA-256 digest of the normalised intent at the moment of corridor
+admission. Any modification of the intent phrase after admission
+invalidates the hash. Verifiers MUST reject envelopes where the intent
+hash does not match the admitted intent. Retrospective reframing by any
+party — operator, agent, or attacker — is cryptographically detectable.
+See §8.2.
+
+### F.6 Scope Amplification in Delegation Chains
+
+**Threat.** In a multi-agent chain (A → B → C), an intermediate agent
+issues a derived credential with broader action classes or looser scope
+constraints than the original delegation, effectively widening the
+authority granted to downstream agents beyond what the originating
+principal intended.
+
+**Structural defence.** OBO uses a non-amplifying invariant-chain
+model. Derived credentials MUST NOT widen `action_classes` or
+`scope_constraints` relative to the parent credential. When
+`delegation_depth` is used, verifiers walk the `parent_credential_ref`
+chain to detect scope widening or ancestral revocation. Scope narrows
+through corridor policy and action class ceilings, not through
+credential re-issuance. See §5.4.1, §3.2, §8.1.
+
+### F.7 Prompt Injection and LLM Logic Errors
+
+**Threat.** An adversary crafts input that causes the LLM inside an
+agent to generate an unauthorised or harmful action request. The
+"jailbroken" LLM output bypasses whatever internal safety measures the
+agent operator has deployed.
+
+**Structural defence.** OBO assumes the LLM will fail and designs
+accordingly. LLM output is explicitly not the authorization boundary.
+Every effectful action — every externally visible state change — MUST
+be gated by the corridor's deterministic policy engine before execution.
+The corridor enforces the OBO Credential's invariants independently of
+what the LLM generated. A successfully injected LLM that produces an
+out-of-scope action request is still rejected at the corridor gate.
+The agent's internal architecture (dual-model, guard evaluator, prompt
+filtering) is the operator's concern; the external authorization gate
+is the protocol's guarantee. See §8.8.
+
+### F.8 Cross-Domain Correlation of Consumer Principals
+
+**Threat.** An operator or corridor aggregates OBO Evidence Envelopes
+across multiple domains to build a behavioural profile of a natural
+person principal, using `principal_id` or `agent_id` as the correlation
+key. The principal did not consent to cross-domain tracking.
+
+**Structural defence.** OBO-REQ-040 (minimum disclosure) requires that
+`principal_id` for natural persons SHOULD be pseudonymous and not
+directly linkable to real-world identity without additional context.
+Short-lived credentials limit the linkability window. Pairwise
+`agent_id` sub-identifiers are feasible for consumer deployments.
+Cross-domain correlation of `operator_id` is intentional for
+enterprise/operator agents (accountability requires identifiability)
+but is a legitimate privacy concern for consumer principals; §9.8
+handles both cases. Anonymous operators cannot be accountable operators.
+
+### F.9 Cascade Revocation Gaps in Delegation Chains
+
+**Threat.** A parent credential in a multi-hop chain is revoked, but
+verifiers only check the presented child credential against the
+nullifier sink. The child credential continues to be accepted even
+though the authority root has been invalidated.
+
+**Structural defence.** When `delegation_depth` and
+`parent_credential_ref` are present, revocation of any credential in
+the chain MUST be treated as revocation of all descendants
+transitively. Verifiers MUST walk the `parent_credential_ref` chain to
+the origin and check each ancestor against the nullifier sink. A chain
+is valid only if every member is valid. See §8.1.
+
+---
+
 *End of draft-lane2-obo-agentic-evidence-envelope-00*
