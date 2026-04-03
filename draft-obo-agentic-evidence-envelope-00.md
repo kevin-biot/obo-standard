@@ -669,8 +669,9 @@ envelope to a specific endpoint at a specific time.
 OBO-REQ-015: Submission of OBO Evidence Envelopes to SAPP, Merkle,
 or audit endpoints MUST use HTTP Message Signatures [RFC 9421], signed
 with the submitting operator's OBO signing key (the key published in
-`_obo-key._domainkey.<operator-domain>`). The signature MUST cover at
-minimum:
+`_obo-key._domainkey.<operator-domain>`). This is the same Ed25519 key
+used to sign OBO Credentials per §3.3 — no additional key material or
+infrastructure is required. The signature MUST cover at minimum:
 
 - The request target (method + URL)
 - `Content-Digest` — the SHA-256 digest of the request body
