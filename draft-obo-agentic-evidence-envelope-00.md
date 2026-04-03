@@ -1497,7 +1497,89 @@ may request registration of the `application/obo-credential+json` and
 }
 ```
 
-## Appendix C. Relationship to DOP Evidence Contract
+## Appendix C. Correspondence with OAuth Token Exchange Claims
+
+*Status: Informative. This appendix is for readers familiar with OAuth
+2.0 Token Exchange (RFC 8693) and WIMSE. It shows how OBO fields
+correspond to OAuth token claims. OBO is not an OAuth profile and does
+not require OAuth infrastructure.*
+
+OAuth Token Exchange (RFC 8693) introduced the `act` and `may_act`
+claims to express impersonation and delegation in JWT-based access
+tokens. WIMSE workload identity builds on this to express agent-to-agent
+delegation in service mesh and API gateway contexts. These are useful
+mechanisms but do not fully specify the execution-time delegation
+semantics required for multi-hop, cross-organisation agentic execution
+(see §5.5).
+
+The table below maps RFC 8693 / WIMSE claims to OBO fields. The
+mapping is conceptual — OBO is not issued as a JWT access token and
+is not obtained via a token exchange flow.
+
+### C.1 Identity Claim Correspondence
+
+| OAuth / WIMSE claim | Meaning | OBO equivalent | Notes |
+|---|---|---|---|
+| `sub` | Subject — the resource owner or principal on whose behalf the token is issued | `principal_id` | OBO requires this to be the originating human, invariant across the delegation chain (§5.4.1) |
+| `act.sub` | Acting party — the entity currently acting on behalf of `sub` | `agent_id` | OBO additionally requires `operator_id` (accountable legal entity) alongside agent identity |
+| `iss` | Token issuer | `issuer_id` | OBO issuer is the operator or an authorised credential issuer, not necessarily an AS |
+| `aud` | Intended audience | `corridor_binding` | OBO binds to a corridor, not an API endpoint — the corridor enforces audience scoping |
+| `exp` | Expiry | `expires_at` | OBO REQUIRES `expires_at`; short-lived credentials RECOMMENDED |
+| `nbf` | Not-before | `issued_at` | OBO uses `issued_at`; not-before semantics are implicit |
+| `may_act.sub` | Authorised actor for future exchange | Not directly expressed | OBO handles this through the originating credential's `agent_id` binding; sub-delegation uses `delegation_depth` (§3.2) |
+| `scope` | Broad capability grant | `action_classes` + `intent_namespace` | OBO scopes by action severity class and intent namespace, not opaque strings |
+| `authorization_details` (RAR, RFC 9396) | Fine-grained action authorization | `scope_constraints` + `intent_hash` | OBO seals the exact intent in `intent_hash`; `scope_constraints` carries resource bounds |
+
+### C.2 What OAuth Token Exchange Does Not Specify
+
+The `act` claim carries identity context — who is acting. It does not
+specify:
+
+- **Turn-boundedness.** OAuth access tokens are typically session-scoped
+  or long-lived. OBO requires delegation to be turn-by-turn: each
+  credential is short-lived and bound to the intent of that action.
+
+- **Non-amplification across hops.** RFC 8693 does not require that each
+  token exchange narrows scope. OBO requires it: action classes and
+  scope constraints MUST NOT widen across delegation hops (§5.4.1,
+  §3.2 `delegation_depth`).
+
+- **Intent binding.** OAuth tokens carry scopes or `authorization_details`
+  but do not seal the exact normalised intent phrase. OBO's `intent_hash`
+  binds the evidence record to the specific action that was authorized,
+  making it a dispute anchor (§1.6).
+
+- **Cross-domain execution semantics.** RFC 8693 describes token exchange
+  mechanics; it does not specify that receiving domains must mint local
+  execution credentials, prohibit bearer token forwarding, or fail closed
+  on missing trust mapping. OBO specifies all three (§5.5, §8.8).
+
+- **Originating human invariance.** In OAuth delegation chains, `sub`
+  may change at each exchange if the acting party becomes the new subject.
+  OBO's `principal_id` is invariant — it always identifies the originating
+  human, regardless of how many agents the delegation passes through (§5.4.1).
+
+### C.3 Deployment Coexistence
+
+OBO does not replace OAuth infrastructure. In deployments that use
+OAuth-secured APIs:
+
+- The agent presents its OBO Credential to the corridor.
+- The corridor validates the OBO Credential and, if admission succeeds,
+  uses its own OAuth client credentials or token exchange to obtain the
+  execution credential for the downstream API.
+- The downstream API sees a normal OAuth access token; it does not need
+  to be OBO-aware.
+- The OBO Evidence Envelope captures the corridor's decision and the
+  execution outcome, independently of the OAuth token lifecycle.
+
+This is the execution assertion pattern described in §5.5: OBO handles
+delegation authority; OAuth handles execution plumbing. They compose
+without either replacing the other.
+
+---
+
+## Appendix D. Relationship to DOP Evidence Contract
 
 The DOP Evidence Contract (DOP-013) is a conforming implementation of
 the OBO Evidence Envelope, extended with pipeline-specific fields
