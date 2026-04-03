@@ -610,7 +610,6 @@ co-signature gate. A rising tide raises all boats.
 ## Specification
 
 - [draft-obo-agentic-evidence-envelope-00.md](draft-obo-agentic-evidence-envelope-00.md) — full specification
-- [draft-obo-agentic-evidence-envelope-00.pdf](draft-obo-agentic-evidence-envelope-00.pdf) — rendered PDF
 
 ## Authors
 
