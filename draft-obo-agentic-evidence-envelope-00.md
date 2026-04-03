@@ -659,7 +659,45 @@ the `action_classes` declared in the referenced OBO Credential. A
 verifier MUST reject an evidence envelope where this constraint is
 violated.
 
-### 4.4 Approval Evidence (Multi-Party HITL)
+### 4.4 Submission Integrity
+
+The `evidence_digest` field establishes tamper-evidence over the
+envelope content. It does not establish non-repudiation of the
+submission act — proof that a specific operator submitted a specific
+envelope to a specific endpoint at a specific time.
+
+OBO-REQ-015: Submission of OBO Evidence Envelopes to SAPP, Merkle,
+or audit endpoints MUST use HTTP Message Signatures [RFC 9421], signed
+with the submitting operator's OBO signing key (the key published in
+`_obo-key._domainkey.<operator-domain>`). The signature MUST cover at
+minimum:
+
+- The request target (method + URL)
+- `Content-Digest` — the SHA-256 digest of the request body
+- A `@timestamp` or `nonce` component preventing replay
+
+This binds the submission act to the operator's identity and prevents
+replay of intercepted envelopes to alternative endpoints. The receiving
+endpoint MUST verify the HTTP Message Signature before accepting the
+submission and MUST reject submissions where the signing key does not
+match the `operator_id` in the enclosed envelope.
+
+**The complete non-repudiation chain:**
+
+```
+Envelope sealed     → evidence_digest  (tamper-evident content)
+POST signed         → HTTP Message Signature, operator key
+                       (non-repudiation of submission act)
+Merkle inclusion    → epoch root anchored in DNS
+                       (proves receipt and anchoring at time T)
+Regulator API call  → signed request, caller identity bound
+                       (audit-grade retrieval)
+```
+
+Every act in the chain is signed by an identifiable legal entity.
+No anonymous submissions. No unattributed retrievals.
+
+### 4.5 Approval Evidence (Multi-Party HITL)
 
 For Class C and Class D operations — irreversible writes and systemic
 actions — a corridor MAY require that the evidence envelope carry a
