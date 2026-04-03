@@ -2185,6 +2185,15 @@ infrastructure present in every networked environment. `did:web`
 additionally requires HTTPS connectivity to the resolved domain.
 `did:key` requires no external infrastructure at all.
 
+**Dual-path publication.** Operators MAY publish both `_obo-key` DNS
+TXT records (Appendix E) and a `did:web` DID Document pointing to the
+same signing key. Verifiers SHOULD accept either resolution path.
+If both paths resolve to *different* keys, the verifier MUST treat
+this as a misconfiguration and fail closed. This pattern allows
+DNS-only verifiers and DID-capable verifiers to operate against the
+same operator without credential changes, and provides resilience if
+one resolution path is temporarily unavailable.
+
 Deployments that cannot guarantee HTTPS connectivity to `did:web`
 endpoints (air-gapped environments, highly restricted networks) SHOULD
 use DNS anchoring as the primary trust anchor and treat `did:web`
