@@ -85,25 +85,51 @@ crossing organisational boundaries with no shared infrastructure. The
 gaps it fills are the gaps that appeared under load, not in a committee
 room.
 
-### 1.2 What Is Already Solved
+### 1.2 What Is Already Solved — And the Category Error That Obscures It
 
 The single-organisation case is already solved. When one organisation
 controls everything — its own authorisation server, its own agents, its
-own APIs — OAuth 2.0, WIMSE, and SPIFFE work well. An AI agent running
-inside that perimeter, with an LLM as one of its internal components,
-is architecturally a workload. It authenticates with its workload
-credential, acquires OAuth tokens, calls internal APIs. No new standards
-are required for this case.
+own APIs — OAuth 2.0, WIMSE, and SPIFFE work well. They have worked
+well since RFC 6749 was published in 2012.
 
-A body of current work frames agents explicitly as workloads and builds
-on OAuth to address agent identity and delegation within that framing.
-For deployments that fit this model — single trust domain, pre-
-established relationships, shared authorisation infrastructure — that
-work is sufficient and OBO adds nothing.
+A service that exposes an HTTP API, authenticates callers with OAuth
+tokens, and happens to have an LLM as one of its internal processing
+components is, from the network's perspective, a microservice. The LLM
+is an implementation detail — as invisible to the calling protocol as
+whether the service uses PostgreSQL or MySQL internally. Attaching the
+label "AI agent" to that service does not change its external protocol
+surface, its authentication requirements, or its authorization model.
+OAuth, mTLS, and platform workload identity (SPIFFE/SPIRE, Kubernetes
+service accounts, cloud provider workload identity) handle this case
+completely. No new standards are needed. No new working group output is
+required.
+
+This is a category error with real costs. When microservice-to-micro-
+service communication under OAuth is relabelled "agent-to-agent
+interaction" and treated as requiring new protocol machinery, the result
+is significant engineering and standards effort spent on a problem that
+was solved over a decade ago. Transaction tokens for internal service
+mesh, OAuth flows for service-to-service delegation, CIBA for
+human-in-the-loop notifications — these are existing mechanisms applied
+to existing patterns. The vocabulary changed; the architecture did not.
+
+Concretely: an enterprise deploys a chat service backed by an LLM. A
+mobile app calls the chat service through an API gateway, with mTLS and
+OAuth tokens. The chat service calls internal APIs for context. Inside
+those internal APIs, some use ML models. None of this requires new
+standards. It requires engineering. It is a deployment, not a protocol
+problem.
+
+A body of current standards work explicitly frames agents as workloads
+and constructs OAuth profiles for agent identity and delegation within
+that framing. For the single trust domain, pre-established relationship,
+shared authorisation infrastructure case, that work is correct and OBO
+adds nothing to it.
 
 The problem OBO addresses is what happens when the agent leaves that
 perimeter. Five organisations. No prior relationship. No shared AS.
-That is not the edge case. That is the growth area.
+No pre-established API contract. No bilateral onboarding. That is not
+the edge case. That is the growth area.
 
 ### 1.3 The Four Questions No Existing Standard Answers Together
 
