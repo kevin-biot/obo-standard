@@ -732,6 +732,25 @@ credentials remain local to each organisation's corridor. This is the
 only design that composes correctly across organisational trust
 boundaries without requiring a shared authorization server.
 
+Forwarding bearer tokens across trust boundaries SHOULD be prohibited.
+The reasons are structural, not stylistic:
+
+- *Audience mismatch.* A token minted for the source domain or API is
+  not valid for the target API. Accepting it is authority confusion.
+- *Scope amplification risk.* A forwarded token may carry broader
+  permissions than the target action requires. Local minting lets the
+  target corridor issue minimum scope for that exact call.
+- *Policy control loss.* The target domain cannot enforce its own
+  authorization policies, consent requirements, or risk checks against
+  a foreign bearer token it did not issue.
+- *Revocation and TTL misalignment.* The source token's lifetime and
+  revocation semantics may not match the target domain's risk model.
+  A locally minted token can be short-lived and bound to the specific
+  action, turn, or tool call.
+- *Attribution blur.* Forwarding obscures who authorized what at which
+  boundary. Local exchange creates an explicit chain: origin delegation
+  → target token → target action, which is the auditable record.
+
 ---
 
 ## 6. Verification
@@ -1078,6 +1097,53 @@ execution, and sealed into the evidence envelope. If the corridor
 requires `approval_evidence` and it is absent, expired, underthreshold,
 or fails segregation checks, the corridor MUST reject the operation
 before execution. There is no fallback path.
+
+### 8.8 LLM Output Is Not the Authorization Boundary
+
+**Scope boundary.** The internal security architecture of LLM-based
+agents — single-model, dual-model, self-critique, guard-model
+orchestration, prompt injection mitigations, and post-generation safety
+filters — is out of scope for this specification. OBO does not prescribe
+how an agent is implemented internally. It treats agents as principals
+presenting credentials and evidence, not as implementations to be
+audited.
+
+**What is in scope** is the set of authorization invariants that MUST
+hold at every externally visible action boundary, regardless of what
+model, pipeline, or internal architecture the agent uses:
+
+- LLM output MUST NOT be the final authority for execution. An LLM
+  generating an action request does not authorize that action. Every
+  externally visible action MUST be gated by a deterministic
+  authorization boundary — the corridor's policy engine — that is
+  external to the LLM and not subject to prompt manipulation.
+
+- Execution MUST be gated by a deterministic policy boundary. The
+  corridor checks the OBO Credential, validates action class, enforces
+  scope constraints, and applies corridor predicates before any action
+  executes. An LLM that generates an out-of-scope action will be
+  rejected at this boundary regardless of how the output was produced.
+
+- Delegation artifacts MUST be bounded and non-amplifying. Intent,
+  audience, scope, actor chain, and TTL are fixed at credential
+  issuance. The LLM cannot extend them at inference time.
+
+- Missing trust mapping, required consent, or required step-up MUST
+  fail closed. There is no fallback path that routes around the
+  authorization boundary on behalf of an agent that has generated
+  an unauthorized action.
+
+- Evidence MUST bind the request, delegation artifact, policy context,
+  and execution outcome. The evidence envelope is sealed after the
+  corridor's decision — not after the LLM's output. If the corridor
+  rejects the action, the rejection is the evidence.
+
+These invariants hold for all agents regardless of their internal
+architecture. A dual-model agent with a guard evaluator still operates
+within the same corridor boundary. A single-model agent with no
+internal safety layer still cannot execute actions the corridor's
+policy rejects. The authorization boundary is external, deterministic,
+and not delegatable to the LLM.
 
 ---
 
