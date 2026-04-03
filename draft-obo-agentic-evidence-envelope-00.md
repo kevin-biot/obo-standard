@@ -62,14 +62,53 @@ and any other context where an agent acts on behalf of a principal.
 
 ## 1. Introduction
 
-### 1.1 The On Behalf Of Problem
+### 1.1 The Problem
 
-Autonomous agents act on behalf of human and organisational principals
-at increasing scale. A user instructs an agent; the agent interacts with
-one or more target services; actions with real-world consequences occur.
+A person asks their agent to plan a trip: book a flight, reserve a
+hotel, get concert tickets, arrange a car, initiate the payment. Five
+organisations. Possibly three countries. None of them have ever met
+this agent before. No shared infrastructure. No common authorisation
+server. No prior relationship.
+
+Each of those five organisations needs to answer the same four questions
+before they act on the agent's instruction:
+
+1. Who are you, and who sent you?
+2. What are you authorised to do?
+3. What did you actually do?
+4. Can I prove all of this to a regulator after the fact, without
+   calling anyone?
+
+OBO emerged from a working implementation, not a specification exercise.
+The fields exist because a real agentic pipeline required them when
+crossing organisational boundaries with no shared infrastructure. The
+gaps it fills are the gaps that appeared under load, not in a committee
+room.
+
+### 1.2 What Is Already Solved
+
+The single-organisation case is already solved. When one organisation
+controls everything — its own authorisation server, its own agents, its
+own APIs — OAuth 2.0, WIMSE, and SPIFFE work well. An AI agent running
+inside that perimeter, with an LLM as one of its internal components,
+is architecturally a workload. It authenticates with its workload
+credential, acquires OAuth tokens, calls internal APIs. No new standards
+are required for this case.
+
+A body of current work frames agents explicitly as workloads and builds
+on OAuth to address agent identity and delegation within that framing.
+For deployments that fit this model — single trust domain, pre-
+established relationships, shared authorisation infrastructure — that
+work is sufficient and OBO adds nothing.
+
+The problem OBO addresses is what happens when the agent leaves that
+perimeter. Five organisations. No prior relationship. No shared AS.
+That is not the edge case. That is the growth area.
+
+### 1.3 The Four Questions No Existing Standard Answers Together
 
 The current standards landscape does not provide a minimum evidence
-standard for this interaction class:
+standard for the multi-organisation first-contact interaction class:
 
 - OAuth 2.0 / OBO [RFC 8693] covers token delegation between known
   parties sharing common authorization infrastructure. It does not cover
@@ -81,16 +120,14 @@ standard for this interaction class:
   claims. They do not define the per-transaction evidence envelope.
 
 - Emerging A2A agent protocols focus on tool enumeration and capability
-  advertisement. These create reconnaissance surfaces without providing
-  evidence that the advertised capabilities were exercised within
-  declared scope.
+  advertisement. These create capability discovery surfaces without
+  providing evidence that the advertised capabilities were exercised
+  within declared scope.
 
-None of these standards addresses the dominant consumer case: a local
-or consumer-side agent transacting with an unknown target service on a
-one-time basis, where the target has no prior relationship with the
-originating agent and no shared authorization infrastructure.
+None of these standards answers all four of the questions above in one
+portable, offline-verifiable, tamper-evident artefact. OBO does.
 
-### 1.2 The Core Requirement
+### 1.4 The Core Requirement
 
 An agent acting on behalf of a principal MUST be able to demonstrate,
 to any party after the fact, without requiring a live authorization
@@ -105,7 +142,7 @@ server:
 This specification defines the minimum data structures that carry these
 five properties.
 
-### 1.3 Scope: When Existing Standards Are Sufficient
+### 1.5 Scope: When Existing Standards Are Sufficient
 
 An agent that exposes only an API surface and responds only to API
 calls is architecturally a microservice. The LLM or inference component
@@ -133,7 +170,7 @@ organisational trust boundary, express a governed intent, and produce
 evidence that is replayable without a live authorization server?" —
 that is the problem this specification solves.
 
-### 1.4 The Two-Agent First Contact Problem
+### 1.6 The Two-Agent First Contact Problem
 
 The traditional enterprise integration model assumes pre-established
 bilateral relationships: procurement processes, API onboarding, mTLS
@@ -181,7 +218,7 @@ credential signature verifiable?
 If yes: proceed. If no: reject. No phone-home required. No central
 registry lookup required. This is the first contact trust floor.
 
-### 1.5 Minimal Trust and Progressive Deepening
+### 1.7 Minimal Trust and Progressive Deepening
 
 OBO provides a **trust floor**, not a trust ceiling. Accepting an OBO
 Credential does not mean the target fully trusts the originating agent.
@@ -229,7 +266,7 @@ OBO is intent-first: the originating agent declares what it intends,
 not what it is capable of. The target determines whether that intent
 class is within its acceptance parameters.
 
-### 1.6 Evidence, Authorisation, and Intent Are Not Separable
+### 1.8 Evidence, Authorisation, and Intent Are Not Separable
 
 Several current frameworks in the agentic trust space treat evidence as
 a separable concern — a logging requirement to be addressed by deployment
@@ -337,7 +374,7 @@ sides of a single accountability record, specified together so that any
 party, anywhere, can verify the complete chain from principal intent to
 transaction outcome without contacting anyone.
 
-### 1.7 Design Principles
+### 1.9 Design Principles
 
 **Intent first.** The primitive is a normalised intent, not a tool
 invocation list. The target service does not need to enumerate its
@@ -1651,7 +1688,7 @@ specify:
 - **Intent binding.** OAuth tokens carry scopes or `authorization_details`
   but do not seal the exact normalised intent phrase. OBO's `intent_hash`
   binds the evidence record to the specific action that was authorized,
-  making it a dispute anchor (§1.7).
+  making it a dispute anchor (§1.9).
 
 - **Cross-domain execution semantics.** RFC 8693 describes token exchange
   mechanics; it does not specify that receiving domains must mint local
