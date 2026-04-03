@@ -771,6 +771,31 @@ The reasons are structural, not stylistic:
   boundary. Local exchange creates an explicit chain: origin delegation
   → target token → target action, which is the auditable record.
 
+**Agents communicate via intent, not via API.** The premise that agents
+interact by calling each other's APIs — and therefore require OAuth
+flows at every hop — reflects a microservice mental model applied to a
+different problem. In OBO, an agent expresses an intent; the corridor
+admits or rejects it; the intent is fulfilled inside the receiving
+agent. Whether that fulfilment involves any API call is an internal
+implementation concern of the receiving agent, invisible to and
+unspecified by this protocol.
+
+An agent running in Kubernetes or OpenShift that needs to call a
+downstream service — a TM Forum API, a payment rail, an internal OSS/BSS
+endpoint — uses the workload identity infrastructure the platform
+already provides: SPIFFE/SPIRE SVIDs bound to the pod, Kubernetes
+service account tokens (projected volumes), or cloud provider workload
+identity (AWS IRSA, GCP Workload Identity Federation, Azure Workload
+Identity). These mechanisms are orthogonal to OBO. They require no
+modification for agentic deployments. OBO does not replace, compete
+with, or need to specify platform workload identity.
+
+The protocol boundary is corridor admission. Everything inside the
+receiving agent — tool selection, internal API calls, workload
+credentials, microservice orchestration — is the agent operator's
+implementation domain. OBO governs what the agent is authorised to
+do. How the agent does it internally is not the protocol's concern.
+
 ---
 
 ## 6. Verification
