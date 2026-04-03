@@ -1253,6 +1253,43 @@ These two mechanisms together bound both the replay window (expiry) and
 enable explicit revocation (nullifier) without requiring the verifier
 and issuer to share session infrastructure.
 
+**Deployment pattern: Curated Operator Registry.**
+
+Large operators with established commercial relationships — a fintech
+running a travel or shopping agent, a payments network operating a
+multi-bank corridor — will typically not rely solely on cold first-contact
+DNS resolution for every counterparty. Instead they maintain an internal
+curated operator registry: a pre-vetted list of approved counterparty
+domains with their expected `_obo-key` values validated out-of-band
+during commercial onboarding.
+
+This is a valid and recommended deployment pattern for regulated
+environments. The OBO DNS anchoring model composes cleanly with it:
+
+1. **Known counterparty.** Agent checks internal registry. If the live
+   DNS `_obo-key` record matches the pinned key: proceed with elevated
+   confidence. If there is a mismatch: FAIL CLOSED — the discrepancy
+   indicates key rotation or a potential substitution attack and MUST
+   be escalated before proceeding.
+
+2. **Unknown counterparty.** Agent falls back to cold DNS resolution
+   per §8.6. The operator MAY restrict their agent to registry-only
+   operation for Class C/D actions, requiring explicit onboarding
+   approval before any new counterparty is admitted for high-impact
+   transactions.
+
+The mismatch check is the security advantage of this pattern: an
+operator that has pinned a counterparty's key receives an immediate
+signal if DNS returns something different, rather than silently
+accepting a potentially substituted key. This defence is not available
+to a cold-lookup-only deployment.
+
+The curated operator registry is structurally equivalent to a private
+aARP corridor with explicit membership: the registry IS the corridor
+admission list. Operators using aARP MAY publish their registry as
+`_obo-crq` corridor predicates, making the membership machine-readable
+and auditable by any party with DNS access.
+
 ### 8.7 High-Impact Operations and Approval Evidence
 
 For Class C (irreversible write) and Class D (systemic) operations,
