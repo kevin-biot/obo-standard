@@ -338,7 +338,7 @@ the upstream human-approved rationale that authorised it. Disputes about
 intent are resolved by evidence. OBO is the evidence.
 
 **Delegation origin travels; it does not re-root.** In a multi-agent
-chain, the `principal_id` of the originating human and the `why_ref`
+chain, the `principal_id` of the originating principal and the `why_ref`
 of their approved rationale are carried unchanged through every hop.
 No intermediate agent in the chain has authority to substitute a new
 principal or issue a new root rationale. When human-in-the-loop
@@ -354,8 +354,9 @@ An agent is a workload that acts on behalf of a human or legal entity
 principal. Agents may be classified, risk-scored, attested, and
 registered for execution control purposes — but none of this confers
 legal standing on the agent itself. Legal authority originates with the
-`principal_id` (the human) and the `operator_id` (the accountable legal
-entity). The agent is a party in the evidence record, not an authority
+`principal_id` (the natural person or identified legal entity on whose
+behalf the agent acts) and the `operator_id` (the accountable legal
+entity operating the agent). The agent is a party in the evidence record, not an authority
 source. Authorization systems that evaluate agent identity for risk
 controls (scope ceiling, TTL, step-up requirements, attestation checks)
 are performing workload classification — a legitimate and necessary
@@ -647,14 +648,15 @@ For orchestrated multi-step transactions (e.g. book + pay + confirm):
    credential's `action_classes`. A single write-bearing step in a
    plan constrains the entire plan.
 
-#### 5.4.1 Multi-agent chains and the originating human
+#### 5.4.1 Multi-agent chains and the originating principal
 
 When a transaction passes through multiple agents — a user agent
 delegating to a booking agent delegating to a payment agent — the same
 accountability principle applies at every hop:
 
 - The `principal_id` in every credential in the chain MUST trace to the
-  originating human who initiated the transaction. Intermediate agents
+  originating principal (natural person or identified legal entity) who
+  initiated the transaction. Intermediate agents
   MUST NOT issue credentials that substitute a different principal.
 - The `why_ref` rationale carried by the originating credential is the
   authority root for the entire chain. Sub-credentials and derived
@@ -662,15 +664,18 @@ accountability principle applies at every hop:
   not create new ones.
 - Each agent in the chain is identified by its own `agent_id` and
   operated by its own `operator_id`, making per-hop accountability clear.
-  But the chain of human authority — the `principal_id` and `why_ref` —
-  does not change as the delegation travels.
+  But the chain of delegated authority — the `principal_id` and
+  `why_ref` — does not change as the delegation travels.
 
 **Human-in-the-loop in multi-agent chains.** When any step in a
-multi-agent chain requires human confirmation, the human to consult is
-the `principal_id` of the originating credential — the person who
-started the chain. This is not an open question for deployments to
-resolve case-by-case. The OBO credential model makes it a structural
-invariant: authority originates with a named human, and that human
+multi-agent chain requires confirmation, the principal to consult is
+the `principal_id` of the originating credential. Where `principal_id`
+identifies a natural person, that person is consulted directly. Where
+`principal_id` identifies a legal entity (a company, institution, or
+government body), an authorized representative of that entity is
+consulted. This is not an open question for deployments to resolve
+case-by-case. The OBO credential model makes it a structural invariant:
+authority originates with the identified principal, and that principal
 remains the authority root regardless of how many agents the delegation
 passes through.
 
@@ -687,7 +692,7 @@ the human principal. Downstream agents carry that credential's
 credentials that substitute a fresh principal or a new rationale root.
 Scope constraints narrow at each hop through corridor policy and action
 class ceilings, not through credential re-issuance. This is the
-structural property that makes the originating human findable and
+structural property that makes the originating principal findable and
 auditable at every point in the chain.
 
 ### 5.5 Multi-Hop Assertion Model
@@ -1542,7 +1547,7 @@ is not obtained via a token exchange flow.
 
 | OAuth / WIMSE claim | Meaning | OBO equivalent | Notes |
 |---|---|---|---|
-| `sub` | Subject — the resource owner or principal on whose behalf the token is issued | `principal_id` | OBO requires this to be the originating human, invariant across the delegation chain (§5.4.1) |
+| `sub` | Subject — the resource owner or principal on whose behalf the token is issued | `principal_id` | OBO requires this to be the originating principal (natural person or identified legal entity), invariant across the delegation chain (§5.4.1) |
 | `act.sub` | Acting party — the entity currently acting on behalf of `sub` | `agent_id` | OBO additionally requires `operator_id` (accountable legal entity) alongside agent identity |
 | `iss` | Token issuer | `issuer_id` | OBO issuer is the operator or an authorised credential issuer, not necessarily an AS |
 | `aud` | Intended audience | `corridor_binding` | OBO binds to a corridor, not an API endpoint — the corridor enforces audience scoping |
