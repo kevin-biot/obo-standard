@@ -402,10 +402,29 @@ transaction outcome without contacting anyone.
 
 ### 1.9 Design Principles
 
-**Intent first.** The primitive is a normalised intent, not a tool
-invocation list. The target service does not need to enumerate its
-internal tools. The originating agent declares what it intends; the
-target determines whether it can serve that intent class.
+**Policy is deterministic and external; the LLM is not the judge.**
+The dominant pattern in current agent deployments is to rely on the
+LLM itself to decide whether an action is safe, permitted, or within
+scope. This is an architectural dependency that OBO explicitly breaks.
+An LLM acting as policy judge is non-deterministic, prompt-injectable,
+inconsistent across runs, and cannot produce a verifiable audit record
+of its decision. It is the wrong component for authorization. OBO
+replaces it with a deterministic, external corridor policy engine that
+is not subject to prompt manipulation and that produces a cryptographic
+evidence record of every decision. The LLM generates action requests;
+the corridor decides whether they execute. These are different
+components with different trust properties, and they must remain
+separated.
+
+**Intent first, not tool first.** The primitive is a normalised intent,
+not a tool invocation list. Tool enumeration — advertising what an
+agent can do before a trust relationship is established — creates a
+reconnaissance surface: an attacker who queries available tools learns
+the exact attack surface before presenting any credentials. OBO rejects
+this pattern. The originating agent declares what it intends; the
+corridor determines whether that intent class is admissible under the
+governing policy. Capabilities are not advertised; governed intents are
+matched.
 
 **Evidence over reputation.** Agent reputation is not a score assigned
 by a central registry. It is accumulated from tamper-evident evidence
@@ -2172,6 +2191,39 @@ Cross-domain correlation of `operator_id` is intentional for
 enterprise/operator agents (accountability requires identifiability)
 but is a legitimate privacy concern for consumer principals; §9.8
 handles both cases. Anonymous operators cannot be accountable operators.
+
+### F.10 LLM as Policy Judge
+
+**Threat.** The agent's LLM is used as the authorization decision
+point — it "decides" whether an action is permitted based on its
+system prompt, training, or in-context instructions. Security depends
+on the model consistently refusing disallowed requests.
+
+This is the dominant pattern in current deployments and represents a
+fundamental architectural error. An LLM used as policy judge:
+
+- Is non-deterministic: the same request may be approved in one run
+  and refused in another.
+- Is prompt-injectable: a sufficiently crafted input can cause the
+  model to approve actions its operator did not intend.
+- Produces no verifiable record: there is no cryptographic evidence of
+  what the model decided or why.
+- Cannot be audited: a regulator or counterparty has no mechanism to
+  independently verify that the model's authorization decision was
+  correct.
+- Cannot fail closed in a defined way: model refusals are soft outputs,
+  not hard gates.
+
+**Structural defence.** OBO breaks this dependency by design. Policy
+is a first-class citizen — a deterministic, external corridor engine
+that is not subject to prompt manipulation. The LLM generates action
+requests; the corridor decides whether they execute. The corridor
+enforces the OBO Credential's invariants (`action_classes`, `expires_at`,
+`corridor_binding`, `scope_constraints`) independently of the LLM's
+output. If the LLM is jailbroken and generates a Class C payment
+request for an agent holding a Class A credential, the corridor rejects
+it. The corridor's decision is sealed in the evidence envelope. The
+LLM's output is not. See §1.9 and §8.8.
 
 ### F.9 Cascade Revocation Gaps in Delegation Chains
 
