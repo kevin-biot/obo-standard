@@ -559,7 +559,7 @@ OBO-REQ-001: An OBO Credential MUST contain the following fields:
 | Field | Type | Description |
 |---|---|---|
 | `obo_credential_id` | string | Stable, globally unique identifier for this credential. |
-| `principal_id` | string | Identifier of the principal on whose behalf the agent acts. Format is scheme-specific (DID, URN, or domain-qualified identifier). |
+| `principal_id` | string | Identifier of the principal on whose behalf the agent acts. Format is scheme-specific (DID, URN, or domain-qualified identifier). OBO does not perform or replace identity verification (KYC or equivalent). `principal_id` carries the output of whatever identity verification process the issuing operator has already completed. Identity verification is a prerequisite to credential issuance, not a function of the credential itself. |
 | `agent_id` | string | Identifier of the agent. MUST be bound to the credential by signature. |
 | `operator_id` | string | Identifier of the entity operating the agent. MAY equal `principal_id` for self-operated agents. |
 | `binding_proof_ref` | string | Reference to the proof of binding between principal and agent (e.g. signed delegation record, consent receipt, legal instrument). |
