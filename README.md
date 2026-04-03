@@ -150,7 +150,7 @@ No authorisation server contact required at verification time.
 No CA. No registry. DNS only. This is precisely the DKIM pattern —
 proven at internet scale for twenty years.
 
-See [Appendix D](draft-obo-agentic-evidence-envelope-00.md#appendix-d-dns-anchoring-profile)
+See [Appendix E](draft-obo-agentic-evidence-envelope-00.md#appendix-e-dns-anchoring-profile)
 for the full DNS Anchoring Profile: key publication, governance pack
 digest anchoring, nullifier epoch roots, and agent domain control proofs.
 
@@ -357,6 +357,50 @@ breaks it.
 
 ---
 
+## A parallel task: teaching the agentic market
+
+OBO has two jobs. The first is technical: define the minimum
+interoperable artefacts that make agentic transactions accountable
+across organisational boundaries.
+
+The second is educational. Most agent systems being built today are
+getting the architecture wrong — not because the teams are careless,
+but because the right patterns have not been clearly named. OBO names
+them:
+
+**Positive patterns OBO establishes:**
+- Intent before tools — scope is pre-committed, not discovered at runtime
+- Authority and execution are separate layers — the OBO Credential
+  carries authority; workload identity (SPIFFE, IRSA, k8s) carries
+  execution credentials; they do not substitute for each other
+- Policy is external and deterministic — the corridor enforces it;
+  the agent does not decide its own scope
+- The principal is the accountable party — the agent is an instrument,
+  not a legal person
+- Evidence is a first-class artefact — not a log format left to the
+  implementor, but a specified, portable, offline-verifiable record
+
+**Antipatterns OBO names explicitly:**
+- LLM as policy judge — non-deterministic, prompt-injectable, produces
+  no verifiable record (§1.9, Appendix G.10)
+- Agents as API surfaces — treating cross-org agentic transactions as
+  microservice-to-microservice calls and applying OAuth perimeter
+  thinking to them (§1.2)
+- Runtime scope negotiation — the agent discovering and expanding what
+  it can do as it goes, rather than carrying pre-committed, sealed
+  authority (§1.4)
+
+Most RFCs describe existing practice. OBO describes correct practice
+before the market has made its mistakes at scale. The RFC format
+provides the precision required for interoperability. The narrative
+structure in §1 provides the teachability required for adoption.
+
+If you are building an agentic system today and these patterns are
+useful regardless of whether you adopt OBO's wire format, that is a
+successful outcome.
+
+---
+
 ## How OBO fits with other work
 
 Several serious efforts are tackling agentic trust. They are doing
@@ -467,7 +511,7 @@ disputed by any party.
 | 2 | DNS zone templates (deployable today) | ✅ In this repository |
 | 3 | Independent implementation reports | 🔲 Seeking contributors |
 | 4 | Jurisdiction profiles (PSD3, UAE, NHS) | 🔲 Seeking contributors |
-| 5 | D.4b suffix privacy circuit review | 🔲 Seeking cryptographic reviewers |
+| 5 | E.4b suffix privacy circuit review | 🔲 Seeking cryptographic reviewers |
 | 6 | IETF submission | 🔲 After Phase 3–4 validation |
 
 ---
@@ -555,7 +599,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). All contributions welcome:
 - Implementation experience (what was ambiguous, what worked)
 - DNS key publication reports (did Phase 1 work in your environment?)
 - Jurisdiction profiles (how OBO maps to your regulatory context)
-- Cryptographic review (Appendix D.4b gnark PLONK suffix circuit)
+- Cryptographic review (Appendix E.4b gnark PLONK suffix circuit)
 - Co-authorship on the RFC
 
 This is an open standard. There is no approved network. There is no
