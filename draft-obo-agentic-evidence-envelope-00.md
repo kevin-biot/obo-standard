@@ -1313,12 +1313,13 @@ intent namespace dynamically, with DNS-published admission predicates
 and proof-based membership — is the function of the Agentic
 Authorisation and Routing Protocol (aARP).
 
-aARP is a companion RFC from the same authors, currently in preparation
-for publication. A reference server implementation exists and has been
-exercised end-to-end with OBO credentials in the Lane2 pipeline. The
-specification and reference server will be published at
-github.com/kevin-biot/aarp-public upon release. aARP is listed as
-forthcoming in the interlinked standards section of this document.
+aARP is a companion protocol from the same authors. It is a live
+component of the Lane2 architecture today — exercised end-to-end with
+OBO credentials in production pipeline runs. The reference server is
+currently private. The authors intend to publish aARP as an open
+standard protocol and release the reference server as soon as the
+specification has stabilised. aARP is listed as forthcoming in the
+interlinked standards section of this document.
 
 OBO credentials are the accountability artefact for a transaction that
 aARP has already routed. The two are complementary layers, not

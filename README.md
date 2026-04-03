@@ -555,10 +555,12 @@ aARP  — Agentic Authorisation and Routing Protocol
         without hardcoded endpoints — DNS-published admission predicates,
         proof-based corridor membership, route evidence sealed per hop.
         The missing link between OBO accountability and dynamic agent
-        discovery. Companion RFC from the same authors. Reference server
-        implementation exists and has been exercised end-to-end with OBO
-        credentials. Specification and reference server forthcoming at
-        github.com/kevin-biot/aarp-public [ publication imminent ]
+        discovery at runtime. aARP is a live component of the Lane2
+        architecture today, exercised end-to-end with OBO credentials
+        in production pipeline runs. The reference server is currently
+        private. The authors intend to publish aARP as an open standard
+        protocol and release the reference server as soon as the
+        specification has stabilised. [ forthcoming ]
 
         ↓  payment steps settled with evidence anchoring
 
