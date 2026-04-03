@@ -518,6 +518,15 @@ The OBO Evidence Envelope is sealed per transaction. It is produced by
 the agent (or by a governed corridor on the agent's behalf) after the
 transaction completes. It is tamper-evident and independently verifiable.
 
+The OBO Evidence Envelope is the primary observability artifact for
+agentic transactions. It is the record that monitoring, audit,
+compliance, and remediation systems consume. Unlike logs, which are
+implementation-defined and operator-internal, the evidence envelope is
+a portable, cryptographically sealed artefact that any authorised party
+can verify independently — without access to the operator's internal
+systems, without a live authorization server, and without trust in the
+operator's own audit infrastructure.
+
 ### 4.1 Required Fields
 
 OBO-REQ-010: An OBO Evidence Envelope MUST contain the following fields:
