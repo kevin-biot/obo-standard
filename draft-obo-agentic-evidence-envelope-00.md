@@ -1290,6 +1290,11 @@ admission list. Operators using aARP MAY publish their registry as
 `_obo-crq` corridor predicates, making the membership machine-readable
 and auditable by any party with DNS access.
 
+The curated registry does not replicate OAuth. It expresses a business
+trust boundary as a technical artefact. No authorisation server is
+required because no authorisation server is the right answer — the
+boundary itself is the authority.
+
 ### 8.7 High-Impact Operations and Approval Evidence
 
 For Class C (irreversible write) and Class D (systemic) operations,
