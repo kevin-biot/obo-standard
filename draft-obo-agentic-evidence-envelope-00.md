@@ -1295,6 +1295,47 @@ trust boundary as a technical artefact. No authorisation server is
 required because no authorisation server is the right answer — the
 boundary itself is the authority.
 
+**Scope boundary: trust is not routing.**
+
+The curated operator registry defines which counterparties an operator
+trusts. It does not solve runtime intent routing — determining which
+agent or corridor should handle a given intent without hardcoding an
+endpoint.
+
+Hardcoded endpoints are brittle by design: they encode a point-to-point
+relationship that breaks on counterparty change, version update, or
+corridor migration. At scale, hardcoded endpoints reproduce the
+fragmentation that plagued B2B integration for two decades — EDI over
+again, with JSON.
+
+Runtime intent routing — discovering the correct corridor for a given
+intent namespace dynamically, with DNS-published admission predicates
+and proof-based membership — is the function of the Agentic
+Authorisation and Routing Protocol (aARP).
+
+aARP is a companion RFC from the same authors, currently in preparation
+for publication. A reference server implementation exists and has been
+exercised end-to-end with OBO credentials in the Lane2 pipeline. The
+specification and reference server will be published at
+github.com/kevin-biot/aarp-public upon release. aARP is listed as
+forthcoming in the interlinked standards section of this document.
+
+OBO credentials are the accountability artefact for a transaction that
+aARP has already routed. The two are complementary layers, not
+substitutes:
+
+```
+aARP  — which corridor handles this intent, discovered at runtime
+          via DNS-published predicates, without hardcoded endpoints
+OBO   — accountability for the transaction that corridor executes:
+          who authorised it, what happened, tamper-evident proof
+```
+
+Deployments that do not yet have aARP available MAY use curated
+registries or static corridor configuration as an interim measure.
+The OBO credential and evidence envelope remain valid regardless of
+how the routing decision was made.
+
 ### 8.7 High-Impact Operations and Approval Evidence
 
 For Class C (irreversible write) and Class D (systemic) operations,

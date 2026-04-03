@@ -550,10 +550,15 @@ OBO   — On Behalf Of  ← this standard
 
         ↓  routed through governed corridors
 
-aARP  — Agentic Authorization and Routing Protocol
-        Which corridor should this agent use? Proof-based admission,
-        DNS-published predicates, route evidence sealed per hop.
-        [ draft in progress ]
+aARP  — Agentic Authorisation and Routing Protocol
+        Which corridor should this agent use? Runtime intent routing
+        without hardcoded endpoints — DNS-published admission predicates,
+        proof-based corridor membership, route evidence sealed per hop.
+        The missing link between OBO accountability and dynamic agent
+        discovery. Companion RFC from the same authors. Reference server
+        implementation exists and has been exercised end-to-end with OBO
+        credentials. Specification and reference server forthcoming at
+        github.com/kevin-biot/aarp-public [ publication imminent ]
 
         ↓  payment steps settled with evidence anchoring
 
