@@ -167,7 +167,7 @@ Minimum required fields:
 | `evidence_digest` | Tamper-evident digest of the envelope |
 
 Full field definitions, optional fields, and profiles are in the
-[specification](draft-obo-agentic-evidence-envelope-00.md).
+[specification](draft-obo-agentic-evidence-envelope-01.md).
 
 ---
 
@@ -184,7 +184,7 @@ No authorisation server contact required at verification time.
 No CA. No registry. DNS only. This is precisely the DKIM pattern —
 proven at internet scale for twenty years.
 
-See [Appendix E](draft-obo-agentic-evidence-envelope-00.md#appendix-e-dns-anchoring-profile)
+See [Appendix E](draft-obo-agentic-evidence-envelope-01.md#appendix-e-dns-anchoring-profile)
 for the full DNS Anchoring Profile: key publication, governance pack
 digest anchoring, nullifier epoch roots, and agent domain control proofs.
 
@@ -675,7 +675,7 @@ co-signature gate. A rising tide raises all boats.
 
 ## Specification
 
-- [draft-obo-agentic-evidence-envelope-00.md](draft-obo-agentic-evidence-envelope-00.md) — full specification
+- [draft-obo-agentic-evidence-envelope-01.md](draft-obo-agentic-evidence-envelope-01.md) — full specification
 
 ## Authors
 

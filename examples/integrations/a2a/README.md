@@ -373,7 +373,7 @@ cat evidence-capture.jsonl | jq .
 | 6 — Forged signature | `OBO-ERR-004` | Ed25519 verification failed |
 | 7 — Replayed credential | `OBO-ERR-008` | `credential_id` already seen |
 
-Full taxonomy: [§5 of the spec](../../draft-obo-agentic-evidence-envelope-00.md).
+Full taxonomy: [§5 of the spec](../../draft-obo-agentic-evidence-envelope-01.md).
 
 ---
 
@@ -420,7 +420,7 @@ Full taxonomy: [§5 of the spec](../../draft-obo-agentic-evidence-envelope-00.md
 
 ## Spec references
 
-- [draft-obo-agentic-evidence-envelope-00](../../draft-obo-agentic-evidence-envelope-00.md)
+- [draft-obo-agentic-evidence-envelope-01](../../draft-obo-agentic-evidence-envelope-01.md)
 - §3.1 OBO Credential
 - §3.2 OBO Evidence Envelope
 - §4.4 Submission Integrity (HTTP Message Signatures, RFC 9421)

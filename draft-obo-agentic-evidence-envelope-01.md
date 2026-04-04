@@ -1,19 +1,20 @@
-Internet-Draft: draft-lane2-obo-agentic-evidence-envelope-00
+Internet-Draft: draft-lane2-obo-agentic-evidence-envelope-01
 Intended status: Experimental
-Expires: 2 October 2026
+Expires: 4 October 2026
 Individual Submission – Lane2 Architecture
 
-Lane2 Architecture                                             2 April 2026
+Lane2 Architecture                                             4 April 2026
 
 ---
 
 # On Behalf Of (OBO): Minimum Evidence Envelope for Agentic Transactions
 
-**draft-lane2-obo-agentic-evidence-envelope-00**
+**draft-lane2-obo-agentic-evidence-envelope-01**
 
-*Status:* Working Draft 0.1
+*Status:* Working Draft — v0.3.0
 *Editors:* K. Brown (Lane2 Architecture)
-*Date:* 2026-04-02
+*Date:* 2026-04-04
+*Replaces:* draft-lane2-obo-agentic-evidence-envelope-01
 
 ---
 
@@ -2951,4 +2952,4 @@ is valid only if every member is valid. See §9.1.
 
 ---
 
-*End of draft-lane2-obo-agentic-evidence-envelope-00*
+*End of draft-lane2-obo-agentic-evidence-envelope-01*
