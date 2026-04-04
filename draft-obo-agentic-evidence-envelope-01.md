@@ -84,7 +84,9 @@ OBO emerged from a working implementation, not a specification exercise.
 The fields exist because a real agentic pipeline required them when
 crossing organisational boundaries with no shared infrastructure. The
 gaps it fills are the gaps that appeared under load, not in a committee
-room.
+room. Regulatory accountability was a first-class design constraint from
+the first transaction, not a requirement discovered after the system was
+built.
 
 ### 1.2 What Is Already Solved — And the Category Error That Obscures It
 
