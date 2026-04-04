@@ -1,0 +1,68 @@
+version: "3.9"
+
+# OBO + A2A Demo — three containers, one DNS TXT record
+#
+# Setup:
+#   1.  python keygen.py --operator-id your-domain.com
+#   2.  Set DNS:  _obo-key.your-domain.com  IN TXT  "v=obo1 ed25519=<value>"
+#   3.  Copy .env.example → .env, fill in values from keygen.py output
+#   4.  docker-compose up
+#
+# Containers:
+#   sapp           SAPP stub — accepts evidence envelopes, returns receipts
+#   flight-search  FlightSearchAgent — verifies OBO credentials, executes tasks
+#   travel-agent   TravelAgent — issues credentials, sends tasks, seals evidence
+
+services:
+
+  sapp:
+    build:
+      context: ./sapp_stub
+    ports:
+      - "8080:8080"
+    environment:
+      - TRAVEL_AGENT_PUBKEY=${TRAVEL_AGENT_PUBKEY}
+      - SAPP_PORT=8080
+      - SAPP_DATA_DIR=/data
+    volumes:
+      - sapp_data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  flight-search:
+    build:
+      context: .
+    command: ["--server"]
+    ports:
+      - "8081:8081"
+    environment:
+      - TRAVEL_AGENT_PUBKEY=${TRAVEL_AGENT_PUBKEY}
+      - FLIGHT_SEARCH_PORT=8081
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8081/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  travel-agent:
+    build:
+      context: .
+    command: ["--demo"]
+    depends_on:
+      sapp:
+        condition: service_healthy
+      flight-search:
+        condition: service_healthy
+    environment:
+      - TRAVEL_AGENT_OPERATOR_ID=${TRAVEL_AGENT_OPERATOR_ID}
+      - TRAVEL_AGENT_PRINCIPAL_ID=${TRAVEL_AGENT_PRINCIPAL_ID:-did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK}
+      - TRAVEL_AGENT_PRIVATE_KEY_B64=${TRAVEL_AGENT_PRIVATE_KEY_B64}
+      - FLIGHT_SEARCH_URL=http://flight-search:8081
+      - SAPP_URL=http://sapp:8080
+      - STARTUP_WAIT_SECONDS=0   # healthcheck handles this
+
+volumes:
+  sapp_data:
