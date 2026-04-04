@@ -1,0 +1,42 @@
+{
+  "_capture": {
+    "scenario": "1 — Flight search LHR→JFK",
+    "run_date": "2026-04-04T11:55:07Z",
+    "operator_id": "lane2.ai",
+    "key_source": "dns-txt",
+    "dns_record": "_obo-key.lane2.ai IN TXT \"v=obo1 ed25519=vqiddGZ0skvsek13nUksdu9NfLq7fDN3BmtCsKkEysU\"",
+    "verify_dns": "dig +short TXT _obo-key.lane2.ai @8.8.8.8",
+    "note": "Key resolved live from Route 53 at task receipt time. envelope_sig verifiable against the DNS pubkey above."
+  },
+  "request": {
+    "evidence_id": "urn:obo:env:523068f5-8f09-4969-b7e6-ed61f944b9c9",
+    "profile_id": "regulated",
+    "leaves": [
+      "event_time:2026-04-04T11:55:07.038933+00:00",
+      "obo_credential_id:urn:obo:cred:1d8d3842-8dd3-4875-8eb3-26264a2cb017",
+      "obo_envelope_id:urn:obo:env:523068f5-8f09-4969-b7e6-ed61f944b9c9",
+      "obo_envelope_sig:nvrois4PEAUNY-3MFX8246enO18c-9MxwwAYL03nqJbPmnQRNjtYXiw1ZvhOkXMtmXKe3lbOfPsrwVFQK8xrBA",
+      "obo_evidence_digest:f07160c23ddd9b9f111e0bf9d58f8f29bc2cc14f0cd58c40008f38b1a743b616",
+      "obo_governance_ref:https://example.com/obo/v1/policy",
+      "obo_intent_hash:b98d4238ecb978415a304d0a86578c1e5f0fecc377df6355a3b3b6f60fba439c",
+      "obo_operator_id:lane2.ai",
+      "obo_outcome:allow",
+      "obo_principal_id:did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+      "obo_reason_code:none",
+      "obo_task_ref:task-0fe230c3-1a81-4c48-b192-c8faa95a1385",
+      "producer_id:lane2.ai",
+      "schema_ref:draft-obo-agentic-evidence-envelope-00"
+    ],
+    "_note": "Leaves shown lexicographically sorted — the order SAPP uses for Merkle construction"
+  },
+  "receipt": {
+    "evidence_bundle": "yBEdJg9rcnI-xyZfigUc9CbU5U3TTI2flPlkm37oBXU",
+    "merkle_root": "4f29251a3d5a565c53a1a3c8dee145373155d00b0a49f6a97b4965bc6a6ecf78",
+    "checkpoint_index": 0,
+    "tree_size": 1,
+    "created_at": "2026-04-04T11:55:07.039747+00:00",
+    "evidence_id": "urn:obo:env:523068f5-8f09-4969-b7e6-ed61f944b9c9",
+    "profile_id": "regulated",
+    "_note": "stub receipt — production would include Merkle inclusion proof and SAPP operator JWS"
+  }
+}

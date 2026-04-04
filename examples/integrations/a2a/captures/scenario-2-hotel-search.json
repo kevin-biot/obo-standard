@@ -1,0 +1,42 @@
+{
+  "_capture": {
+    "scenario": "2 — Hotel search New York",
+    "run_date": "2026-04-04T11:55:07Z",
+    "operator_id": "lane2.ai",
+    "key_source": "dns-txt",
+    "dns_record": "_obo-key.lane2.ai IN TXT \"v=obo1 ed25519=vqiddGZ0skvsek13nUksdu9NfLq7fDN3BmtCsKkEysU\"",
+    "verify_dns": "dig +short TXT _obo-key.lane2.ai @8.8.8.8",
+    "note": "Second transaction in the same run. checkpoint_index increments to 1, proving monotonic Merkle accumulation across transactions."
+  },
+  "request": {
+    "evidence_id": "urn:obo:env:35e6b4c0-2268-4401-8623-d6fd41ff1ee8",
+    "profile_id": "regulated",
+    "leaves": [
+      "event_time:2026-04-04T11:55:07.044302+00:00",
+      "obo_credential_id:urn:obo:cred:e8561775-a0b3-424b-ade7-7db628521c35",
+      "obo_envelope_id:urn:obo:env:35e6b4c0-2268-4401-8623-d6fd41ff1ee8",
+      "obo_envelope_sig:h6_GBNEQLwBu-7jNUYRiDtX4IF6_LlqhGMT98l4vfKOhJSrfu_sm4x_8t82G3FjY_Kg_ZL3P5L8gbF6tWMBICw",
+      "obo_evidence_digest:46d4f79e58b296fc77b99d501e0e77cd52ee7e86393163ed8c458c35d51b099b",
+      "obo_governance_ref:https://example.com/obo/v1/policy",
+      "obo_intent_hash:e2b7c2bfeaeb1d0e7084c650c92f2a23005fd310c8208dea46ed1fa51fd20efd",
+      "obo_operator_id:lane2.ai",
+      "obo_outcome:allow",
+      "obo_principal_id:did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+      "obo_reason_code:none",
+      "obo_task_ref:task-07218a97-47b8-4240-80e0-7aeeaed554de",
+      "producer_id:lane2.ai",
+      "schema_ref:draft-obo-agentic-evidence-envelope-00"
+    ],
+    "_note": "Leaves shown lexicographically sorted — the order SAPP uses for Merkle construction"
+  },
+  "receipt": {
+    "evidence_bundle": "sDBAtmjL13TT4q5MhQ6z3cvMFHbDEOzt1vTCHxjFj0E",
+    "merkle_root": "116234800d9a56a49a8f61950e78d001a1729e137f9d12044cfd1f143313a4d5",
+    "checkpoint_index": 1,
+    "tree_size": 2,
+    "created_at": "2026-04-04T11:55:07.045080+00:00",
+    "evidence_id": "urn:obo:env:35e6b4c0-2268-4401-8623-d6fd41ff1ee8",
+    "profile_id": "regulated",
+    "_note": "stub receipt — production would include Merkle inclusion proof and SAPP operator JWS"
+  }
+}
