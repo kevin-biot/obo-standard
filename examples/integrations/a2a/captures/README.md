@@ -87,6 +87,113 @@ print("✓ envelope_sig valid")
 
 ---
 
+## Extended evidence — delegation and intent artifacts
+
+The 14 leaves in these captures are the **minimum viable OBO evidence
+set**. The architecture is designed as a carrier: operators and agents
+can bind arbitrarily rich evidence into the same Merkle root by adding
+leaves. Two artifacts defined in the spec (§3.3 and §3.4) are the most
+important extensions — they are what make OBO evidence useful for
+regulated industries and legally meaningful in dispute resolution.
+
+### What the demo leaves don't show
+
+The current 14 leaves establish:
+- *Who* acted (`obo_operator_id`, `obo_principal_id`)
+- *What* was intended (`obo_intent_hash`)
+- *What happened* (`obo_outcome`, `obo_task_ref`)
+- *That the record is intact* (`obo_evidence_digest`, `obo_envelope_sig`)
+
+What they do not establish:
+- *On what authority* the principal was delegated to act
+- *That a human explicitly approved* this specific intent
+- *How* the principal's identity was verified
+- *What constraints* the principal imposed at authorisation time
+
+The Delegation Chain Artifact (§3.3) and Intent Artifact (§3.4) fill
+these gaps. Together they turn `obo_principal_id: did:key:z6Mk…` — a
+cryptographic identifier — into a full accountability record that a
+regulator, court, or compliance auditor can work with.
+
+### What a rich evidence set looks like
+
+The following shows what the Scenario 1 leaf set would look like with
+both artifacts fully bound. New leaves are marked `(§3.3)` or `(§3.4)`:
+
+```
+# ── Regulated profile required ────────────────────────────────
+event_time:2026-04-04T11:55:07.038933+00:00
+producer_id:lane2.ai
+schema_ref:draft-obo-agentic-evidence-envelope-00
+
+# ── OBO credential provenance ─────────────────────────────────
+obo_credential_id:urn:obo:cred:1d8d3842-…
+obo_governance_ref:https://example.com/obo/v1/policy
+obo_operator_id:lane2.ai
+obo_principal_id:did:key:z6MkhaXgBZ…
+
+# ── Delegation chain (§3.3) ───────────────────────────────────
+delegation_id:urn:obo:del:9f4e2a1b-…              (§3.3)
+delegation_chain_digest:7f3a9b2c8e…               (§3.3)
+delegation_depth:1                                 (§3.3)
+delegation_issuer_sig:Ed25519-base64url…           (§3.3)
+
+# ── Intent artifact (§3.4) ────────────────────────────────────
+intent_id:urn:obo:intent:3c7d5f2a-…               (§3.4)
+intent_authorised_at:2026-04-04T11:54:58Z          (§3.4)
+intent_authorisation_method:explicit_approval      (§3.4)
+intent_principal_sig:Ed25519-base64url…            (§3.4)
+intent_operator_sig:Ed25519-base64url…             (§3.4)
+obo_intent_hash:b98d4238ecb978415a30…
+
+# ── Authorisation evidence / biometric (§3.4.4) ───────────────
+biometric_method:face_id                           (§3.4)
+biometric_provider:apple_faceid                    (§3.4)
+biometric_score:0.987                              (§3.4)
+biometric_verified_at:2026-04-04T11:54:55Z         (§3.4)
+kyc_level:enhanced                                 (§3.4)
+kyc_ref:jumio-kyc-abc123                           (§3.4)
+
+# ── Evidence envelope binding ─────────────────────────────────
+obo_envelope_id:urn:obo:env:523068f5-…
+obo_envelope_sig:nvrois4PEAUNY-…
+obo_evidence_digest:f07160c23ddd9b9f…
+obo_outcome:allow
+obo_reason_code:none
+obo_task_ref:task-0fe230c3-…
+```
+
+That is 30 leaves vs 14. All 30 are committed into a single
+`merkle_root`. A compliance auditor receives one hash that commits to
+the complete picture — the delegation chain, the biometric check, the
+principal's explicit approval signature, and the transaction outcome.
+No component can be presented or withheld independently.
+
+### Why this matters for regulated industries
+
+| What is provable with 14 leaves | What is additionally provable with 30 |
+|---------------------------------|---------------------------------------|
+| An agent acted under operator `lane2.ai` | Acme Corp delegated to the agent, within scope £500 economy only |
+| The intent matched the credential | Alice Chen signed this specific intent at 11:54:58 |
+| The outcome was `allow` | Alice's face ID matched at 11:54:55 with score 0.987 |
+| The record has not been tampered | Alice is KYC-verified at `enhanced` level (Jumio ref: abc123) |
+
+The 14-leaf version is technically auditable. The 30-leaf version is
+**legally producible** — to a regulator under PSD2 Art. 74, to a court
+in a dispute, to a compliance officer under EU AI Act Art. 12. The
+difference is not the cryptography (both use the same Merkle root); it
+is what the root commits to.
+
+### The `--rich` demo mode
+
+The reference implementation does not yet emit these extended leaves.
+A future `--rich` flag for TravelAgent will add delegation chain +
+intent artifact + stub biometric leaf to the SAPP submission, showing
+extensibility concretely. See §3.3 and §3.4 of the spec for the full
+canonical schemas and signing requirements.
+
+---
+
 ## SAPP Merkle signing — what the demo omits and best practice
 
 ### What the stub does (and does not do)

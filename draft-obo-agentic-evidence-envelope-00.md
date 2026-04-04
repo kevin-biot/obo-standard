@@ -584,7 +584,287 @@ OBO-REQ-002: An OBO Credential MAY contain the following fields:
 | `delegation_depth` | object | Present only in explicit multi-hop delegation chains. Contains `current` (integer, this credential's depth from the origin, starting at 0) and `max` (integer, the chain ceiling set by the originating credential). A credential with `current == max` MUST NOT be used to issue sub-credentials. Each derived credential MUST carry the same `max` and `current` incremented by one. `scope_constraints` MUST NOT widen relative to the parent credential at any hop. |
 | `parent_credential_ref` | string | The `obo_credential_id` of the credential from which this credential was derived. Required when `delegation_depth.current > 0`. Enables verifiers to walk the chain and detect scope widening or revocation of any ancestor. |
 
-### 3.3 Signing
+### 3.3 Delegation Chain Artifact
+
+The `binding_proof_ref` field in the OBO Credential points to a
+Delegation Chain Artifact — a dereferenceable, signed document that
+establishes the complete chain of authorisation from the originating
+principal to the acting agent. It is distinct from the credential
+itself: the credential is ephemeral and transaction-scoped; the
+delegation chain artifact is durable and may span many credentials.
+
+#### 3.3.1 Purpose
+
+The OBO Credential's `principal_id` is a cryptographic identifier. It
+is opaque without context: a DID or URN by itself does not establish
+who the principal is, what authority they hold, or who authorised them
+to delegate. The Delegation Chain Artifact resolves that opacity. It
+answers: "on what basis does this principal have authority to act, and
+through what chain did that authority reach the acting agent?"
+
+For regulated industries — payments, healthcare, financial services —
+this chain is a compliance requirement, not an implementation detail.
+PSD2 Article 74, EU AI Act Article 12, and eIDAS 2.0 each require the
+ability to produce the complete authorisation chain to a regulator or
+court. A `principal_id` in isolation cannot satisfy that requirement.
+The Delegation Chain Artifact makes it satisfiable.
+
+#### 3.3.2 Canonical Schema
+
+```json
+{
+  "delegation_id": "urn:obo:del:<uuid>",
+  "version": "1",
+  "chain": [
+    {
+      "depth": 0,
+      "principal_id": "did:web:acme-corp.com",
+      "principal_role": "regulated-entity",
+      "delegated_to": "did:key:z6MkhaXgBZ…",
+      "delegated_role": "travel-booking-agent",
+      "operator_id": "lane2.ai",
+      "scope": {
+        "action_classes": ["A", "B"],
+        "intent_namespaces": ["urn:lane2:ns:travel"],
+        "constraints": {
+          "max_transaction_value_gbp": 500,
+          "permitted_destinations": ["*"],
+          "cabin_class": ["economy", "business"]
+        }
+      },
+      "valid_from": "2026-04-04T09:00:00Z",
+      "valid_until": "2026-04-04T18:00:00Z",
+      "link_sig": "<Ed25519 by principal_id over canonical link fields>"
+    },
+    {
+      "depth": 1,
+      "principal_id": "did:key:z6MkhaXgBZ…",
+      "principal_role": "travel-booking-agent",
+      "delegated_to": "did:key:z6MkFlightSearch…",
+      "delegated_role": "flight-search-subagent",
+      "operator_id": "lane2.ai",
+      "scope": {
+        "action_classes": ["A"],
+        "intent_namespaces": ["urn:lane2:ns:travel:flights"],
+        "constraints": {
+          "max_transaction_value_gbp": 500,
+          "read_only": true
+        }
+      },
+      "valid_from": "2026-04-04T11:54:50Z",
+      "valid_until": "2026-04-04T11:59:50Z",
+      "link_sig": "<Ed25519 by depth-0 agent over canonical link fields>"
+    }
+  ],
+  "chain_digest": "<SHA-256 over canonical JSON of chain array>",
+  "issuer_sig": "<Ed25519 by operator over chain_digest>"
+}
+```
+
+#### 3.3.3 Field Definitions
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `delegation_id` | MUST | Stable URN, globally unique. |
+| `version` | MUST | Schema version. Current value: `"1"`. |
+| `chain` | MUST | Ordered array of delegation links, depth 0 first. `depth` MUST increment by exactly 1 per entry. |
+| `chain[].depth` | MUST | Integer. 0 = originating principal. |
+| `chain[].principal_id` | MUST | Identifier of the delegating party at this link. |
+| `chain[].principal_role` | SHOULD | Human-readable role of the delegating party. |
+| `chain[].delegated_to` | MUST | Identifier of the party receiving delegation at this link. |
+| `chain[].delegated_role` | SHOULD | Human-readable role of the receiving party. |
+| `chain[].operator_id` | MUST | The OBO operator responsible for this link. |
+| `chain[].scope` | MUST | `action_classes`, `intent_namespaces`, and any `constraints`. Scope MUST NOT widen relative to the parent link. |
+| `chain[].valid_from` | MUST | ISO 8601 UTC. Start of this link's validity window. |
+| `chain[].valid_until` | MUST | ISO 8601 UTC. End of this link's validity window. |
+| `chain[].link_sig` | MUST | Ed25519 by `principal_id` over canonical JSON of this link (excluding `link_sig`). Proves the delegating party explicitly consented to this specific link. |
+| `chain_digest` | MUST | SHA-256 over canonical JSON of the `chain` array. Enables tamper detection across all links. |
+| `issuer_sig` | MUST | Ed25519 by the issuing operator over `chain_digest`. |
+
+#### 3.3.4 Binding to the OBO Credential
+
+OBO-REQ-004: When a Delegation Chain Artifact exists for a transaction,
+the OBO Credential MUST carry:
+
+- `binding_proof_ref` — dereferenceable URI or content-addressed hash
+  of the Delegation Chain Artifact.
+- `delegation_chain_digest` — SHA-256 of the canonical artifact,
+  enabling verifiers to confirm integrity without dereferencing.
+- `delegation_depth.current` — MUST match the depth of the final link.
+
+OBO-REQ-005: A verifier processing a credential with `binding_proof_ref`
+MUST either dereference and verify the full chain, or record in the
+evidence envelope that chain verification was deferred. A verifier MUST
+NOT classify an action as Class C or D without full chain verification.
+
+#### 3.3.5 SAPP Leaves
+
+When submitting evidence to SAPP, the following leaves bind the
+Delegation Chain Artifact into the Merkle commitment:
+
+```
+delegation_id:urn:obo:del:<uuid>
+delegation_chain_digest:<SHA-256 of canonical chain array>
+delegation_depth:1
+delegation_issuer_sig:<base64url Ed25519 over chain_digest>
+```
+
+These four leaves commit the complete delegation chain into the same
+`merkle_root` as the transaction outcome. Any post-hoc modification of
+the delegation artifact would invalidate the root.
+
+---
+
+### 3.4 Intent Artifact
+
+The `intent_hash` field in both the OBO Credential and the OBO Evidence
+Envelope is a SHA-256 digest of the canonical intent phrase. The phrase
+itself is not carried in either artefact. The Intent Artifact is the
+durable, signed document containing the phrase, its structured
+decomposition, the principal's explicit authorisation of it, and any
+constraints the principal imposed at authorisation time.
+
+#### 3.4.1 Purpose
+
+Without the Intent Artifact, `intent_hash` provides tamper-detection
+but not reconstructibility: a verifier can confirm that a hash matches
+a phrase they already have, but cannot derive the phrase from the hash.
+For dispute resolution, regulatory inspection, or cross-party audit,
+reconstructibility is required.
+
+More critically: the Intent Artifact carries the **principal's own
+signature** over the specific intent they approved. This is the
+cryptographic proof that a human (or upstream authorised system)
+explicitly approved this bounded act — not a general delegation that
+the agent interpreted, but a specific intent that the principal signed.
+This is the human-in-the-loop proof that regulators and compliance
+frameworks require for Class B and above.
+
+#### 3.4.2 Canonical Schema
+
+```json
+{
+  "intent_id": "urn:obo:intent:<uuid>",
+  "version": "1",
+  "phrase": "search flights from LHR to JFK on 2026-06-15 economy class",
+  "structured": {
+    "action": "search",
+    "domain": "travel:flights",
+    "origin": "LHR",
+    "destination": "JFK",
+    "date": "2026-06-15",
+    "cabin": "economy"
+  },
+  "constraints": {
+    "max_price_gbp": 600,
+    "non_stop_only": false,
+    "result_limit": 10
+  },
+  "principal_id": "did:key:z6MkhaXgBZ…",
+  "authorised_at": "2026-04-04T11:54:58Z",
+  "authorisation_method": "explicit_approval",
+  "authorisation_evidence": {
+    "method": "face_id",
+    "provider": "apple_faceid",
+    "session_id": "fid-session-7f3a9b…",
+    "match_score": 0.987,
+    "verified_at": "2026-04-04T11:54:55Z",
+    "kyc_ref": "jumio-kyc-abc123",
+    "kyc_level": "enhanced"
+  },
+  "intent_hash": "b98d4238ecb978415a304d0a86578c1e5f0fecc377df6355a3b3b6f60fba439c",
+  "phrase_hash_alg": "sha-256",
+  "principal_sig": "<Ed25519 by principal over canonical artifact fields>",
+  "operator_id": "lane2.ai",
+  "operator_sig": "<Ed25519 by operator over intent_id || intent_hash || principal_sig>"
+}
+```
+
+#### 3.4.3 Field Definitions
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `intent_id` | MUST | Stable URN, globally unique. |
+| `version` | MUST | Schema version. Current value: `"1"`. |
+| `phrase` | MUST | Canonical intent phrase. SHA-256 of this field's exact UTF-8 bytes MUST equal `intent_hash`. |
+| `structured` | SHOULD | Machine-parseable decomposition of the phrase. Enables automated dispute resolution and corridor matching without NLP. |
+| `constraints` | SHOULD | Constraints the principal imposed at authorisation time. These narrow — never widen — the scope of the acting credential. |
+| `principal_id` | MUST | MUST match `principal_id` in the OBO Credential. |
+| `authorised_at` | MUST | ISO 8601 UTC. When the principal approved this intent. MUST precede `issued_at` in the OBO Credential. |
+| `authorisation_method` | MUST | `explicit_approval`, `pre_authorised_scope`, or `delegation_implied`. |
+| `authorisation_evidence` | SHOULD | Structured record of the authorisation act. REQUIRED for Class C and D actions. See §3.4.4. |
+| `intent_hash` | MUST | SHA-256 of `phrase`. MUST match `intent_hash` in the OBO Credential and OBO Evidence Envelope. |
+| `phrase_hash_alg` | MUST | Hash algorithm. Current value: `"sha-256"`. |
+| `principal_sig` | MUST | Ed25519 by `principal_id` over the canonical JSON of the artifact (excluding `principal_sig` and `operator_sig`). This is the human authorisation proof. |
+| `operator_id` | MUST | The OBO operator that witnessed and countersigned the authorisation. |
+| `operator_sig` | MUST | Ed25519 by `operator_id` over `intent_id \|\| intent_hash \|\| principal_sig`. The countersignature proves the operator did not fabricate the principal's approval. |
+
+#### 3.4.4 Authorisation Evidence
+
+The `authorisation_evidence` sub-object records how the principal
+demonstrated approval. It is the structured form of the
+"human-in-the-loop" proof.
+
+| Field | Description |
+|-------|-------------|
+| `method` | `face_id`, `pin`, `passkey`, `sms_otp`, `email_link`, `qualified_esig`, `pre_authorised` |
+| `provider` | System or device that performed the check (e.g. `apple_faceid`, `yubikey`, `jumio`). |
+| `session_id` | Opaque session identifier from the provider. Enables cross-reference with provider logs. |
+| `match_score` | For biometric methods: confidence score in [0, 1]. |
+| `verified_at` | ISO 8601 UTC. Time of the authentication check. MUST precede `authorised_at`. |
+| `kyc_ref` | Reference to the KYC or AML check that established the principal's identity. |
+| `kyc_level` | `basic`, `enhanced`, `qualified`. Corresponds to the verification tier required by applicable regulation. |
+
+`authorisation_evidence` is RECOMMENDED for Class B and above, and
+REQUIRED for Class C and D. It closes the gap between "an agent was
+delegated authority" and "a specific human explicitly approved this
+specific act, with this verification confidence, at this time."
+
+#### 3.4.5 Binding to the OBO Credential and Evidence Envelope
+
+OBO-REQ-006: When an Intent Artifact exists for a transaction, the
+`intent_hash` in the OBO Credential and OBO Evidence Envelope MUST be
+the SHA-256 of the `phrase` field in that artifact, computed over the
+exact UTF-8 byte sequence with no leading or trailing whitespace.
+
+OBO-REQ-007: The `intent_id` SHOULD be carried in the OBO Evidence
+Envelope as an optional field, enabling verifiers to dereference the
+artifact without requiring access to the OBO Credential.
+
+#### 3.4.6 SAPP Leaves
+
+When submitting evidence to SAPP, the following leaves bind the Intent
+Artifact and the authorisation act into the Merkle commitment. All
+material facts about the principal's authorisation — including
+biometric verification and KYC level — are committed into the same
+`merkle_root` as the transaction outcome:
+
+```
+intent_id:urn:obo:intent:<uuid>
+intent_authorised_at:2026-04-04T11:54:58Z
+intent_authorisation_method:explicit_approval
+intent_principal_sig:<base64url Ed25519 by principal>
+intent_operator_sig:<base64url Ed25519 by operator>
+kyc_level:enhanced
+kyc_ref:<opaque ref to KYC record>
+biometric_method:face_id
+biometric_provider:apple_faceid
+biometric_session_id:fid-session-7f3a9b…
+biometric_score:0.987
+biometric_verified_at:2026-04-04T11:54:55Z
+```
+
+The critical property: the biometric check, the KYC level, the
+principal's explicit approval signature, and the transaction outcome
+are all committed into the same `merkle_root`. A compliance auditor
+receives a single Merkle root that commits to the complete picture —
+who the principal is, how they were verified, what they explicitly
+approved, and what the agent did with that approval. No component can
+be separated from the others without invalidating the root.
+
+---
+
+### 3.5 Signing
 
 OBO-REQ-003: An OBO Credential MUST be signed using a cryptographic
 scheme that supports offline verification. Ed25519 signatures over the
@@ -670,7 +950,7 @@ OBO-REQ-015: Submission of OBO Evidence Envelopes to SAPP, Merkle,
 or audit endpoints MUST use HTTP Message Signatures [RFC 9421], signed
 with the submitting operator's OBO signing key (the key published in
 `_obo-key._domainkey.<operator-domain>`). This is the same Ed25519 key
-used to sign OBO Credentials per §3.3 — no additional key material or
+used to sign OBO Credentials per §3.5 — no additional key material or
 infrastructure is required. The signature MUST cover at minimum:
 
 - The request target (method + URL)
