@@ -2992,4 +2992,350 @@ is valid only if every member is valid. See §9.1.
 
 ---
 
+## Appendix H. SHACL Conformance Shapes (Normative)
+
+### H.1 Purpose
+
+The JSON Schema at `schemas/obo-evidence-envelope.json` validates
+structure and field types. The SHACL shapes at
+`schemas/obo-evidence-envelope.shacl.ttl` validate *semantics* under a
+closed-world assumption: every constraint declared in this document that
+can be expressed as a shape MUST be satisfied for an envelope to be
+considered conformant.
+
+No OWL reasoning or open-world inference is required or implied.
+Validators MUST use a SHACL 1.0 processor in closed-world mode.
+
+### H.2 Namespace
+
+The OBO namespace URI is `https://obo-standard.org/ns#`, abbreviated
+`obo:` throughout the shapes file.
+
+### H.3 Shapes Summary
+
+| Shape | Target | Key constraints |
+|-------|--------|----------------|
+| `obo:EvidenceEnvelopeShape` | `obo:EvidenceEnvelope` | All required fields; `sha256:<hex>` patterns; closed enumerations for `action_class`, `outcome`, `eudi_presentation_alg`, `corridor_admission_tier` |
+| `obo:ClassDKYCShape` | `obo:EvidenceEnvelope` where `action_class = "D"` | `kyc_ref` MUST be present (ADR-007, §3.4.4.1) |
+| `obo:EUDICompletenessShape` | `obo:EvidenceEnvelope` where `eudi_presentation_alg` present | `eudi_pid_issuer` MUST be present |
+| `obo:WhyRefShape` | `obo:WhyRef` | All three digest sub-fields required; `sha256:<hex>` pattern |
+
+### H.4 Validation Requirement
+
+Implementations that emit evidence envelopes SHOULD validate against
+the SHACL shapes before anchoring. Anchor operators MAY reject
+submissions that fail shape validation.
+
+A conformance report from a SHACL 1.0 processor with zero violations
+constitutes machine-readable evidence of structural compliance with
+this specification.
+
+### H.5 Relationship to JSON Schema
+
+JSON Schema and SHACL are complementary, not redundant:
+
+- JSON Schema validates syntax and field types (for JSON consumers).
+- SHACL validates semantics and cross-field constraints (for RDF/linked-data consumers and automated auditors).
+
+Implementations operating in pure JSON MAY use JSON Schema only.
+Implementations targeting regulatory audit trails or linked-data
+pipelines SHOULD additionally validate against the SHACL shapes.
+
+---
+
+## Appendix I. Domain Evidence Shape Taxonomy (Informative)
+
+### I.1 Purpose
+
+The OBO evidence envelope is domain-agnostic by design. The action
+class (`A`–`D`), intent class, and governance framework together
+establish *what kind* of action occurred. They do not specify the
+semantic structure of the action itself — what a payment looks like,
+what a clinical event looks like, what a purchase contains.
+
+Domain SHACL profiles fill that gap. A domain profile is a SHACL
+shapes graph that constrains the domain-specific fields of an action
+within an OBO evidence context. This appendix describes the taxonomy of
+domains where such profiles are meaningful and identifies the existing
+standards those profiles SHOULD reference.
+
+This appendix is **informative only**. This specification does not
+define domain profiles, their content, or their runtime resolution.
+Implementations are responsible for obtaining and applying the domain
+profile declared in the governance pack for their corridor.
+
+### I.2 Why Domain Shapes Matter
+
+An evidence envelope records *that* an action occurred and *under what
+governance*. A domain shape records *whether the action was
+semantically well-formed* — whether a payment carried a valid IBAN,
+whether a prescription referenced a valid medication code, whether a
+purchase basket was internally consistent.
+
+Without domain shapes, an envelope may be structurally conformant and
+still represent a semantically invalid action. Downstream verifiers —
+regulators, auditors, dispute arbiters — benefit from both layers of
+validation.
+
+Implementations operating in financial or health domains SHOULD
+validate action semantics against a domain SHACL profile before
+emitting evidence. The domain profile URI is declared in the governance
+pack. This specification does not define how domain profiles are
+fetched, cached, or enforced at runtime.
+
+### I.3 Domain Taxonomy
+
+The following taxonomy identifies the principal domains and the
+existing standards that domain SHACL profiles SHOULD reference. It is
+not exhaustive.
+
+#### I.3.1 Financial Domain
+
+Financial actions are typically Class C or Class D. Regulatory
+obligations under MiFID II, PSD2, and equivalent frameworks make
+domain-level validation especially important in this domain.
+
+| Sub-domain | Action examples | Reference standard |
+|------------|----------------|-------------------|
+| Payments — credit transfer | SEPA CT, cross-border wire | ISO 20022 pacs.008, pain.001 |
+| Payments — direct debit | Mandate execution, collection | ISO 20022 pain.008, pacs.003 |
+| Securities — order | Equity/bond order placement | FIX Protocol, ISO 20022 setr |
+| Securities — settlement | DVP, FOP settlement | ISO 20022 sese, FpML |
+| Insurance | Policy issuance, claim | ACORD standards |
+
+ISO 20022 is the recommended reference standard for payment and
+securities domain profiles. OWL serialisations of ISO 20022 message
+schemas provide a formal RDF foundation on which SHACL profiles can be
+layered without duplicating the underlying vocabulary.
+
+#### I.3.2 Health Domain
+
+Health actions are typically Class C or Class D. GDPR Article 9
+(special category data) and sector-specific regulations (HIPAA, MDR)
+make evidence and domain validation mandatory in most jurisdictions.
+
+| Sub-domain | Action examples | Reference standard |
+|------------|----------------|-------------------|
+| Clinical event | Diagnosis record, procedure | HL7 FHIR R4 Encounter, Procedure |
+| Prescription | Medication order, dispensing | HL7 FHIR MedicationRequest |
+| Patient consent | Consent grant, withdrawal | HL7 FHIR Consent |
+| Imaging | Diagnostic image order | DICOM SR, FHIR ImagingStudy |
+
+HL7 FHIR R4 is the recommended reference standard for health domain
+profiles. FHIR profiles are already expressed as StructureDefinitions
+with constraint semantics directly mappable to SHACL shapes.
+
+#### I.3.3 Commerce Domain
+
+Commerce actions are typically Class A or Class B. Evidence
+requirements are lower but domain shapes provide auditability for
+dispute resolution and consumer protection compliance.
+
+| Sub-domain | Action examples | Reference standard |
+|------------|----------------|-------------------|
+| Retail purchase | Basket, checkout, refund | schema.org Order, GS1 |
+| Travel booking | Flight, hotel, car hire | schema.org TravelAction |
+| Subscription | Enrolment, renewal, cancellation | schema.org SubscribeAction |
+
+#### I.3.4 Identity and Sovereign Domain
+
+Identity actions are Class D by definition. Domain shapes in this
+context constrain how identity presentation evidence is structured
+within an OBO envelope — particularly in conjunction with EUDI wallet
+credentials (see Appendix F and the EUDI Wallet Composability
+integration guide).
+
+| Sub-domain | Action examples | Reference standard |
+|------------|----------------|-------------------|
+| Sovereign identity | PID presentation, eIDAS login | EUDI / eIDAS 2.0, ISO 18013-5 |
+| Verifiable credential | VC issuance, presentation | W3C VC Data Model 2.0 |
+| KYC / AML | Identity verification, screening | FATF guidance, national frameworks |
+
+### I.4 Governance Pack Declaration
+
+A corridor governance pack that requires domain shape validation SHOULD
+include a `domain_shacl_profile` field pointing to the canonical shapes
+URI for the domain:
+
+```json
+{
+  "governance_framework_ref": "urn:pack:lane2:payments:sha256:abc123",
+  "domain_shacl_profile": "https://example.org/shapes/payments/iso20022-credit-transfer.shacl.ttl",
+  "domain_shacl_profile_digest": "sha256:3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b"
+}
+```
+
+The `domain_shacl_profile_digest` field binds the governance pack to a
+specific version of the shapes graph. Implementations SHOULD verify the
+digest before applying the profile.
+
+### I.5 What This Specification Does Not Define
+
+This specification intentionally does not define:
+
+- The content of any domain SHACL profile
+- How domain profiles are fetched or resolved at runtime
+- How domain profiles are cached or invalidated
+- How intent phrases are normalised to domain action classes
+- What constitutes a conformant implementation of domain validation
+
+These are implementation concerns. The distance between this
+specification and a production-grade implementation of domain
+validation is non-trivial. Implementations operating at scale in
+regulated domains should treat this appendix as a directional
+reference, not a construction manual.
+
+---
+
+## Appendix J. Governance Pack Structure (Normative)
+
+### J.1 Purpose
+
+The `governance_framework_ref` field in both the OBO Credential and the
+OBO Evidence Envelope is a stable pointer to a **governance pack** — a
+machine-readable document that declares the full semantic contract for
+a corridor. This appendix defines the governance pack structure.
+
+The governance pack is the document an agent resolves to understand
+what it may do, under what constraints, validated against which domain
+shapes, and anchored where. It is the corridor's published contract.
+
+### J.2 Pack Identity and Integrity
+
+A governance pack MUST carry three identity fields:
+
+| Field | Requirement | Description |
+|-------|-------------|-------------|
+| `pack_id` | Required | Stable URN. MUST match the `governance_framework_ref` that resolves to this document |
+| `pack_version` | Required | Semantic version. Incrementing version MUST produce a new `pack_id` and `pack_digest` |
+| `pack_digest` | Required | `sha256:<hex>` of canonical JSON serialisation excluding this field |
+
+Verifiers MUST recompute `pack_digest` and reject packs where the
+digest does not match. A governance pack with a mismatched digest MUST
+be treated as tampered.
+
+### J.3 Corridor Declaration
+
+Every pack declares its corridor identity and the admission tier that
+governs agent entry:
+
+```json
+{
+  "pack_id":                  "urn:pack:lane2:payments:sha256:abc123",
+  "pack_version":             "1.0.0",
+  "pack_digest":              "sha256:3a7bd3e2...",
+  "operator_id":              "urn:org:lane2:ai",
+  "corridor_id":              "urn:corridor:lane2:payments:eu",
+  "corridor_admission_tier":  "regulated",
+  "action_classes":           ["B", "C"],
+  "intent_namespace":         "urn:obo:ns:payments",
+  "issued_at":                1743552000,
+  "expires_at":               1775088000
+}
+```
+
+Agents MUST NOT execute action classes not listed in `action_classes`.
+Evidence envelopes emitted under this pack MUST carry `action_class`
+values within the declared set.
+
+### J.4 Domain SHACL Profile Declaration
+
+When the corridor requires domain-level semantic validation, the pack
+declares the applicable SHACL profile:
+
+```json
+{
+  "domain_shacl_profile":
+    "https://obo-standard.org/shapes/payments/iso20022-credit-transfer.shacl.ttl",
+  "domain_shacl_profile_digest":
+    "sha256:9f4c2a1b...",
+  "domain_reference_standard":
+    "ISO 20022 pacs.008 — FI To FI Customer Credit Transfer"
+}
+```
+
+`domain_shacl_profile_digest` MUST be present when
+`domain_shacl_profile` is present. Implementations SHOULD verify the
+digest before applying the profile.
+
+Implementations SHOULD validate action semantics against the declared
+profile before emitting evidence. This specification does not define
+how profiles are fetched, cached, or enforced at runtime.
+
+### J.5 Evidence Anchor Declaration
+
+The pack declares where conformant evidence MUST be anchored:
+
+```json
+{
+  "evidence_anchor":     "https://anchor.lane2.ai",
+  "evidence_anchor_did": "did:web:anchor.lane2.ai"
+}
+```
+
+Agents MUST submit evidence envelopes to the `evidence_anchor`
+declared in the governance pack for their corridor. Evidence anchored
+elsewhere for a corridor that declares a specific anchor is
+non-conformant.
+
+### J.6 Identity and KYC Requirements
+
+```json
+{
+  "kyc_required":  true,
+  "eudi_accepted": true
+}
+```
+
+When `kyc_required` is `true`, Class C and Class D evidence envelopes
+MUST include `kyc_ref`. This is implied when
+`corridor_admission_tier` is `regulated` or `sovereign`.
+
+When `eudi_accepted` is `true`, EUDI wallet credentials are recognised
+as a `kyc_ref` source. The `eudi_pid_issuer` and
+`eudi_presentation_alg` fields are meaningful in this corridor.
+
+### J.7 Scope Constraints
+
+Optional corridor-level constraints bound all agents admitted under
+the pack:
+
+```json
+{
+  "scope_constraints": {
+    "max_transaction_value":   50000,
+    "permitted_jurisdictions": ["DE", "FR", "NL", "ES", "IT"],
+    "permitted_currencies":    ["EUR"]
+  }
+}
+```
+
+These constraints are additive — they narrow but do not replace
+constraints declared in individual OBO Credentials.
+
+### J.8 Pack Lifecycle
+
+- Packs are versioned. A new version MUST carry a new `pack_id`.
+- The `supersedes` field MAY reference the prior pack version.
+- Credentials issued under a superseded pack remain valid until their
+  own `expires_at`, unless explicitly revoked via the nullifier sink.
+- Packs MUST NOT outlive `expires_at`. Credentials MUST NOT outlive
+  the pack under which they were issued.
+
+### J.9 What the Governance Pack Does Not Define
+
+The governance pack declares the corridor contract. It does not define:
+
+- How runtime resolution of the pack is performed
+- How `domain_shacl_profile` is fetched or cached
+- How write-bearing rules referenced by `write_bearing_policy` are
+  enforced
+- How intent phrases are normalised to `intent_class` values
+- What constitutes a conformant runtime implementation
+
+These are implementation concerns outside the scope of this
+specification.
+
+---
+
 *End of draft-lane2-obo-agentic-evidence-envelope-01*

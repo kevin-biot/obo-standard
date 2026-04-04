@@ -1,0 +1,204 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://obo-standard.org/schemas/obo-governance-pack/v0.1",
+  "title": "OBO Governance Pack",
+  "description": "Machine-readable corridor governance declaration. The document resolved by governance_framework_ref in an OBO Credential or Evidence Envelope. Defines what actions are permitted, under what constraints, against which domain shapes, and anchored where. Defined in draft-obo-agentic-evidence-envelope-01 Appendix J.",
+  "type": "object",
+  "required": [
+    "pack_id",
+    "pack_version",
+    "pack_digest",
+    "operator_id",
+    "corridor_id",
+    "corridor_admission_tier",
+    "action_classes",
+    "intent_namespace",
+    "issued_at",
+    "expires_at"
+  ],
+  "properties": {
+
+    "pack_id": {
+      "type": "string",
+      "description": "Stable, globally unique identifier for this governance pack. MUST match the urn referenced in governance_framework_ref fields that point to this document.",
+      "examples": ["urn:pack:lane2:payments:sha256:abc123"]
+    },
+
+    "pack_version": {
+      "type": "string",
+      "description": "Semantic version of this governance pack. Incrementing the version MUST produce a new pack_id and pack_digest.",
+      "examples": ["1.0.0", "2.3.1"]
+    },
+
+    "pack_digest": {
+      "type": "string",
+      "description": "SHA-256 of the canonical JSON serialisation of this document (excluding this field). Verifiers MUST check this field. Format: sha256:<hex>.",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+
+    "operator_id": {
+      "type": "string",
+      "description": "Identifier of the corridor operator that issued this governance pack.",
+      "examples": ["urn:org:lane2:ai"]
+    },
+
+    "corridor_id": {
+      "type": "string",
+      "description": "Identifier of the corridor this pack governs.",
+      "examples": ["urn:corridor:lane2:payments:eu", "urn:corridor:lane2:travel:global"]
+    },
+
+    "corridor_admission_tier": {
+      "type": "string",
+      "description": "The admission tier for this corridor. Determines identity and governance requirements for agents seeking admission.",
+      "enum": ["open", "domain-gated", "regulated", "sovereign"]
+    },
+
+    "action_classes": {
+      "type": "array",
+      "description": "Action classes permitted within this corridor. Agents MUST NOT execute actions of a class not listed here.",
+      "items": {
+        "type": "string",
+        "enum": ["A", "B", "C", "D"]
+      },
+      "minItems": 1,
+      "uniqueItems": true,
+      "examples": [["A", "B"], ["A", "B", "C"], ["D"]]
+    },
+
+    "intent_namespace": {
+      "type": "string",
+      "description": "The governed intent namespace for this corridor. All intent_class values in evidence envelopes MUST be within this namespace.",
+      "examples": ["urn:obo:ns:payments", "urn:obo:ns:travel", "urn:obo:ns:healthcare"]
+    },
+
+    "permitted_intent_classes": {
+      "type": "array",
+      "description": "Explicit list of permitted intent class URNs within the namespace. If absent, all intent classes within intent_namespace are permitted.",
+      "items": { "type": "string" },
+      "examples": [
+        ["urn:obo:ns:payments:credit-transfer", "urn:obo:ns:payments:direct-debit"]
+      ]
+    },
+
+    "issued_at": {
+      "type": "integer",
+      "description": "Unix epoch seconds at which this governance pack was issued.",
+      "examples": [1743552000]
+    },
+
+    "expires_at": {
+      "type": "integer",
+      "description": "Unix epoch seconds at which this governance pack expires. Credentials issued under this pack MUST NOT outlive the pack.",
+      "examples": [1775088000]
+    },
+
+    "domain_shacl_profile": {
+      "type": "string",
+      "description": "URI of the domain SHACL shapes graph applicable to actions within this corridor. Implementations SHOULD validate action semantics against this profile before emitting evidence. This field does not specify how validation is performed.",
+      "examples": [
+        "https://obo-standard.org/shapes/payments/iso20022-credit-transfer.shacl.ttl",
+        "https://example.org/shapes/healthcare/fhir-r4-encounter.shacl.ttl"
+      ]
+    },
+
+    "domain_shacl_profile_digest": {
+      "type": "string",
+      "description": "SHA-256 of the domain SHACL profile document at domain_shacl_profile. Binds this governance pack to a specific version of the domain shapes. MUST be present if domain_shacl_profile is present. Format: sha256:<hex>.",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+
+    "domain_reference_standard": {
+      "type": "string",
+      "description": "Human-readable reference to the external standard the domain SHACL profile is derived from. Informative only.",
+      "examples": [
+        "ISO 20022 pacs.008 — FI To FI Customer Credit Transfer",
+        "HL7 FHIR R4 MedicationRequest",
+        "schema.org Order"
+      ]
+    },
+
+    "evidence_anchor": {
+      "type": "string",
+      "description": "Base URL of the Evidence Anchor to which conformant evidence envelopes for this corridor MUST be submitted. MUST be HTTPS.",
+      "examples": ["https://anchor.lane2.ai"]
+    },
+
+    "evidence_anchor_did": {
+      "type": "string",
+      "description": "DID of the Evidence Anchor operator, if applicable. Used to verify anchor signatures on receipts.",
+      "examples": ["did:web:anchor.lane2.ai"]
+    },
+
+    "kyc_required": {
+      "type": "boolean",
+      "description": "When true, Class C and D evidence envelopes MUST include a kyc_ref field. Implied true when corridor_admission_tier is regulated or sovereign.",
+      "default": false
+    },
+
+    "eudi_accepted": {
+      "type": "boolean",
+      "description": "When true, EUDI wallet credentials are accepted as a kyc_ref source. eudi_pid_issuer and eudi_presentation_alg fields are recognised.",
+      "default": false
+    },
+
+    "scope_constraints": {
+      "type": "object",
+      "description": "Optional corridor-level scope constraints applying to all agents admitted under this pack.",
+      "properties": {
+        "max_transaction_value": {
+          "type": "number",
+          "description": "Maximum permitted transaction value in the corridor's base currency."
+        },
+        "permitted_jurisdictions": {
+          "type": "array",
+          "description": "ISO 3166-1 alpha-2 country codes permitted within this corridor.",
+          "items": { "type": "string", "pattern": "^[A-Z]{2}$" },
+          "examples": [["DE", "FR", "NL", "ES"]]
+        },
+        "permitted_currencies": {
+          "type": "array",
+          "description": "ISO 4217 currency codes permitted within this corridor.",
+          "items": { "type": "string", "pattern": "^[A-Z]{3}$" },
+          "examples": [["EUR", "GBP"]]
+        }
+      }
+    },
+
+    "instance_binding_required": {
+      "type": "boolean",
+      "description": "When true, all OBO Credentials issued under this governance pack MUST include agent_instance_id and agent_instance_pubkey. Presentations MUST be signed by the instance private key. Implied true when corridor_admission_tier is regulated or sovereign. See ADR-010.",
+      "default": false
+    },
+
+    "write_bearing_policy": {
+      "type": "string",
+      "description": "URI of the write-bearing rules policy document applicable to Class B, C, and D actions in this corridor. This field does not specify how write-bearing rules are enforced at runtime.",
+      "examples": ["urn:policy:lane2:payments:write-bearing:v1"]
+    },
+
+    "nullifier_epoch_root": {
+      "type": "string",
+      "description": "DNS name under which the corridor operator publishes nullifier epoch roots for credential revocation. See §9.1 and Appendix E.",
+      "examples": ["_obo-null.lane2.ai"]
+    },
+
+    "supersedes": {
+      "type": "string",
+      "description": "pack_id of the governance pack this document supersedes, if any.",
+      "examples": ["urn:pack:lane2:payments:sha256:prev123"]
+    }
+
+  },
+  "additionalProperties": false,
+
+  "if": {
+    "properties": {
+      "domain_shacl_profile": { "type": "string" }
+    },
+    "required": ["domain_shacl_profile"]
+  },
+  "then": {
+    "required": ["domain_shacl_profile_digest"]
+  }
+}

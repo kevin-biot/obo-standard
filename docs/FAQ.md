@@ -5,6 +5,23 @@ detail, the linked ADRs and spec sections go deeper.
 
 ---
 
+## "Can't we just use reputation scores to decide whether to trust an agent?"
+
+No. Reputation and accountability answer different questions.
+Reputation asks *"has this agent behaved well before?"* Accountability
+asks *"who is liable and what actually happened?"* Only the second
+question is useful in a dispute, a regulatory audit, or a court.
+
+Reputation scores are also systematically gameable: Sybil attacks,
+collusion rings, strategic omission of failures, and temporal gaming
+can all manufacture high scores without any legitimate track record.
+A 99% success rate collapsed across task types, severities, and
+volumes tells you very little.
+
+For the full analysis: [Reputation Systems and Agent Accountability](REPUTATION-SYSTEMS-AND-AGENT-ACCOUNTABILITY.md)
+
+---
+
 ## "But doesn't X already do this?"
 
 ---

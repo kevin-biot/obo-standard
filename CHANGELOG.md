@@ -7,6 +7,252 @@ Versioning: IETF draft number (`-NN`) + semantic version (`vX.Y.Z`).
 
 ---
 
+## [draft-01 / v0.4.12] — 2026-04-05
+
+**Transactional lessons — educational reference for the agentic ecosystem.**
+
+### Added
+- **`docs/TRANSACTIONAL-LESSONS.md`**: Eight-section educational
+  document offering lessons from thirty years of transactional
+  infrastructure to the agentic AI ecosystem. Tone: respectful and
+  historical, not preachy. Sections: (1) The $5 problem — volume
+  multiplies harm, consumer protection law does not scale with
+  transaction value, small transactions teach architecture; (2) Failure
+  modes are designed not discovered — the question before building is
+  what happens when it fails, not when it works; (3) Authorisation is
+  explicit or it does not exist — capability is not permission, prior
+  behaviour is not standing permission, scope matters, authorisation
+  must be counterparty-verifiable; (4) If it is not recorded it did
+  not happen — tamper-evident, independent, temporally anchored,
+  complete; (5) Liability must be assigned before execution — agents
+  are not legal persons, "the AI did it" is not a defence, liability
+  assignment must precede capability; (6) Automation amplifies
+  everything — errors, fraud, and harm scale with the same multiplier
+  as correct behaviour; (7) Discovery is not trust — the SWIFT
+  correspondent model applied to agent discovery; (8) The moment of
+  understanding — offered without the incident.
+
+---
+
+## [draft-01 / v0.4.11] — 2026-04-05
+
+**Reputation paper: admission/adherence precedent and human decision layer.**
+
+### Changed
+- **`docs/REPUTATION-SYSTEMS-AND-AGENT-ACCOUNTABILITY.md`**: Added new
+  §6 *"The Precedent: How Financial Networks Actually Work"* with two
+  sub-sections:
+  - §6.1 *Admission and Adherence for Agents* — SWIFT/Visa model:
+    no reputation scores, only admission (legal entity, bound by
+    rules) and adherence (conformant message). Applied to OBO:
+    admission = OBO Credential, adherence = governance pack + sealed
+    evidence. The model that works at global scale in financial
+    infrastructure, applied to agents.
+  - §6.2 *The Human Decision Layer* — high-consequence counterparty
+    selection (which agent handles my finances, which contractor is
+    admitted) is a human decision, not an agent optimisation.
+    Reputation scores launder human decisions through automated
+    proxies, removing humans from accountability chains at precisely
+    the point their presence matters most.
+  - Two new design principles added (§8.6, §8.7): use admission and
+    adherence as primary trust signals for regulated corridors; do not
+    delegate high-consequence selection decisions to agents.
+
+---
+
+## [draft-01 / v0.4.10] — 2026-04-05
+
+**Reputation systems analysis paper — educational reference.**
+
+### Added
+- **`docs/REPUTATION-SYSTEMS-AND-AGENT-ACCOUNTABILITY.md`**: Full
+  analysis paper on why reputation systems are insufficient for
+  accountable agentic transactions. Eight sections covering: the
+  fundamental distinction between reputation and accountability; what
+  reputation systems actually measure; the severity collapse problem
+  (99% success rate hides catastrophic domain-specific failure); the
+  base rate problem; five concrete attack vectors (Sybil attack with
+  full multi-phase playbook, collusion rings, success rate
+  manufacturing via strategic omission, temporal gaming, cold-start
+  inversion); what OBO provides instead (declared authority + sealed
+  evidence); complementary stack model (reputation for discovery,
+  accountability for regulated transactions); seven design principles
+  for agentic systems in regulated domains.
+
+- **`docs/FAQ.md`**: Added entry *"Can't we just use reputation scores?"*
+  with pointer to the full paper.
+
+### Design note
+Motivated by analysis of emerging A2A ecosystem reputation proposals
+(MoltBridge, OATR, attestation graphs). The paper does not attack
+reputation systems — it defines precisely what they do and do not
+provide, and why accountability is not a stronger form of reputation
+but a structurally different thing.
+
+---
+
+## [draft-01 / v0.4.9] — 2026-04-05
+
+**Agent instance binding — closes runtime authorization gap natively.**
+
+### Added
+- **`docs/adr/ADR-010-agent-instance-binding.md`** (Accepted): Agent
+  instance binding via `agent_instance_id` and `agent_instance_pubkey`
+  in the OBO Credential. Instance signs all presentations with its
+  Ed25519 private key; counterparties verify against the credentialed
+  public key. No shared registry required — works cross-org at first
+  contact. Subsumes external runtime authorization schemes (OATR et al.)
+  for Pattern 2 deployments. Instance binding optional for Class A/B,
+  required for Class C/D. Guidance on key rotation (new keypair on
+  restart, new credential required).
+
+- **`docs/adr/ADR-009-domain-shacl-profiles.md`** (Accepted): Formalises
+  the domain SHACL profile decision: emitter responsibility, corridor-
+  declared, ISO 20022 reference for payments. Documents why SHACL over
+  OWL (closed-world conformance, not open-world inference), why emitter
+  responsibility (anchor hot path performance), and why corridor-declared
+  (regulatory domain evolution is the corridor operator's concern).
+
+### Changed
+- **`schemas/obo-credential.json`**: Added optional fields
+  `agent_instance_id` (instance identifier, operator-defined scheme) and
+  `agent_instance_pubkey` (Ed25519 public key, base64url, covered by
+  `credential_digest`).
+
+- **`schemas/obo-governance-pack.json`**: Added optional field
+  `instance_binding_required` (boolean, default false). When true, all
+  credentials under the pack MUST include instance binding fields.
+  Implied true for regulated and sovereign admission tiers.
+
+### Design note
+The instance binding mechanism was motivated by analysis of the A2A
+ecosystem's emerging runtime authorization layer (OATR). OATR solves
+instance binding via short-lived JWTs from a shared registry — which
+cannot operate cross-org at first contact. OBO instance binding uses
+the credential itself as the binding artifact: the instance public key
+is credentialed at issuance, the instance proves liveness by signing
+presentations. No registry, no round-trip, offline-verifiable.
+
+---
+
+## [draft-01 / v0.4.8] — 2026-04-05
+
+**AGNTCY composability integration guide.**
+
+### Added
+- **`docs/integrations/AGNTCY-COMPOSABILITY.md`**: Integration guide
+  positioning OBO as the accountability layer above AGNTCY's Internet
+  of Agents infrastructure (Linux Foundation; formative members: Cisco,
+  Dell, Google Cloud, Oracle, Red Hat). Covers: layer diagram showing
+  AGNTCY (infrastructure) vs OBO (accountability); composability map
+  across all six AGNTCY components (OASF, Agent Directory, SLIM, A2A,
+  MCP, Observability); full transaction flow for a regulated payment
+  agent; explicit gap analysis (AGNTCY has no evidence record, no
+  authority contract, no EU AI Act Article 12 coverage); identity
+  composability (AGNTCY answers *who is the agent*, OBO answers *on
+  whose authority*); OASF vs governance pack distinction; four known
+  open questions (identifier alignment, SLIM transport, OASF
+  capability advertisement, observability trace correlation).
+
+### Design note
+AGNTCY is the internet for agents. OBO is the audit trail of what
+happened on it. The gap in AGNTCY's scope — evidence, accountability,
+governance, EU AI Act Article 12 — is OBO's scope exactly. The two
+standards are non-overlapping and compose cleanly.
+
+---
+
+## [draft-01 / v0.4.7] — 2026-04-05
+
+**Governance pack schema and Appendix J.**
+
+### Added
+- **`schemas/obo-governance-pack.json`**: normative JSON Schema for the
+  governance pack — the document resolved by `governance_framework_ref`
+  in credentials and evidence envelopes. Covers: pack identity and
+  integrity (`pack_id`, `pack_version`, `pack_digest`); corridor
+  declaration (`corridor_id`, `corridor_admission_tier`,
+  `action_classes`, `intent_namespace`); domain SHACL profile
+  declaration with digest binding; evidence anchor endpoint; KYC and
+  EUDI acceptance flags; scope constraints (jurisdictions, currencies,
+  max transaction value); write-bearing policy reference; nullifier
+  epoch root; pack lifecycle (`supersedes`, `expires_at`).
+  Conditional: `domain_shacl_profile_digest` required when
+  `domain_shacl_profile` is present.
+
+- **`Appendix J`** (Normative): Governance Pack Structure. Defines
+  pack identity and integrity verification, corridor declaration,
+  domain SHACL profile binding, evidence anchor declaration, KYC
+  requirements, scope constraints, and pack lifecycle rules. §J.9
+  explicitly enumerates what the governance pack does not define:
+  runtime resolution, profile caching, write-bearing enforcement,
+  intent normalisation, and reference implementation detail.
+
+### Design note
+The governance pack is the corridor's published contract. Publishing
+the schema and format completes the open surface of the standard:
+RFC (evidence contract) + SHACL shapes (conformance) + governance pack
+(corridor semantics). Runtime implementation of pack resolution,
+domain validation, and write-bearing enforcement remains outside the
+scope of this specification.
+
+---
+
+## [draft-01 / v0.4.6] — 2026-04-04
+
+**Domain evidence shape taxonomy — informative appendix.**
+
+### Added
+- **`Appendix I`** (Informative): Domain Evidence Shape Taxonomy.
+  Establishes four domain families — Financial, Health, Commerce,
+  Identity/Sovereign — and maps each to existing reference standards
+  (ISO 20022, HL7 FHIR R4, schema.org/GS1, EUDI/eIDAS 2.0). Includes
+  governance pack `domain_shacl_profile` declaration pattern.
+  Two normative sentences only: implementations in financial or health
+  domains SHOULD validate against a domain profile before emitting
+  evidence; this specification does not define how. §I.5 explicitly
+  names what is out of scope: profile content, runtime resolution,
+  caching, intent normalisation, and reference implementation detail.
+
+### Design note
+The taxonomy signals the domain space and points at existing standards
+without prescribing implementation. Intent normalisation and runtime
+domain validation are named as non-trivial implementation concerns.
+No further guidance is provided by this specification.
+
+---
+
+## [draft-01 / v0.4.5] — 2026-04-04
+
+**SHACL conformance shapes — closed-world semantic validation.**
+
+### Added
+- **`schemas/obo-evidence-envelope.shacl.ttl`**: SHACL 1.0 shapes file
+  providing closed-world semantic validation of OBO Evidence Envelopes.
+  Complements the existing JSON Schema (structural validation) with:
+  - `obo:EvidenceEnvelopeShape` — all required fields, `sha256:<hex>`
+    patterns, closed enumerations for `action_class`, `outcome`,
+    `eudi_presentation_alg`, `corridor_admission_tier`
+  - `obo:ClassDKYCShape` — cross-field constraint: Class D envelopes
+    MUST include `kyc_ref` (ADR-007, §3.4.4.1)
+  - `obo:EUDICompletenessShape` — cross-field constraint:
+    `eudi_presentation_alg` requires `eudi_pid_issuer`
+  - `obo:WhyRefShape` — nested `why_ref` object validation
+  - Minimal vocabulary declarations (`obo:EvidenceEnvelope`,
+    `obo:ActionClass`, `obo:AdmissionTier`) giving RDF identity to
+    core OBO concepts without requiring an OWL reasoner
+- **`Appendix H`** added to RFC: normative reference to SHACL shapes,
+  shapes summary table, validation requirement, and relationship to
+  JSON Schema.
+
+### Design note
+SHACL was chosen over OWL for the formal layer: OBO evidence validation
+is a closed-world conformance problem, not an open-world inference
+problem. No reasoner required. A SHACL 1.0 processor reporting zero
+violations constitutes machine-readable compliance evidence.
+
+---
+
 ## [draft-01 / v0.4.3] — 2026-04-04
 
 **Lane2 commercial Evidence Anchor, public PoC endpoint, and performance context.**

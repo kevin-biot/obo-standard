@@ -1,0 +1,313 @@
+# OBO Evidence Envelope — SHACL Shapes
+# Companion to obo-evidence-envelope.json and draft-obo-agentic-evidence-envelope-01.md
+#
+# Closed-world validation: instances MUST conform to declared shapes.
+# No inference, no open-world reasoning. Pass or fail.
+#
+# Namespace: https://obo-standard.org/ns#
+# Version:   0.4.4
+# See also:  docs/adr/ADR-007-selective-disclosure.md
+
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix obo:  <https://obo-standard.org/ns#> .
+
+
+# ── Vocabulary ───────────────────────────────────────────────────────────────
+# Minimal concept declarations. Not an OWL ontology — just enough RDF
+# identity so shapes have something to target.
+
+obo:EvidenceEnvelope
+    a rdfs:Class ;
+    rdfs:label "OBO Evidence Envelope" ;
+    rdfs:comment "Sealed per-transaction artefact. §4 of draft-obo-agentic-evidence-envelope-01." .
+
+obo:OBOCredential
+    a rdfs:Class ;
+    rdfs:label "OBO Credential" .
+
+# Action class hierarchy — four values, closed enumeration.
+obo:ActionClass   a rdfs:Class ; rdfs:label "Action Class" .
+obo:ClassA        a obo:ActionClass ; rdfs:label "Class A — read-only, no side effects" .
+obo:ClassB        a obo:ActionClass ; rdfs:label "Class B — write, reversible" .
+obo:ClassC        a obo:ActionClass ; rdfs:label "Class C — write, regulated" .
+obo:ClassD        a obo:ActionClass ; rdfs:label "Class D — sovereign / identity-bound" .
+
+# Corridor admission tiers
+obo:AdmissionTier a rdfs:Class ; rdfs:label "Corridor Admission Tier" .
+obo:Open          a obo:AdmissionTier ; rdfs:label "open" .
+obo:DomainGated   a obo:AdmissionTier ; rdfs:label "domain-gated" .
+obo:Regulated     a obo:AdmissionTier ; rdfs:label "regulated" .
+obo:Sovereign     a obo:AdmissionTier ; rdfs:label "sovereign" .
+
+
+# ── Shape: EvidenceEnvelope ──────────────────────────────────────────────────
+
+obo:EvidenceEnvelopeShape
+    a sh:NodeShape ;
+    sh:targetClass obo:EvidenceEnvelope ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+
+    # ── Required identity fields ─────────────────────────────────────────────
+
+    sh:property [
+        sh:path      obo:evidence_id ;
+        sh:datatype  xsd:string ;
+        sh:minCount  1 ;
+        sh:maxCount  1 ;
+        sh:name      "evidence_id" ;
+        sh:message   "evidence_id is required and must be a string" ;
+    ] ;
+
+    sh:property [
+        sh:path      obo:obo_credential_ref ;
+        sh:datatype  xsd:string ;
+        sh:minCount  1 ;
+        sh:maxCount  1 ;
+        sh:name      "obo_credential_ref" ;
+    ] ;
+
+    sh:property [
+        sh:path      obo:principal_id ;
+        sh:datatype  xsd:string ;
+        sh:minCount  1 ;
+        sh:maxCount  1 ;
+    ] ;
+
+    sh:property [
+        sh:path      obo:agent_id ;
+        sh:datatype  xsd:string ;
+        sh:minCount  1 ;
+        sh:maxCount  1 ;
+    ] ;
+
+    # ── Required digest fields — all MUST be sha256:<64 hex chars> ───────────
+
+    sh:property [
+        sh:path      obo:credential_digest_ref ;
+        sh:datatype  xsd:string ;
+        sh:pattern   "^sha256:[0-9a-f]{64}$" ;
+        sh:minCount  1 ;
+        sh:maxCount  1 ;
+        sh:message   "credential_digest_ref MUST be sha256:<hex>" ;
+    ] ;
+
+    sh:property [
+        sh:path      obo:intent_hash ;
+        sh:datatype  xsd:string ;
+        sh:pattern   "^sha256:[0-9a-f]{64}$" ;
+        sh:minCount  1 ;
+        sh:maxCount  1 ;
+        sh:message   "intent_hash MUST be sha256:<hex>" ;
+    ] ;
+
+    sh:property [
+        sh:path      obo:evidence_digest ;
+        sh:datatype  xsd:string ;
+        sh:pattern   "^sha256:[0-9a-f]{64}$" ;
+        sh:minCount  1 ;
+        sh:maxCount  1 ;
+        sh:message   "evidence_digest MUST be sha256:<hex>" ;
+    ] ;
+
+    # ── Required classification fields ───────────────────────────────────────
+
+    sh:property [
+        sh:path      obo:action_class ;
+        sh:datatype  xsd:string ;
+        sh:in        ( "A" "B" "C" "D" ) ;
+        sh:minCount  1 ;
+        sh:maxCount  1 ;
+        sh:message   "action_class MUST be one of A, B, C, D" ;
+    ] ;
+
+    sh:property [
+        sh:path      obo:outcome ;
+        sh:datatype  xsd:string ;
+        sh:in        ( "allow" "deny" "escalate" "error" ) ;
+        sh:minCount  1 ;
+        sh:maxCount  1 ;
+        sh:message   "outcome MUST be one of allow, deny, escalate, error" ;
+    ] ;
+
+    sh:property [
+        sh:path      obo:intent_class ;
+        sh:datatype  xsd:string ;
+        sh:minCount  1 ;
+        sh:maxCount  1 ;
+    ] ;
+
+    # ── Required governance references ────────────────────────────────────────
+
+    sh:property [
+        sh:path      obo:policy_snapshot_ref ;
+        sh:datatype  xsd:string ;
+        sh:minCount  1 ;
+        sh:maxCount  1 ;
+    ] ;
+
+    sh:property [
+        sh:path      obo:governance_framework_ref ;
+        sh:datatype  xsd:string ;
+        sh:minCount  1 ;
+        sh:maxCount  1 ;
+    ] ;
+
+    # ── Required timestamp ───────────────────────────────────────────────────
+
+    sh:property [
+        sh:path         obo:sealed_at ;
+        sh:datatype     xsd:integer ;
+        sh:minCount     1 ;
+        sh:maxCount     1 ;
+        sh:minInclusive 0 ;
+        sh:message      "sealed_at MUST be a non-negative Unix epoch integer" ;
+    ] ;
+
+    # ── Optional: selective disclosure / EUDI (ADR-007) ──────────────────────
+    # kyc_ref MUST be sha256:<hex> if present. Raw PID attributes MUST NOT appear.
+
+    sh:property [
+        sh:path      obo:kyc_ref ;
+        sh:datatype  xsd:string ;
+        sh:pattern   "^sha256:[0-9a-f]{64}$" ;
+        sh:maxCount  1 ;
+        sh:message   "kyc_ref MUST be sha256:<hex> commitment — raw PID attributes prohibited (ADR-007)" ;
+    ] ;
+
+    sh:property [
+        sh:path      obo:eudi_pid_issuer ;
+        sh:datatype  xsd:string ;
+        sh:maxCount  1 ;
+    ] ;
+
+    sh:property [
+        sh:path      obo:eudi_presentation_alg ;
+        sh:datatype  xsd:string ;
+        sh:in        ( "sd-jwt" "mdoc" ) ;
+        sh:maxCount  1 ;
+        sh:message   "eudi_presentation_alg MUST be sd-jwt or mdoc" ;
+    ] ;
+
+    # ── Optional: corridor fields ─────────────────────────────────────────────
+
+    sh:property [
+        sh:path      obo:corridor_ref ;
+        sh:datatype  xsd:string ;
+        sh:maxCount  1 ;
+    ] ;
+
+    sh:property [
+        sh:path      obo:corridor_admission_tier ;
+        sh:datatype  xsd:string ;
+        sh:in        ( "open" "domain-gated" "regulated" "sovereign" ) ;
+        sh:maxCount  1 ;
+    ] ;
+
+    sh:property [
+        sh:path      obo:corridor_predicate_digest ;
+        sh:datatype  xsd:string ;
+        sh:pattern   "^sha256:[0-9a-f]{64}$" ;
+        sh:maxCount  1 ;
+    ] ;
+
+    # ── Optional: transaction chain fields ───────────────────────────────────
+
+    sh:property [
+        sh:path      obo:target_id ;
+        sh:datatype  xsd:string ;
+        sh:maxCount  1 ;
+    ] ;
+
+    sh:property [
+        sh:path      obo:stage3_ref ;
+        sh:datatype  xsd:string ;
+        sh:maxCount  1 ;
+    ] ;
+
+    sh:property [
+        sh:path      obo:prior_evidence_ref ;
+        sh:datatype  xsd:string ;
+        sh:maxCount  1 ;
+    ] ;
+
+    sh:property [
+        sh:path      obo:route_proof_ref ;
+        sh:datatype  xsd:string ;
+        sh:maxCount  1 ;
+    ] ;
+    .
+
+
+# ── Cross-field constraint: Class D requires kyc_ref ─────────────────────────
+# Action class D is identity-bound. A kyc_ref commitment is mandatory.
+# See: ADR-007, §3.4.4.1
+
+obo:ClassDKYCShape
+    a sh:NodeShape ;
+    sh:targetClass obo:EvidenceEnvelope ;
+    sh:condition [
+        sh:property [
+            sh:path     obo:action_class ;
+            sh:hasValue "D" ;
+        ]
+    ] ;
+    sh:property [
+        sh:path     obo:kyc_ref ;
+        sh:minCount 1 ;
+        sh:message  "Class D evidence MUST include kyc_ref (ADR-007, §3.4.4.1)" ;
+    ] .
+
+
+# ── Cross-field constraint: EUDI alg requires issuer ─────────────────────────
+# If eudi_presentation_alg is present, eudi_pid_issuer MUST also be present.
+
+obo:EUDICompletenessShape
+    a sh:NodeShape ;
+    sh:targetClass obo:EvidenceEnvelope ;
+    sh:condition [
+        sh:property [
+            sh:path     obo:eudi_presentation_alg ;
+            sh:minCount 1 ;
+        ]
+    ] ;
+    sh:property [
+        sh:path     obo:eudi_pid_issuer ;
+        sh:minCount 1 ;
+        sh:message  "eudi_pid_issuer MUST be present when eudi_presentation_alg is set" ;
+    ] .
+
+
+# ── Shape: why_ref (nested object) ───────────────────────────────────────────
+
+obo:WhyRefShape
+    a sh:NodeShape ;
+    sh:targetClass obo:WhyRef ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+
+    sh:property [
+        sh:path      obo:rationale_id ;
+        sh:datatype  xsd:string ;
+        sh:minCount  1 ;
+        sh:maxCount  1 ;
+    ] ;
+
+    sh:property [
+        sh:path      obo:rationale_digest ;
+        sh:datatype  xsd:string ;
+        sh:pattern   "^sha256:[0-9a-f]{64}$" ;
+        sh:minCount  1 ;
+        sh:maxCount  1 ;
+    ] ;
+
+    sh:property [
+        sh:path      obo:derivation_digest ;
+        sh:datatype  xsd:string ;
+        sh:pattern   "^sha256:[0-9a-f]{64}$" ;
+        sh:minCount  1 ;
+        sh:maxCount  1 ;
+    ] .
