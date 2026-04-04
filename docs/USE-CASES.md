@@ -10,6 +10,63 @@ requirement scales with the risk of the action.
 
 ---
 
+## The core assumption: no Authorization Server between the agents
+
+**OBO is designed for the case where there is no pre-existing Authorization
+Server (AS) in the interaction path between agents.**
+
+If an AS is present — an OAuth 2.0 authorisation server, an OpenID Connect
+provider, an enterprise identity broker — then standard OAuth / OIDC flows
+already handle token issuance and scope enforcement between the parties. Use
+them. OBO does not replace OAuth. In an environment where the agents are
+already enrolled in a shared AS, the right tool is OAuth Token Exchange
+(RFC 8693) or a similar delegated token flow.
+
+**OBO fills the gap when no shared AS exists.** This is the common case for:
+
+- **Cross-organisation agent interactions** — TravelAgent (lane2.ai) calling
+  FlightSearchAgent (another operator). There is no shared OAuth AS between
+  them; neither has pre-registered with the other's identity infrastructure.
+- **Ad-hoc agent-to-agent calls** — a newly deployed agent calling a service
+  it has never contacted before, with no prior enrollment.
+- **Consumer agents calling commercial APIs** — a personal assistant calling a
+  booking or data service without an enterprise identity broker in the path.
+- **Multi-hop delegation chains** — authority passed across three or more
+  operators, each potentially in a different trust domain, with no single AS
+  that spans all of them.
+
+In these situations, the only trust anchor available at interaction time is what
+is publicly verifiable — which is exactly what DNS-anchored operator keys
+provide.
+
+### When OBO and OAuth coexist
+
+OBO and OAuth are composable. A common pattern in enterprise deployments:
+
+```
+Human principal
+    │
+    │  authenticates via OIDC / enterprise IdP (OAuth AS present)
+    ▼
+Operator agent  ──── OAuth access token ────►  Internal enterprise APIs
+    │
+    │  no shared AS with external service
+    ▼
+OBO credential  ─────────────────────────────►  External agent / service
+```
+
+The internal leg uses OAuth because both parties share an AS. The external leg
+uses OBO because they do not. The OBO credential carries the operator's
+Ed25519-signed proof of authority; the receiving external agent verifies it via
+DNS without needing to enroll with the operator's IdP.
+
+This is also the pattern described in §8 of the spec ("Relationship to Existing
+Standards"): OBO adds the accountability layer that OAuth was not designed to
+provide, specifically for agentic interactions where pre-shared trust
+infrastructure does not exist between the parties.
+
+---
+
 ## Class A — Read-only, informational
 
 *The agent reads data. No side effects. Accountability is about transparency,
@@ -351,26 +408,32 @@ evidence reference.
 
 ## The two-agent first contact problem
 
-All five scenarios above share a common challenge: **two agents that have never
+All nine scenarios above share a common challenge: **two agents that have never
 interacted before must establish trust quickly, with no pre-shared secrets and
-no central directory.**
+no shared Authorization Server.**
 
-Before OBO, the only options were:
+Before OBO, the only options without a shared AS were:
 - Pre-register every agent pair out-of-band (doesn't scale)
 - Use a centralised directory (single point of failure, governance overhead)
 - Trust on assertion (no accountability)
+- Require every external service to enroll with the calling agent's AS
+  (operationally impossible at scale across organisations)
 
 After OBO, the pattern is the same in every case:
 1. Receiving agent fetches calling agent's Agent Card → discovers OBO requirement
 2. Calling agent presents an OBO credential signed by its operator
 3. Receiving agent resolves the operator's public key from DNS
 4. Verification is purely cryptographic — no phone calls, no pre-registration,
-   no directory lookup
+   no shared identity infrastructure
 
 This is what "zero infrastructure" means in the OBO framing: neither party needs
-to have met before, and neither party needs to trust a third-party directory.
-The operator's domain control (proven by DNS TXT record publication) is the only
-prerequisite.
+to have met before, and neither party needs to share an AS or trust a
+third-party directory. The operator's domain control (proven by DNS TXT record
+publication) is the only prerequisite.
+
+**If a shared AS does exist between the parties, use it.** OBO is not a
+replacement for OAuth in environments where OAuth already works. OBO is the
+answer to "what do we do when it doesn't."
 
 ---
 

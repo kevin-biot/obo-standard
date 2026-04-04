@@ -9,7 +9,7 @@ Versioning: IETF draft number (`-NN`) + semantic version (`vX.Y.Z`).
 
 ## [draft-01 / v0.3.2] — 2026-04-04
 
-**Use cases document.**
+**Use cases document with no-AS assumption clarification.**
 No normative spec changes.
 
 ### Added — Documentation
@@ -17,8 +17,15 @@ No normative spec changes.
   (A1/A2 read-only, B1/B2 reversible write, C1/C2 irreversible, D1/D2/D3
   regulated). Each case: parties, before-OBO situation, after-OBO credential +
   evidence, accountability value. Covers travel (live demo), finance/PSD2,
-  healthcare, legal, DevOps, and infrastructure. Closes with the
-  two-agent first contact problem framing and a summary table.
+  healthcare, legal, DevOps, and infrastructure.
+  - **No-AS assumption section** — OBO assumes no shared Authorization Server
+    between agents; if an AS exists, use OAuth / OIDC instead. OBO and OAuth
+    are composable: internal legs use OAuth (shared AS), external legs use OBO
+    (no shared AS). Includes ASCII diagram of the split-trust pattern.
+  - Two-agent first contact problem section updated to reinforce the AS
+    boundary: "If a shared AS does exist, use it. OBO is the answer to what
+    do we do when it doesn't."
+  - Summary table.
 
 ---
 
