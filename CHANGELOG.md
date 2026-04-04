@@ -7,6 +7,20 @@ Versioning: IETF draft number (`-NN`) + semantic version (`vX.Y.Z`).
 
 ---
 
+## [draft-01 / v0.3.5] — 2026-04-04
+
+**FAQ document.**
+No normative spec changes.
+
+### Added — Documentation
+- `docs/FAQ.md` — short answers to the most common pushbacks:
+  "But doesn't X already do this?" (RFC 8693, OAuth, WIMSE/SPIFFE, W3C VCs,
+  A2A, mTLS, audit logs); "Why not just..." (central registry, human approval
+  for everything, encryption, RSA); "What about..." (DNS compromise, GDPR,
+  key theft, composability table). Each answer in 3–5 sentences.
+
+---
+
 ## [draft-01 / v0.3.4] — 2026-04-04
 
 **The scope problem document.**
