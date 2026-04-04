@@ -159,12 +159,30 @@ class OBOCredential:
         public_key.verify(sig_bytes, self._canonical())
 
 
+# ─── OBO Error Codes (§5 of draft-obo-agentic-evidence-envelope-00) ──────────
+
+OBO_ERR_MISSING          = "OBO-ERR-001"   # No extensions.obo present
+OBO_ERR_INCOMPLETE       = "OBO-ERR-002"   # Required fields absent
+OBO_ERR_EXPIRED          = "OBO-ERR-003"   # Current time > expires_at
+OBO_ERR_SIG_INVALID      = "OBO-ERR-004"   # Ed25519 verification failed
+OBO_ERR_INTENT_MISMATCH  = "OBO-ERR-005"   # SHA-256(task.intent) ≠ intent_hash
+OBO_ERR_KEY_NOT_FOUND    = "OBO-ERR-006"   # DNS/DID resolution returned nothing
+OBO_ERR_KEY_CONFLICT     = "OBO-ERR-007"   # DNS key ≠ did:web key — fail closed
+OBO_ERR_REPLAYED         = "OBO-ERR-008"   # credential_id already seen
+OBO_ERR_CLOCK_SKEW       = "OBO-ERR-009"   # issued_at is in the future
+OBO_ERR_SCOPE_DRIFT      = "OBO-ERR-010"   # Intent class exceeds credential scope
+
+
 @dataclasses.dataclass
 class OBOEvidenceEnvelope:
     """
     OBO Evidence Envelope (§3.2). Sealed post-task. Ed25519 over evidence_digest.
     The A2A task.id is the correlation anchor — links evidence back to the task
     and forward to SAPP / Merkle / regulator API.
+
+    reason_code is populated on deny/escalate outcomes (§5 error taxonomy).
+    It is included in the evidence_digest pre-image so the rejection reason
+    is cryptographically bound and immutable in the Merkle tree.
     """
     envelope_id: str
     credential_id: str
@@ -172,9 +190,10 @@ class OBOEvidenceEnvelope:
     principal_id: str
     intent_hash: str
     outcome: str                  # "allow" | "deny" | "escalate"
+    reason_code: str              # OBO-ERR-xxx on deny; "" on allow
     task_correlation_ref: str     # A2A task.id
     executed_at: str
-    evidence_digest: str          # SHA-256 of binding payload
+    evidence_digest: str          # SHA-256 of binding payload (includes reason_code)
     envelope_sig: str             # base64url Ed25519 over evidence_digest
 
     def to_dict(self) -> dict:
@@ -188,10 +207,12 @@ class OBOEvidenceEnvelope:
         outcome: str,
         task_id: str,
         task_result_summary: str,
+        reason_code: str = "",
     ) -> "OBOEvidenceEnvelope":
         executed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        # reason_code is in the pre-image — binds rejection class into the digest
         digest_payload = (
-            f"{credential.credential_id}:{outcome}:{task_id}:{task_result_summary}"
+            f"{credential.credential_id}:{outcome}:{reason_code}:{task_id}:{task_result_summary}"
         )
         evidence_digest = hashlib.sha256(digest_payload.encode()).hexdigest()
 
@@ -202,6 +223,7 @@ class OBOEvidenceEnvelope:
             principal_id=credential.principal_id,
             intent_hash=credential.intent_hash,
             outcome=outcome,
+            reason_code=reason_code,
             task_correlation_ref=task_id,
             executed_at=executed_at,
             evidence_digest=evidence_digest,
@@ -418,6 +440,7 @@ class TravelAgent:
                 # ── Evidence envelope binding ──────────────────────────────────
                 f"obo_envelope_id:{envelope.envelope_id}",
                 f"obo_outcome:{envelope.outcome}",
+                f"obo_reason_code:{envelope.reason_code or 'none'}",
                 f"obo_task_ref:{envelope.task_correlation_ref}",
                 f"obo_evidence_digest:{envelope.evidence_digest}",
                 f"obo_envelope_sig:{envelope.envelope_sig}",
@@ -468,31 +491,64 @@ class TravelAgent:
             print()
 
         scenarios = [
+            # ── Happy path ────────────────────────────────────────────────────
             {
-                "label": "Flight search: LHR → JFK",
-                "intent": "search flights from LHR to JFK on 2025-06-15",
+                "label":   "Flight search: LHR → JFK  [expect: allow]",
+                "intent":  "search flights from LHR to JFK on 2025-06-15",
                 "payload": {"origin": "LHR", "destination": "JFK", "date": "2025-06-15"},
-                "tamper": False,
             },
             {
-                "label": "Hotel search: New York",
-                "intent": "search hotels in New York 2025-06-15 to 2025-06-18",
+                "label":   "Hotel search: New York  [expect: allow]",
+                "intent":  "search hotels in New York 2025-06-15 to 2025-06-18",
                 "payload": {"city": "New York", "check_in": "2025-06-15", "check_out": "2025-06-18"},
-                "tamper": False,
+            },
+            # ── Edge cases — each exercises a different OBO-ERR code ──────────
+            {
+                "label":      "Tampered intent  [expect: OBO-ERR-005]",
+                "intent":     "search flights from LHR to JFK on 2025-06-15",
+                "payload":    {"origin": "LHR", "destination": "JFK", "date": "2025-06-15"},
+                "inject":     "tamper_intent",
             },
             {
-                "label": "Tampered intent (should be rejected)",
-                "intent": "search flights from LHR to JFK on 2025-06-15",
-                "payload": {"origin": "LHR", "destination": "JFK", "date": "2025-06-15"},
-                "tamper": True,
+                "label":      "Missing OBO extension  [expect: OBO-ERR-001]",
+                "intent":     "search flights from LHR to SFO on 2025-07-01",
+                "payload":    {"origin": "LHR", "destination": "SFO", "date": "2025-07-01"},
+                "inject":     "drop_obo",
+            },
+            {
+                "label":      "Expired credential  [expect: OBO-ERR-003]",
+                "intent":     "search flights from LHR to DXB on 2025-07-10",
+                "payload":    {"origin": "LHR", "destination": "DXB", "date": "2025-07-10"},
+                "inject":     "expire_credential",
+            },
+            {
+                "label":      "Forged signature  [expect: OBO-ERR-004]",
+                "intent":     "search flights from LHR to CDG on 2025-08-01",
+                "payload":    {"origin": "LHR", "destination": "CDG", "date": "2025-08-01"},
+                "inject":     "forge_sig",
+            },
+            {
+                "label":      "Replayed credential  [expect: OBO-ERR-008]",
+                "intent":     "search flights from LHR to JFK on 2025-06-15",
+                "payload":    {"origin": "LHR", "destination": "JFK", "date": "2025-06-15"},
+                "inject":     "replay",
             },
         ]
+
+        # First pass collects the credential from scenario[0] for the replay test
+        self._replay_cred: Optional["OBOCredential"] = None
 
         for i, s in enumerate(scenarios, 1):
             print(f"{'─' * 62}")
             print(f"  SCENARIO {i}: {s['label']}")
             print(f"{'─' * 62}")
-            self._run_scenario(**s)
+            inject = s.get("inject", "none")
+            self._run_scenario(
+                label=s["label"],
+                intent=s["intent"],
+                payload=s["payload"],
+                inject=inject,
+            )
             print()
 
         print(f"{banner}")
@@ -500,38 +556,70 @@ class TravelAgent:
         print(f"  Inspect:  curl {self.sapp_url}/evidence/{{trace_id}}/proof | jq")
         print(f"{banner}\n")
 
-    def _run_scenario(self, label, intent, payload, tamper):
+    def _run_scenario(self, label, intent, payload, inject="none"):
         # ── Step 1: Issue OBO credential ──────────────────────────────────────
         print(f"\n  [1/5] Issuing OBO Credential")
-        cred = OBOCredential.issue(
-            private_key=self.private_key,
-            operator_id=self.operator_id,
-            principal_id=self.principal_id,
-            intent_phrase=intent,
-        )
+
+        if inject == "replay" and self._replay_cred:
+            # Reuse the credential from a previously completed scenario
+            cred = self._replay_cred
+            print(f"        ⚠ INJECT replay: reusing credential_id {cred.credential_id[:30]}…")
+        elif inject == "expire_credential":
+            # Issue with TTL already elapsed
+            cred = OBOCredential.issue(
+                private_key=self.private_key,
+                operator_id=self.operator_id,
+                principal_id=self.principal_id,
+                intent_phrase=intent,
+                ttl_seconds=-60,          # already expired 60s ago
+            )
+            print(f"        ⚠ INJECT expire: credential expired at {cred.expires_at}")
+        else:
+            cred = OBOCredential.issue(
+                private_key=self.private_key,
+                operator_id=self.operator_id,
+                principal_id=self.principal_id,
+                intent_phrase=intent,
+            )
+
+        # Store first successful credential for later replay test
+        if inject == "none" and self._replay_cred is None:
+            self._replay_cred = cred
+
         print(f"        operator_id:    {cred.operator_id}")
         print(f"        principal_id:   {cred.principal_id[:52]}…")
         print(f"        intent_hash:    {cred.intent_hash[:20]}…")
         print(f"        credential_sig: Ed25519 ✓  ({cred.credential_sig[:20]}…)")
 
-        # ── Step 2: Build and send A2A task ───────────────────────────────────
+        # ── Step 2: Build A2A task with injected fault ────────────────────────
         print(f"\n  [2/5] Sending A2A Task → FlightSearchAgent")
+
+        obo_ext: Optional[dict]
+        if inject == "drop_obo":
+            obo_ext = None                     # no OBO extension at all
+            print(f"        ⚠ INJECT drop_obo: extensions.obo omitted entirely")
+        elif inject == "forge_sig":
+            forged = dict(cred.to_dict())
+            # Replace last 8 chars of sig with garbage — still b64url, but wrong bytes
+            forged["credential_sig"] = cred.credential_sig[:-8] + "AAAAAAAA"
+            obo_ext = {"spec_version": "draft-obo-agentic-evidence-envelope-00", **forged}
+            print(f"        ⚠ INJECT forge_sig: credential_sig corrupted")
+        else:
+            obo_ext = {"spec_version": "draft-obo-agentic-evidence-envelope-00", **cred.to_dict()}
+
+        extensions = {"obo": obo_ext} if obo_ext is not None else {}
+
         task = A2ATask(
             task_id=f"task-{uuid.uuid4()}",
             intent=intent,
             payload=payload,
-            extensions={
-                "obo": {
-                    "spec_version": "draft-obo-agentic-evidence-envelope-00",
-                    **cred.to_dict(),
-                }
-            },
+            extensions=extensions,
         )
         self._pending[task.task_id] = cred
 
-        if tamper:
+        if inject == "tamper_intent":
             task.intent = "search flights from LHR to CDG on 2025-06-15"
-            print(f"        ⚠ TAMPER: intent changed to '{task.intent}'")
+            print(f"        ⚠ INJECT tamper_intent: intent changed to '{task.intent}'")
 
         print(f"        POST {self.flight_search_url}/tasks")
         print(f"        task_id: {task.task_id[:16]}…")
@@ -549,17 +637,30 @@ class TravelAgent:
         print(f"\n  [3/5] FlightSearchAgent response")
         print(f"        status: {completed.status}")
         if completed.status == "completed":
-            flights = (completed.result or {}).get("flights", [])
-            print(f"        flights found: {len(flights)}")
-            for f in flights[:2]:
-                print(f"          {f['flight_number']}  {f['origin']}→{f['destination']}  ${f['fare_usd']}")
+            result = completed.result or {}
+            flights = result.get("flights", [])
+            hotels  = result.get("hotels",  [])
+            if flights:
+                print(f"        flights found: {len(flights)}")
+                for f in flights[:2]:
+                    print(f"          {f['flight_number']}  {f['origin']}→{f['destination']}  ${f['fare_usd']}")
+            elif hotels:
+                print(f"        hotels found: {len(hotels)}")
+                for h in hotels[:2]:
+                    print(f"          {h['name']}  ${h['rate_usd']}/night")
         else:
-            err = (completed.result or {}).get("error", "unknown")
-            print(f"        ✗ rejected: {err}")
+            result = completed.result or {}
+            err         = result.get("error", "unknown")
+            reason_code = result.get("reason_code", "")
+            if reason_code:
+                print(f"        ✗ {reason_code}  {err}")
+            else:
+                print(f"        ✗ rejected: {err}")
 
         # ── Step 4: Seal evidence envelope ───────────────────────────────────
         print(f"\n  [4/5] Sealing OBO Evidence Envelope")
-        outcome = "allow" if completed.status == "completed" else "deny"
+        outcome      = "allow" if completed.status == "completed" else "deny"
+        reason_code  = (completed.result or {}).get("reason_code", "")
         result_summary = json.dumps(completed.result or {}, sort_keys=True)
         envelope = OBOEvidenceEnvelope.seal(
             private_key=self.private_key,
@@ -567,9 +668,12 @@ class TravelAgent:
             outcome=outcome,
             task_id=completed.task_id,
             task_result_summary=result_summary,
+            reason_code=reason_code,
         )
         print(f"        envelope_id:     {envelope.envelope_id[:40]}…")
         print(f"        outcome:         {envelope.outcome}")
+        if envelope.reason_code:
+            print(f"        reason_code:     {envelope.reason_code}")
         print(f"        evidence_digest: {envelope.evidence_digest[:20]}…")
         print(f"        envelope_sig:    Ed25519 ✓  ({envelope.envelope_sig[:20]}…)")
         print(f"        task_ref:        {envelope.task_correlation_ref[:20]}…")
@@ -639,6 +743,9 @@ def run_flight_search_server():
         print(f"[FlightSearchAgent] WARNING: {e}")
         public_key = None
 
+    # Replay detection — seen credential_ids within this server lifetime
+    _seen_credential_ids: set = set()
+
     # Build Agent Card with runtime URL
     agent_card = dict(FLIGHT_SEARCH_AGENT_CARD)
     agent_card["url"] = os.environ.get("FLIGHT_SEARCH_URL", f"http://localhost:{port}")
@@ -651,69 +758,89 @@ def run_flight_search_server():
     def health():
         return jsonify({"status": "ok"})
 
+    def _reject(task, code: str, msg: str):
+        """Return a standardised OBO rejection response with error code."""
+        print(f"[FlightSearchAgent] ✗ REJECTED  {code}  {msg}")
+        task.status = "failed"
+        task.result = {"error": msg, "reason_code": code}
+        return jsonify(task.to_dict()), 422
+
     @app.route("/tasks", methods=["POST"])
     def receive_task():
         task_dict = request.get_json(force=True)
         task = A2ATask.from_dict(task_dict)
         print(f"\n[FlightSearchAgent] ← task {task.task_id[:16]}… intent: {task.intent[:50]}")
 
-        obo_raw = task.extensions.get("obo", {})
+        obo_raw = task.extensions.get("obo")
 
-        # ── Structural check ──────────────────────────────────────────────────
+        # ── OBO-ERR-001  Missing extension ────────────────────────────────────
+        if not obo_raw:
+            return _reject(task, OBO_ERR_MISSING,
+                           "No extensions.obo present — OBO credential required")
+
+        # ── OBO-ERR-002  Incomplete fields ────────────────────────────────────
         required = [
             "credential_id", "operator_id", "principal_id",
-            "intent_hash", "credential_sig", "expires_at",
+            "intent_hash", "credential_sig", "expires_at", "issued_at",
         ]
         missing = [f for f in required if not obo_raw.get(f)]
         if missing:
-            msg = f"OBO credential missing fields: {missing}"
-            print(f"[FlightSearchAgent] ✗ REJECTED — {msg}")
-            task.status = "failed"
-            task.result = {"error": msg}
-            return jsonify(task.to_dict()), 422
+            return _reject(task, OBO_ERR_INCOMPLETE,
+                           f"Required OBO fields absent: {missing}")
 
         cred = OBOCredential(
             credential_id=obo_raw["credential_id"],
             operator_id=obo_raw["operator_id"],
             principal_id=obo_raw["principal_id"],
             intent_hash=obo_raw["intent_hash"],
-            issued_at=obo_raw.get("issued_at", ""),
+            issued_at=obo_raw["issued_at"],
             expires_at=obo_raw["expires_at"],
             governance_framework_ref=obo_raw.get("governance_framework_ref", ""),
             credential_sig=obo_raw["credential_sig"],
         )
 
-        # ── Expiry ────────────────────────────────────────────────────────────
-        expires = datetime.datetime.fromisoformat(cred.expires_at)
-        if datetime.datetime.now(datetime.timezone.utc) > expires:
-            msg = "OBO credential expired"
-            print(f"[FlightSearchAgent] ✗ REJECTED — {msg}")
-            task.status = "failed"
-            task.result = {"error": msg}
-            return jsonify(task.to_dict()), 422
+        now = datetime.datetime.now(datetime.timezone.utc)
 
-        # ── Intent hash consistency ───────────────────────────────────────────
+        # ── OBO-ERR-009  Clock skew (issued_at in the future) ─────────────────
+        try:
+            issued = datetime.datetime.fromisoformat(cred.issued_at)
+            if issued > now + datetime.timedelta(seconds=5):   # 5s grace
+                return _reject(task, OBO_ERR_CLOCK_SKEW,
+                               f"OBO issued_at is in the future: {cred.issued_at}")
+        except ValueError:
+            return _reject(task, OBO_ERR_INCOMPLETE, "issued_at is not valid ISO 8601")
+
+        # ── OBO-ERR-003  Expired ──────────────────────────────────────────────
+        try:
+            expires = datetime.datetime.fromisoformat(cred.expires_at)
+            if now > expires:
+                return _reject(task, OBO_ERR_EXPIRED,
+                               f"OBO credential expired at {cred.expires_at}")
+        except ValueError:
+            return _reject(task, OBO_ERR_INCOMPLETE, "expires_at is not valid ISO 8601")
+
+        # ── OBO-ERR-005  Intent hash mismatch ────────────────────────────────
         computed = hashlib.sha256(task.intent.encode()).hexdigest()
         if computed != cred.intent_hash:
-            msg = "OBO intent_hash mismatch — tampered or drifted intent"
-            print(f"[FlightSearchAgent] ✗ REJECTED — {msg}")
-            task.status = "failed"
-            task.result = {"error": msg}
-            return jsonify(task.to_dict()), 422
+            return _reject(task, OBO_ERR_INTENT_MISMATCH,
+                           "SHA-256(task.intent) does not match OBO intent_hash")
 
-        # ── Ed25519 signature verification ────────────────────────────────────
+        # ── OBO-ERR-004  Ed25519 signature invalid ────────────────────────────
         if public_key is not None:
             try:
                 cred.verify(public_key)
                 print(f"[FlightSearchAgent] ✓ Ed25519 credential_sig verified")
             except InvalidSignature:
-                msg = "OBO credential_sig invalid — Ed25519 verification failed"
-                print(f"[FlightSearchAgent] ✗ REJECTED — {msg}")
-                task.status = "failed"
-                task.result = {"error": msg}
-                return jsonify(task.to_dict()), 422
+                return _reject(task, OBO_ERR_SIG_INVALID,
+                               "Ed25519 credential_sig verification failed")
         else:
             print(f"[FlightSearchAgent] ⚠  Ed25519 verify skipped (no pubkey configured)")
+
+        # ── OBO-ERR-008  Replay ───────────────────────────────────────────────
+        if cred.credential_id in _seen_credential_ids:
+            return _reject(task, OBO_ERR_REPLAYED,
+                           f"credential_id already seen: {cred.credential_id[:30]}…")
+        _seen_credential_ids.add(cred.credential_id)
 
         print(f"[FlightSearchAgent] ✓ OBO credential accepted (operator: {cred.operator_id})")
 
