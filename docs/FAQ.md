@@ -360,3 +360,108 @@ to provide. The composition table from §8 of the spec:
 Use the right tool for each layer. OBO is one layer — the accountability layer
 for cross-org agentic transactions. It is designed to compose with all of the
 above, not to replace any of them.
+
+---
+
+## How technically sophisticated people arrive here
+
+If you are reading this FAQ because someone sent you a link, you have probably
+already had — or are about to have — a version of the following conversation.
+Recognising where you are in it saves time.
+
+Every technically sophisticated person who engages seriously with OBO goes
+through the same arc. The steps are predictable because they follow the natural
+order of existing expertise. Each step is correct on its own terms. The final
+step is where OBO lives.
+
+---
+
+### Step 1 — "OAuth handles delegation"
+
+**The instinct:** OAuth is the standard for delegated authorisation. If an agent
+is acting on behalf of a user, use OAuth. `scope=flights:book` is the fence.
+
+**Where it stops:** OAuth scope is negotiated at token issuance between parties
+that share an Authorization Server. The AS is the trust anchor. Cross-org —
+Ryanair, Booking.com, Ticketmaster, Hertz — there is no shared AS.
+`scope=flights:book` does not encode *which* flight, *at what price*, *approved
+by whom*, *at what time*. And OAuth produces no post-transaction evidence record.
+
+---
+
+### Step 2 — "RFC 8693 covers on-behalf-of specifically"
+
+**The instinct:** RFC 8693 is the OAuth extension for on-behalf-of token
+exchange. It even has `act` claims for delegation chains. This is exactly the
+use case.
+
+**Where it stops:** RFC 8693 §2.1 requires the client to exchange a token at
+an AS. The AS issues the new delegated token. Whose AS? For N cross-org
+operators, N×(N-1)/2 bilateral AS trust relationships are required, or a central
+AS. Neither exists. RFC 8693 is the right answer inside a trust domain. The
+cross-org case is the gap.
+
+---
+
+### Step 3 — "OpenID4VP — pass the keys and the verifiable presentation"
+
+**The instinct:** OpenID4VP + W3C VCs solves cross-org key distribution without
+a shared AS. The verifier knows the root authority (the VC issuer). The agent
+presents a signed credential. The verifier validates the user's signature on the
+mandate.
+
+**Where it stops:** Three gaps remain. The flow is backwards for M2M APIs —
+OpenID4VP requires the verifier to initiate a presentation request; at API scale
+in milliseconds this doesn't fit. A VP carries identity and attribute claims,
+not `intent_hash` — a cryptographic commitment to the exact scope the human
+approved at the exact time. And OpenID4VP ends at presentation — no
+post-transaction evidence envelope, no Merkle anchoring, no record for the
+dispute six months later.
+
+---
+
+### Step 4 — "There is no single answer — compose technologies: W3C VC + OpenID4VP"
+
+**The instinct:** You're right that no single existing standard covers it.
+Combine them. W3C VC for portable identity. OpenID4VP for cross-org presentation.
+Something else for the evidence trail.
+
+**This is the arrival point.** This instinct is exactly correct.
+
+OBO is that composition — specified, implemented, and running. The parts:
+
+| What is needed | What OBO uses |
+|---------------|--------------|
+| Cross-org operator identity without shared AS | DNS-anchored Ed25519 key (`_obo-key.<domain>`) |
+| Scope fence: what the human approved | `intent_hash = SHA-256(exact phrase)` in credential |
+| Human approval proof (Class C/D) | `principal_sig` in Intent Artifact (§3.4) |
+| Post-transaction evidence | Evidence Envelope, signed, Merkle-anchored in SAPP |
+| Composability with W3C VCs / DIDs | DID Profile (Appendix F), `kyc_ref` in Intent Artifact |
+
+The "root authority that verifies the agent" Pietro described is
+`_obo-key.lane2.ai IN TXT "v=obo1 ed25519=…"`. Any counterparty resolves it in
+one DNS lookup. No issuer registry. No enrollment. No shared infrastructure.
+
+The DNS key is live. The reference implementation runs. The evidence captures
+are in the repo.
+
+---
+
+### Why the journey takes four steps
+
+The existing standards were designed for **systems calling systems** within
+established trust relationships — where the AS is known in advance, the scope
+is negotiated at enrollment, and the parties have a prior relationship.
+
+OBO is designed for **agents acting for humans at runtime** — where the
+counterparty is unknown in advance, the scope is what a specific human approved
+minutes ago, and the accountability record must survive a dispute months later
+in a different jurisdiction.
+
+That is not an incremental extension of the existing model. It is a different
+layer. Experts who have built the existing layer well — and they have built it
+well — need four steps to see that the layer doesn't exist yet, not that they
+built the wrong thing.
+
+Every step of the journey is valid expertise applied to the wrong problem
+boundary. Step 4 is where the boundary becomes visible.

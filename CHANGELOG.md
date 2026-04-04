@@ -7,6 +7,23 @@ Versioning: IETF draft number (`-NN`) + semantic version (`vX.Y.Z`).
 
 ---
 
+## [draft-01 / v0.3.8] — 2026-04-04
+
+**FAQ: "How technically sophisticated people arrive here" section.**
+No normative spec changes.
+
+### Changed — Documentation
+- `docs/FAQ.md`: added "How technically sophisticated people arrive here" —
+  the four-step arc experts follow: OAuth → RFC 8693 → OpenID4VP → "compose
+  technologies." Each step is correct on its own terms and stops at the same
+  boundary. Step 4 ("there is no single answer, compose") is the arrival point
+  — OBO is that composition, specified and running. Closes with why the journey
+  takes four steps: existing standards were designed for systems calling systems
+  in established trust relationships; OBO is designed for agents acting for
+  humans at runtime across unknown counterparties.
+
+---
+
 ## [draft-01 / v0.3.7] — 2026-04-04
 
 **FAQ: DIDComm and GNAP entries added (pre-emptive).**
