@@ -1,12 +1,37 @@
 # OBO Use Cases
 
-This document shows OBO applied to concrete, real-world scenarios available
-today. Each case describes who the parties are, what action class applies, what
-goes in the credential, and what the evidence proves — and contrasts the
-before-OBO and after-OBO situations.
+A person asks their agent to plan a trip: book a flight, reserve a hotel,
+get concert tickets, arrange a car, initiate the payment. Five organisations.
+Possibly three countries. None of them have ever met this agent before.
+No shared infrastructure. No common authorisation server. No prior relationship.
 
-The scenarios are organised by action class to show how the accountability
-requirement scales with the risk of the action.
+Each of those five organisations needs to answer the same four questions
+before they act on the agent's instruction:
+
+1. **Who are you, and who sent you?**
+2. **What are you authorised to do?**
+3. **What did you actually do?**
+4. **Can I prove all of this to a regulator after the fact, without calling anyone?**
+
+OBO emerged from a working implementation, not a specification exercise.
+The fields exist because a real agentic pipeline required them when crossing
+organisational boundaries with no shared infrastructure. The gaps it fills
+are the gaps that appeared under load, not in a committee room.
+
+**The single-organisation case is already solved.** When one company controls
+everything — its own AS, its own agents, its own APIs — OAuth, WIMSE, and
+SPIFFE work well. That is not the growth area.
+
+**The growth area is cross-organisation, cross-border, no shared AS.** A travel
+agent booking on Ryanair, Booking.com, Ticketmaster, and Hertz has no common
+authorisation server with any of them. A healthcare agent crossing NHS and a
+private clinic crosses jurisdictions. A payment agent initiating a SEPA transfer
+and settling in a different currency crosses regulatory regimes.
+
+The scenarios below show OBO applied to these cases — concrete, today, with the
+current spec. Each case identifies the action class, what goes in the credential,
+and what the evidence proves. The scenarios are organised by action class to show
+how the accountability requirement scales with the risk of the action.
 
 ---
 

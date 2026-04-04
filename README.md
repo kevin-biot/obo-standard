@@ -1,6 +1,6 @@
 # OBO — On Behalf Of: Minimum Evidence Standard for Agentic Transactions
 
-**draft-lane2-obo-agentic-evidence-envelope-00**
+**draft-obo-agentic-evidence-envelope-01**
 Status: Working Draft · Seeking contributors and implementation experience
 
 ---
