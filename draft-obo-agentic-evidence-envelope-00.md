@@ -1442,6 +1442,19 @@ signal if DNS returns something different, rather than silently
 accepting a potentially substituted key. This defence is not available
 to a cold-lookup-only deployment.
 
+**DNS caching and high-value transactions.** DKIM tolerates eventual
+consistency because the cost of a stale key is a misclassified email.
+In payment and regulated corridors the cost profile is different. For
+high-value transactions with known counterparties, the curated registry
+IS the real-time check — the pinned key is the ground truth, and the
+live DNS record is a trip-wire rather than the primary verification
+path. Implementations MUST NOT rely solely on a cached DNS response
+for Class C or D actions with known counterparties; they MUST either
+resolve DNS live or compare against a pinned registry value. For
+first-contact unknown counterparties where no registry entry exists,
+DNS is resolved live (no cache) and Class C/D actions SHOULD require
+explicit onboarding before proceeding.
+
 The curated operator registry is structurally equivalent to a private
 aARP corridor with explicit membership: the registry IS the corridor
 admission list. Operators using aARP MAY publish their registry as

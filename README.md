@@ -66,9 +66,9 @@ provide — and composes with them rather than replacing them:
 
 ---
 
-## The solution
+## Start here — two artefacts, zero infrastructure
 
-OBO answers all four questions with two artefacts:
+OBO is two JSON objects. That is the minimum. Everything else is optional.
 
 ```
 OBO Credential        — carried by the agent before the transaction
@@ -78,6 +78,35 @@ OBO Evidence Envelope — sealed by the agent after the transaction
                         answers: what happened, within what scope, tamper-evident
 ```
 
+**To try it now:**
+
+```bash
+cd examples/integrations/a2a
+python keygen.py --operator-id your-domain.com   # generates Ed25519 keypair
+cp .env.example .env                              # paste values from keygen output
+docker-compose up --build                         # three containers, full evidence chain
+```
+
+Seven test scenarios run automatically — two clean accepts, five rejection
+edge cases with error codes. The output is a real Merkle receipt from SAPP.
+No infrastructure beyond Docker and one DNS TXT record.
+
+**What is optional vs. required:**
+
+| Capability | Required for | How hard |
+|---|---|---|
+| OBO Credential + Evidence Envelope | All use cases | Two JSON objects |
+| One DNS TXT record (`_obo-key`) | Cross-org verification | 30 seconds in Route 53 |
+| SAPP / Merkle anchoring | Regulated audit trails | SAPP container in docker-compose |
+| RTGF / `why_ref` | Regulated high-risk AI, PSD3 | Optional field, ignored if absent |
+| aARP | Intent routing (separate protocol) | Not required for OBO |
+
+Start with the first two rows. Add rows as your use case requires.
+
+---
+
+## The full solution
+
 Both artefacts are verifiable **offline, without contacting any central
 service**, by anyone who can resolve DNS — including organisations that
 have never met the agent, share no infrastructure with its operator,
@@ -85,10 +114,9 @@ and are in a different jurisdiction.
 
 > **DNS as the universal trust anchor.** Every organisation on the
 > internet can resolve DNS. No shared AS required. No pre-registration.
-> No approved network. Operator signing keys, governance pack digests,
-> corridor admission predicates, and nullifier epoch roots are published
-> as DNS TXT records — the same infrastructure pattern DKIM has used for
-> email trust for twenty years.
+> No approved network. Operator signing keys are published as DNS TXT
+> records — the same infrastructure pattern DKIM has used for email
+> trust for twenty years.
 >
 > ```
 > operator key  →  _obo-key._domainkey.<operator>
