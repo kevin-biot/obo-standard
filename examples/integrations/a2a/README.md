@@ -399,11 +399,22 @@ Full taxonomy: [§5 of the spec](../../draft-obo-agentic-evidence-envelope-00.md
 | Ed25519 signing / verification | ✅ Real | ✅ Real |
 | DNS trust anchor | ✅ Real (Route 53, live) | ✅ Real |
 | SAPP `POST /v1/evidence/mint` | Stub | Real SAPP instance |
-| Merkle tree | SHA-256 stub | Real Merkle construction |
-| JWS proof (`GET /evidence/{id}/proof`) | Structurally valid stub | SAPP operator Ed25519 |
+| Merkle tree | SHA-256 over sorted leaves (real commitment) | Full binary Merkle tree with sibling path |
+| SAPP operator key | No key — stub JWS is `SHA-256(header.payload)` | Ed25519 keypair; pubkey at `_sapp-key.<domain> IN TXT "v=sapp1 ed25519=…"` |
+| JWS proof (`GET /evidence/{id}/proof`) | Structurally valid, not cryptographically signed | Real Ed25519 over `{merkle_root, checkpoint_index, tree_size, iss}` |
+| Inclusion proof | Not returned | `inclusion_proof` sibling array lets verifier recompute root independently |
+| Epoch root anchoring | Not implemented | `_sapp-epoch-N.<domain> IN TXT` or CT log — prevents retroactive rewrite |
 | HTTP Message Signatures (RFC 9421) | Not implemented | Required for §4.4 |
 | Curated operator registry | Not implemented | Required for Class C/D |
 | Key rotation | Not implemented | Required for long-lived operators |
+
+> **The unsigned Merkle gap explained:** `obo_envelope_sig` proves the *issuer*
+> committed to the record. It does not prove SAPP *received* it. A SAPP operator
+> Ed25519 signature over the checkpoint is a second independent party attesting
+> receipt — closing the accountability chain. See
+> [`captures/README.md`](captures/README.md#sapp-merkle-signing--what-the-demo-omits-and-best-practice)
+> for the full best-practice description, production JWS payload format, and
+> epoch root anchoring pattern.
 
 ---
 
