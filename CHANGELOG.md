@@ -7,6 +7,39 @@ Versioning: IETF draft number (`-NN`) + semantic version (`vX.Y.Z`).
 
 ---
 
+## [draft-01 / v0.3.1] — 2026-04-04
+
+**Documentation: architecture, security, and design decision records.**
+No normative spec changes.
+
+### Added — Documentation
+- `docs/ARCHITECTURE.md` — system component map, two-artifact model,
+  trust hierarchy, action class table, evidence layer comparison,
+  DNS anchoring patterns, A2A integration notes, spec section index.
+- `docs/SECURITY.md` — implementer threat model (forgery, replay, intent
+  substitution, scope escalation, tampered evidence, fabricated receipts);
+  explicit non-goals table; key management guide (generation, storage,
+  rotation); verifier and issuer hardening checklists; error code quick
+  reference.
+- `docs/adr/ADR-001-dns-trust-anchor.md` — why DNS over a central registry;
+  operator autonomy; TTL guidance; Class C/D curated-registry requirement.
+- `docs/adr/ADR-002-ed25519-only.md` — no algorithm agility; Ed25519
+  rationale (deterministic, compact, no padding oracle); rejected RSA/ECDSA.
+- `docs/adr/ADR-003-fail-closed.md` — all verification errors → deny;
+  asymmetry of consequences; fail-open as attack surface; availability
+  handled at deployment not protocol.
+- `docs/adr/ADR-004-merkle-leaf-format.md` — tag:value strings as Merkle
+  leaves; canonicalisation over JSON; CBOR rejected; first-colon split rule;
+  extensibility without schema registration.
+- `docs/adr/ADR-005-action-classes.md` — graduated A/B/C/D model; binary
+  allow/deny rejected; mapping of classes to artifact requirements; scope
+  MUST NOT widen at delegation hops.
+- `docs/adr/ADR-006-intent-hash.md` — SHA-256(phrase) in credential not
+  phrase itself; privacy by default; binding preserved; Intent Artifact
+  (§3.4) carries full phrase for Class C/D audit.
+
+---
+
 ## [draft-01 / v0.3.0] — 2026-04-04
 
 **Material additions to normative content.**
