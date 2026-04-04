@@ -7,6 +7,21 @@ Versioning: IETF draft number (`-NN`) + semantic version (`vX.Y.Z`).
 
 ---
 
+## [draft-01 / v0.3.6] — 2026-04-04
+
+**FAQ: OpenID4VP entry added.**
+No normative spec changes.
+
+### Changed — Documentation
+- `docs/FAQ.md`: added OpenID4VP entry — flow is backwards for M2M APIs
+  (verifier-initiated VP request doesn't fit calling-agent-initiates pattern);
+  VP carries identity claims not scope fence (no `intent_hash`); OpenID4VP
+  ends at presentation, no post-transaction evidence equivalent. Composability
+  note: use OpenID4VP for wallet/VC infrastructure, compose with OBO when
+  scope-fencing and post-transaction evidence are also required.
+
+---
+
 ## [draft-01 / v0.3.5] — 2026-04-04
 
 **FAQ document.**

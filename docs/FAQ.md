@@ -45,6 +45,51 @@ neither.
 
 ---
 
+### OpenID4VP — just use OpenID for Verifiable Presentations and pass the keys
+
+OpenID4VP is a more sophisticated observation than plain OAuth — and it gets
+closer. OpenID4VP defines how a holder presents W3C Verifiable Credentials to a
+verifier via a signed Verifiable Presentation (VP), with key-binding proving the
+presenter holds the key. OBO's DID profile (Appendix F) is compatible with this
+ecosystem and the delegation chain and intent artifacts (§3.3, §3.4) could be
+expressed as VCs. The VC/VP layer composes with OBO. But three gaps remain:
+
+**1. The flow is backwards for machine-to-machine APIs.**
+OpenID4VP assumes the verifier initiates — it sends a presentation request, the
+holder's wallet responds. In OBO's scenario the calling agent initiates the
+request (a flight search API call, a payment, a booking). There is no
+presentation request. The credential travels with the task as proof of authority.
+Requiring Ryanair's API to issue a VP challenge before every inbound agent call
+— at scale, in milliseconds — does not fit the machine-to-machine interaction
+pattern.
+
+**2. A VP carries identity claims. It does not carry a scope fence.**
+A Verifiable Presentation proves: *this holder has these attributes* ("KYC
+verified", "operator registered"). It does not carry
+`intent_hash = SHA-256("Book cheapest economy LHR→JFK 15 April")` — a
+cryptographic commitment to the exact scope a specific human approved at a
+specific time. The scope fence is the piece that answers the judge's question.
+VP credential claims are not it.
+
+**3. OpenID4VP ends at presentation. OBO continues to evidence.**
+There is no equivalent in OpenID4VP to the OBO Evidence Envelope, the SAPP
+Merkle anchoring, or the post-transaction checkpoint. The VP proves claims were
+valid when presented. It does not produce a cryptographically anchored record
+of what the agent did with them — verifiable offline, by a third party, six
+months later in a dispute.
+
+**The pattern:** OpenID4VP is the right answer for the credential presentation
+layer. OBO is three layers simultaneously — presentation, scope-fencing, and
+post-transaction evidence. OpenID4VP covers the first. None of the existing VC
+standards cover the second or third.
+
+**Use OpenID4VP** where you have a wallet model, a verifier-initiated
+presentation flow, and VC-based identity infrastructure.
+**Compose it with OBO** when you also need scope-fenced authorisation and
+post-transaction evidence that survives a cross-jurisdictional dispute.
+
+---
+
 ### WIMSE / SPIFFE gives every workload a strong identity
 
 Yes, and that solves the within-org problem cleanly. SPIFFE SVIDs are
