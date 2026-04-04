@@ -3,13 +3,13 @@
 **Status:** Accepted
 **Date:** 2026-04-02
 **Deciders:** OBO working group
-**Spec ref:** §4.3, SAPP ADR-153
+**Spec ref:** §4.3, Evidence Anchor mint API
 
 ---
 
 ## Context
 
-The OBO Evidence Envelope is submitted to SAPP as a set of leaves that SAPP
+The OBO Evidence Envelope is submitted to Evidence Anchor as a set of leaves that the Evidence Anchor
 hashes into a Merkle tree. Each leaf becomes one node in the tree; the
 `merkle_root` is a SHA-256 commitment over all leaves sorted lexicographically.
 
@@ -36,7 +36,7 @@ obo_outcome:allow
 producer_id:lane2.ai
 ```
 
-The SAPP API accepts these as a JSON array of strings in any order; SAPP sorts
+The Evidence Anchor API accepts these as a JSON array of strings in any order; Evidence Anchor sorts
 them before constructing the tree.
 
 ---
@@ -96,9 +96,9 @@ the first colon is always the separator. Double-colon or equals signs introduce
 potential confusion with base64, URLs, or other encoded values that use those
 characters.
 
-### Lexicographic sort by SAPP
+### Lexicographic sort by the Evidence Anchor
 
-Sorting is done by SAPP, not the submitter, for a specific reason: it
+Sorting is done by the Evidence Anchor, not the submitter, for a specific reason: it
 eliminates any possibility that the submitter can influence which leaves appear
 adjacent in the tree (and therefore which sibling hash paths are used in
 inclusion proofs). The submitter can submit leaves in any order; the tree
@@ -122,7 +122,7 @@ with their own tag prefixes.
 - Canonicalisation is trivial — the leaf string is its own canonical form.
 - Leaves are human-readable in logs, captures, and audit trails.
 - Extensible without schema registration.
-- Lexicographic sort by SAPP makes the tree structure independent of submission
+- Lexicographic sort by Evidence Anchor makes the tree structure independent of submission
   order.
 
 **Negative / watch points:**
@@ -133,7 +133,7 @@ with their own tag prefixes.
   (`biometric_score:0.987`) must be normalised to a canonical decimal
   representation by the submitter to ensure consistent hashing.
 - No built-in schema validation for individual leaves. The spec defines required
-  leaves per profile; enforcement is at the SAPP profile validation layer.
+  leaves per profile; enforcement is at the Evidence Anchor profile validation layer.
 
 ---
 

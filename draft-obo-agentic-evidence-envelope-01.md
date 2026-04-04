@@ -510,7 +510,7 @@ and only when, they appear in all capitals.
 | OBO Credential | The portable, pre-transaction artefact carried by the agent declaring its authority to act. |
 | OBO Evidence Envelope | The sealed, per-transaction artefact recording what happened. |
 | Intent | The normalised expression of what the principal wishes to accomplish, sealed in the evidence record at transaction time. Intent is a legal construct: it defines the scope of the agent's authority and is the primary evidence in any dispute about whether the agent's actions were authorised. It is distinct from the tasks the agent performed — tasks are the mechanical execution; intent is the governing purpose that authorises the task set. Sealing the intent at transaction time makes retrospective reframing impossible. |
-| Task | A discrete action or step performed by the agent in service of the intent. Tasks are within scope when they fall within the intent's authorised class and namespace; they are out of scope when they exceed it. Task-level evidence is the domain of profiles (e.g. SAPP for payment tasks); OBO seals the governing intent that authorises the task set. |
+| Task | A discrete action or step performed by the agent in service of the intent. Tasks are within scope when they fall within the intent's authorised class and namespace; they are out of scope when they exceed it. Task-level evidence is the domain of profiles (e.g. an Evidence Anchor for payment tasks); OBO seals the governing intent that authorises the task set. |
 | Intent Class | A governed category of intent mapped to an action class and scope boundary. |
 | Action Class | A severity classification of the action implied by the intent (read-only through irreversible). |
 | Corridor | A governed, evidence-chained channel between an originating agent and a target. |
@@ -700,9 +700,9 @@ MUST either dereference and verify the full chain, or record in the
 evidence envelope that chain verification was deferred. A verifier MUST
 NOT classify an action as Class C or D without full chain verification.
 
-#### 3.3.5 SAPP Leaves
+#### 3.3.5 Evidence Anchor Leaves
 
-When submitting evidence to SAPP, the following leaves bind the
+When submitting evidence to an Evidence Anchor, the following leaves bind the
 Delegation Chain Artifact into the Merkle commitment:
 
 ```
@@ -834,9 +834,9 @@ OBO-REQ-007: The `intent_id` SHOULD be carried in the OBO Evidence
 Envelope as an optional field, enabling verifiers to dereference the
 artifact without requiring access to the OBO Credential.
 
-#### 3.4.6 SAPP Leaves
+#### 3.4.6 Evidence Anchor Leaves
 
-When submitting evidence to SAPP, the following leaves bind the Intent
+When submitting evidence to an Evidence Anchor, the following leaves bind the Intent
 Artifact and the authorisation act into the Merkle commitment. All
 material facts about the principal's authorisation — including
 biometric verification and KYC level — are committed into the same
@@ -949,7 +949,7 @@ envelope content. It does not establish non-repudiation of the
 submission act — proof that a specific operator submitted a specific
 envelope to a specific endpoint at a specific time.
 
-OBO-REQ-015: Submission of OBO Evidence Envelopes to SAPP, Merkle,
+OBO-REQ-015: Submission of OBO Evidence Envelopes to an Evidence Anchor, Merkle,
 or audit endpoints MUST use HTTP Message Signatures [RFC 9421], signed
 with the submitting operator's OBO signing key (the key published in
 `_obo-key._domainkey.<operator-domain>`). This is the same Ed25519 key
@@ -1055,7 +1055,7 @@ appear in three places to be useful:
 2. The **OBO Evidence Envelope** `reason_code` field, so the rejection class is
    cryptographically bound into the `evidence_digest` and sealed into the audit
    record.
-3. The **SAPP evidence leaf** `obo_reason_code:<code>`, so the Merkle tree
+3. The **Evidence Anchor leaf** `obo_reason_code:<code>`, so the Merkle tree
    includes the rejection reason and it can be retrieved at audit time without
    decrypting the envelope.
 
@@ -1073,13 +1073,13 @@ appear in three places to be useful:
 | `OBO-ERR-008` | `credential_replayed` | Replay | `credential_id` has been seen before. Per-session or per-window nullifier check failed. The sender MUST issue a new credential with a fresh `credential_id`. |
 | `OBO-ERR-009` | `clock_skew` | Temporal | `issued_at` is in the future beyond an acceptable tolerance (RECOMMENDED: 5 seconds). Possible clock misconfiguration or pre-issued credential. |
 | `OBO-ERR-010` | `intent_scope_drift` | Policy | The action class implied by `task.intent` exceeds the action class scope recorded in the credential or governance framework. |
-| `OBO-ERR-020` | `envelope_sig_invalid` | Cryptographic | Ed25519 verification of `envelope_sig` failed at the SAPP boundary. The evidence envelope has been tampered with after sealing. |
-| `OBO-ERR-021` | `evidence_digest_mismatch` | Integrity | The SAPP endpoint recomputed `evidence_digest` from the envelope fields and the value does not match the claimed `evidence_digest`. |
-| `OBO-ERR-022` | `sapp_submission_failed` | Submission | The SAPP endpoint rejected the mint request. This is an operational error; the evidence envelope itself may be valid. Retry with idempotency key. |
+| `OBO-ERR-020` | `envelope_sig_invalid` | Cryptographic | Ed25519 verification of `envelope_sig` failed at the Evidence Anchor boundary. The evidence envelope has been tampered with after sealing. |
+| `OBO-ERR-021` | `evidence_digest_mismatch` | Integrity | The Evidence Anchor endpoint recomputed `evidence_digest` from the envelope fields and the value does not match the claimed `evidence_digest`. |
+| `OBO-ERR-022` | `anchor_submission_failed` | Submission | The Evidence Anchor rejected the mint request. This is an operational error; the evidence envelope itself may be valid. Retry with idempotency key. |
 
 Codes `OBO-ERR-001` through `OBO-ERR-010` are generated by the **receiving agent**
 (credential verification layer). Codes `OBO-ERR-020` through `OBO-ERR-022` are
-generated by the **SAPP boundary** (evidence submission layer).
+generated by the **Evidence Anchor boundary** (evidence submission layer).
 
 ### 5.3 HTTP Response Format
 
@@ -1128,7 +1128,7 @@ This extends the allow-path pre-image with `reason_code` between `outcome` and
 consistently on both allow and deny paths (using `""` for allow outcomes) to
 maintain a uniform digest schema.
 
-OBO-REQ-017: When minting a rejection envelope to SAPP, the submitter MUST
+OBO-REQ-017: When minting a rejection envelope to an Evidence Anchor, the submitter MUST
 include an `obo_reason_code:<code>` leaf so that the rejection class is
 retrievable from the Merkle tree at audit time without accessing the full
 envelope:

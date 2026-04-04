@@ -1,12 +1,17 @@
 """
-SAPP Stub — Settlement and Audit Processing Platform (demo stub)
-=================================================================
-Accepts OBO Evidence Envelopes via the ADR-153 domain-neutral API,
-stores them in memory (+ JSONL file), and returns stub Merkle receipts.
+Evidence Anchor Stub — reference implementation of the Evidence Anchor interface
+================================================================================
+Accepts OBO Evidence Envelopes, stores them in memory (+ JSONL file), and
+returns stub Merkle receipts.
+
+This stub is based on SAPP (Secure Agent Payment Protocol), the internal
+reference implementation of the Evidence Anchor interface. The API design
+follows internal reference implementation specs (mint API, signed proof API).
+Any conforming Evidence Anchor may be substituted.
 
 Routes:
-  POST /v1/evidence/mint       Accept and mint evidence (ADR-153)
-  GET  /evidence/<id>/proof    Return stub signed Merkle proof (ADR-181 E7)
+  POST /v1/evidence/mint       Accept and mint evidence
+  GET  /evidence/<id>/proof    Return stub signed Merkle proof
   GET  /v1/envelopes           List all stored evidence records
   GET  /v1/envelopes/<id>      Retrieve a specific record
   GET  /health                 Health check
@@ -15,7 +20,7 @@ In production:
   - POST body would be HTTP-Message-Signed per RFC 9421 (§4.4)
   - Merkle tree would be real (inclusion proof, epoch root anchored in DNS)
   - Storage would be immutable append-only log
-  - Proof JWS would be signed by SAPP operator key
+  - Proof JWS would be signed by Evidence Anchor operator key
 
 This stub:
   - Accepts any valid JSON with 'leaves' array
@@ -39,7 +44,7 @@ app = Flask("sapp-stub")
 _store: dict[str, dict] = {}
 
 # JSONL file for post-demo inspection
-DATA_DIR = Path(os.environ.get("SAPP_DATA_DIR", "/data"))
+DATA_DIR = Path(os.environ.get("ANCHOR_DATA_DIR", "/data"))
 DATA_DIR.mkdir(exist_ok=True)
 ENVELOPE_LOG = DATA_DIR / "envelopes.jsonl"
 
@@ -60,7 +65,7 @@ def _stub_merkle_root(leaves: list[str], evidence_id: str) -> str:
 
 def _stub_evidence_bundle(evidence_id: str, merkle_root: str, created_at: str) -> str:
     """
-    Stub evidence bundle handle. In production: opaque SAPP-issued bundle ID.
+    Stub evidence bundle handle. In production: opaque Evidence Anchor-issued bundle ID.
     Here: base64url(SHA-256(evidence_id + merkle_root + created_at)).
     """
     raw = hashlib.sha256(f"{evidence_id}:{merkle_root}:{created_at}".encode()).digest()
@@ -69,11 +74,11 @@ def _stub_evidence_bundle(evidence_id: str, merkle_root: str, created_at: str) -
 
 def _stub_proof_jws(evidence_id: str, merkle_root: str) -> str:
     """
-    Stub JWS compact proof. In production: SAPP operator Ed25519 over inclusion proof.
+    Stub JWS compact proof. In production: Evidence Anchor operator Ed25519 over inclusion proof.
     Here: base64url(JSON header).base64url(JSON payload).stub_sig — not valid for crypto,
     but structurally correct for demo code paths that parse .split('.').
     """
-    header  = _b64url_encode(json.dumps({"alg": "EdDSA", "typ": "SAPP-PROOF+JWT"}).encode())
+    header  = _b64url_encode(json.dumps({"alg": "EdDSA", "typ": "ANCHOR-PROOF+JWT"}).encode())
     payload = _b64url_encode(json.dumps({
         "evidence_id": evidence_id,
         "merkle_root": merkle_root,
@@ -92,7 +97,7 @@ def health():
 @app.route("/v1/evidence/mint", methods=["POST"])
 def mint_evidence():
     """
-    ADR-153 domain-neutral evidence mint.
+    Evidence Anchor mint endpoint.
     Accepts: {evidence_id, profile_id, leaves: [...], org_id?}
     Returns: {evidence_bundle, merkle_root, checkpoint_index, tree_size, created_at}
     """
@@ -102,10 +107,10 @@ def mint_evidence():
     leaves      = body.get("leaves", [])
     org_id      = body.get("org_id", "")
 
-    print(f"\n[SAPP] ← /v1/evidence/mint  id={str(evidence_id)[:30]}…  profile={profile_id}  leaves={len(leaves)}")
+    print(f"\n[anchor] ← /v1/evidence/mint  id={str(evidence_id)[:30]}…  profile={profile_id}  leaves={len(leaves)}")
 
     if not leaves:
-        print(f"[SAPP] ✗ rejected — empty leaves")
+        print(f"[anchor] ✗ rejected — empty leaves")
         return jsonify({"error": "leaves must be a non-empty array"}), 422
 
     # ── Profile validation ────────────────────────────────────────────────────
@@ -118,7 +123,7 @@ def mint_evidence():
     leaf_keys = {leaf.split(":", 1)[0] for leaf in leaves if ":" in leaf}
     missing_keys = required_prefixes - leaf_keys
     if missing_keys:
-        print(f"[SAPP] ✗ rejected — profile '{profile_id}' requires leaves: {missing_keys}")
+        print(f"[anchor] ✗ rejected — profile '{profile_id}' requires leaves: {missing_keys}")
         return jsonify({
             "error":           f"profile '{profile_id}' requires leaves",
             "missing_leaves":  sorted(missing_keys),
@@ -127,7 +132,7 @@ def mint_evidence():
     # ── Idempotency — return existing receipt if already minted ──────────────
     if evidence_id in _store:
         existing = _store[evidence_id]["receipt"]
-        print(f"[SAPP] ↩  idempotent replay — returning existing receipt")
+        print(f"[anchor] ↩  idempotent replay — returning existing receipt")
         return jsonify(existing), 200
 
     # ── Build receipt ─────────────────────────────────────────────────────────
@@ -156,14 +161,14 @@ def mint_evidence():
     with ENVELOPE_LOG.open("a") as f:
         f.write(json.dumps(record) + "\n")
 
-    print(f"[SAPP] ✓ minted — merkle_root: {merkle_root[:20]}…  bundle: {evidence_bundle[:20]}…  idx: {checkpoint_index}")
+    print(f"[anchor] ✓ minted — merkle_root: {merkle_root[:20]}…  bundle: {evidence_bundle[:20]}…  idx: {checkpoint_index}")
     return jsonify(receipt), 201
 
 
 @app.route("/evidence/<evidence_id>/proof", methods=["GET"])
 def get_proof(evidence_id: str):
     """
-    ADR-181 E7 — signed Merkle proof for an anchored evidence record.
+    Signed Merkle proof for an anchored evidence record.
     Returns stub JWS: header.payload.sig (structurally valid, not cryptographically bound).
     """
     record = _store.get(evidence_id)
@@ -178,9 +183,9 @@ def get_proof(evidence_id: str):
         "merkle_root":  merkle_root,
         "proof_depth":  3,
         "jws":          jws,
-        "_note":        "stub JWS — production is SAPP operator Ed25519 over inclusion proof",
+        "_note":        "stub JWS — production is Evidence Anchor operator Ed25519 over inclusion proof",
     }
-    print(f"[SAPP] → /evidence/{str(evidence_id)[:20]}…/proof  JWS: {jws[:30]}…")
+    print(f"[anchor] → /evidence/{str(evidence_id)[:20]}…/proof  JWS: {jws[:30]}…")
     return jsonify(response)
 
 
@@ -209,7 +214,7 @@ def get_envelope(evidence_id: str):
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("SAPP_PORT", 8080))
-    print(f"[SAPP stub] listening on :{port}")
-    print(f"[SAPP stub] records will be written to {ENVELOPE_LOG}")
+    port = int(os.environ.get("ANCHOR_PORT", 8080))
+    print(f"[anchor stub] listening on :{port}")
+    print(f"[anchor stub] records will be written to {ENVELOPE_LOG}")
     app.run(host="0.0.0.0", port=port)

@@ -374,18 +374,18 @@ payment network.
 
 ---
 
-## 9. Relationship to SAPP
+## 9. Relationship to Evidence Anchor
 
-This profile draws on work originally developed in the SAPP (Secure Agent
+This profile draws on work originally developed in the Evidence Anchor (Secure Agent
 Payment Protocol) evidence framework, which identified the operational
 evidence gap around the Verifiable Intent specification. The `vi_evidence`
 extension fields in this profile map directly to the six missing operational
 objects identified in that work.
 
-SAPP-based implementations may use this profile as the interoperability
+Evidence Anchor implementations may use this profile as the interoperability
 bridge between their internal evidence contracts and the OBO Evidence
 Envelope wire format, enabling cross-corridor portability without exposing
-internal SAPP-specific structures.
+internal Evidence Anchor-specific structures.
 
 ---
 

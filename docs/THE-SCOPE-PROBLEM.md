@@ -84,7 +84,7 @@ has:
 3. **Whether they match** — compare `intent_hash` in the credential to
    `SHA-256(executed_phrase)` in the evidence envelope
 4. **That none of this has been altered** — a Merkle root over all evidence
-   leaves, anchored in an append-only log, signed by the SAPP operator
+   leaves, anchored in an append-only log, signed by the Evidence Anchor operator
 
 The record testifies. No Alice. No operator. No expert witness. No one needs
 to be in the room.
@@ -154,7 +154,7 @@ time. These are two different problems:
 | Who is this operator? | DNS-anchored Ed25519 key (ADR-001) |
 | What were they authorised to do? | `intent_hash` + `action_class` in credential |
 | Did a human explicitly approve this scope? | `principal_sig` in Intent Artifact (§3.4) |
-| Has anything been altered after the fact? | Merkle root + SAPP checkpoint |
+| Has anything been altered after the fact? | Merkle root + Evidence Anchor checkpoint |
 
 OBO addresses all four. A certificate addresses only the first.
 

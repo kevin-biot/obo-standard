@@ -76,18 +76,18 @@ transactions. OBO answers all five.
   │       │  • envelope_sig = Ed25519(evidence_digest)                 │
   │       │                                                            │
   │       ▼                                                            │
-  │  SAPP POST /v1/evidence/mint                                       │
+  │  Evidence Anchor POST /v1/evidence/mint                                       │
   │       │  leaves = [tag:value …] sorted lexicographically           │
   │       │  merkle_root = SHA-256 over all leaf hashes                │
   │       │  checkpoint_index monotonically increasing                 │
   │       │                                                            │
   │       ▼                                                            │
-  │  SAPP Receipt                                                      │
+  │  Evidence Anchor Receipt                                                      │
   │       • evidence_bundle (opaque handle)                            │
   │       • merkle_root                                                │
   │       • checkpoint_index, tree_size, created_at                   │
   │                                                                    │
-  │  Production: SAPP operator signs checkpoint (EdDSA JWS)           │
+  │  Production: Evidence Anchor operator signs checkpoint (EdDSA JWS)           │
   │  Epoch root anchored in DNS / CT log                               │
   └────────────────────────────────────────────────────────────────────┘
 ```
@@ -113,7 +113,7 @@ accountability loop.
 
 ```
   DNS  ─────────────────────────────────────────────────────────┐
-  (operator public keys, corridor predicates, SAPP epoch roots)  │
+  (operator public keys, corridor predicates, Evidence Anchor epoch roots)  │
                                                                   │
   Issuing Operator                                                │
        │  issues credential, signs envelope                       │
@@ -121,14 +121,14 @@ accountability loop.
        ▼                                                          │
   Acting Agent                                                    │
        │  presents credential to verifier                         │
-       │  submits evidence to SAPP                               │
+       │  submits evidence to Evidence Anchor                               │
        ▼                                                          │
   Verifier (Receiving Agent / Service)                            │
        │  resolves key from DNS ◄──────────────────────────────┘ │
        │  verifies credential sig                                  │
        │  enforces action class                                    │
        ▼                                                          │
-  SAPP (Settlement / Audit / Proof Provider)                      │
+  Evidence Anchor (Settlement / Audit / Proof Provider)                      │
        │  anchors merkle_root                                      │
        │  signs checkpoint (production)                           │
        │  epoch root in DNS / CT                                  │
@@ -186,9 +186,9 @@ exists or is required.
 
 ```
 Operator key:     _obo-key.<operator_id>     IN TXT  "v=obo1 ed25519=<pubkey>"
-SAPP key:         _sapp-key.<sapp_domain>    IN TXT  "v=sapp1 ed25519=<pubkey>"
+Evidence Anchor key: _anchor-key.<anchor_domain>  IN TXT  "v=anchor1 ed25519=<pubkey>"
 Corridor gate:    _obo-corridor.<domain>     IN TXT  "v=obo1 permit=<class>"
-Epoch root:       _sapp-epoch-<N>.<domain>   IN TXT  "v=sapp1 root=<root> size=<n>"
+Epoch root:       _anchor-epoch-<N>.<domain> IN TXT  "v=anchor1 root=<root> size=<n>"
 ```
 
 TTL guidance: 60–300 s for operator keys (stale cached keys are a liability for

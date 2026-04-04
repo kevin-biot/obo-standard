@@ -7,6 +7,37 @@ Versioning: IETF draft number (`-NN`) + semantic version (`vX.Y.Z`).
 
 ---
 
+## [draft-01 / v0.4.0] — 2026-04-04
+
+**SAPP → Evidence Anchor: remove proprietary product name from normative text.**
+No normative spec changes — field names, API paths, and wire format unchanged.
+
+### Changed
+- **Spec:** all normative references to "SAPP" replaced with "Evidence Anchor".
+  Section headings (§3.3.5, §3.4.6), OBO-REQ-015/017, error code descriptions
+  (`anchor_submission_failed`), and boundary references updated.
+- **`examples/integrations/a2a/sapp_stub/` → `anchor_stub/`**: directory
+  renamed; `server.py` header updated; env vars `SAPP_PORT`/`SAPP_DATA_DIR`
+  → `ANCHOR_PORT`/`ANCHOR_DATA_DIR`; log prefix `[SAPP]` → `[anchor]`;
+  JWS typ `SAPP-PROOF+JWT` → `ANCHOR-PROOF+JWT`. Attribution note retained:
+  *"This stub is based on SAPP (Secure Agent Payment Protocol), the internal
+  reference implementation."*
+- **`docker-compose.yml`**: service `sapp` → `anchor`; build context updated;
+  env vars and volume `sapp_data` → `anchor_data`.
+- **`agents.py`**: `SAPP_URL`/`SAPP_ORG_ID`/`SAPP_PROFILE_ID` →
+  `ANCHOR_URL`/`ANCHOR_ORG_ID`/`ANCHOR_PROFILE_ID`; `self.sapp_url` →
+  `self.anchor_url`; all log/comment references updated.
+- **All docs/** (`ARCHITECTURE.md`, `SECURITY.md`, `THE-SCOPE-PROBLEM.md`,
+  `USE-CASES.md`, `FAQ.md`, ADRs, profiles, examples): "SAPP" → "Evidence
+  Anchor" throughout.
+- **`captures/README.md`**: added attribution note at top — records were
+  captured against SAPP (the internal reference implementation); SAPP name
+  retained throughout the file and in all `.json` captures as historical record.
+- **CHANGELOG.md entries** prior to this release: left unchanged as historical
+  record.
+
+---
+
 ## [draft-01 / v0.3.8] — 2026-04-04
 
 **FAQ: "How technically sophisticated people arrive here" section.**

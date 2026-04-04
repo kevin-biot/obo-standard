@@ -21,10 +21,10 @@ forward-looking proposals.
 | Execution contract | PACT | `ontology` service — pack compilation, SHACL validation, intent mapping, OBT signing | Go | Running |
 | Credential + evidence | **OBO** (this standard) | DOP pipeline — Stages 0–8, EvidenceContract, credential issuance, envelope sealing | Go | Running |
 | Routing / admission | aARP | `aARP-router` — corridor admission predicates, DNS resolution, route proof per hop | Go | Running |
-| Payment settlement | SAPP | `sapp` service — PSP receipt signing, RRMT/IMT/CORT/PSRT token verification, Merkle anchoring | Go | Running |
+| Payment settlement | Evidence Anchor | `sapp` service — PSP receipt signing, RRMT/IMT/CORT/PSRT token verification, Merkle anchoring | Go | Running |
 
 The full chain — RTGF rationale → PACT pack → OBO Credential →
-aARP corridor admission → OBO Evidence Envelope → SAPP settlement
+aARP corridor admission → OBO Evidence Envelope → Evidence Anchor settlement
 receipt — has been exercised end-to-end.
 
 ---
@@ -53,7 +53,7 @@ receipt — has been exercised end-to-end.
 |---|---|---|---|
 | D.1 `obo-dns-key` | Lane2 Architecture | Planned | Reference deployment |
 | D.2 `obo-dns-gov` | Lane2 Architecture | Planned | Reference deployment |
-| D.3 `obo-dns-null` (SAPP nullifier) | Lane2 Architecture | Planned | Reference deployment |
+| D.3 `obo-dns-null` (Evidence Anchor nullifier) | Lane2 Architecture | Planned | Reference deployment |
 
 ## Corridor Implementations
 
@@ -65,7 +65,7 @@ receipt — has been exercised end-to-end.
 
 | Profile | Implementation | Organisation | Status |
 |---|---|---|---|
-| payments-mastercard-vi | SAPP + DOP pipeline | Lane2 Architecture | Running (internal, non-normative) |
+| payments-mastercard-vi | Evidence Anchor + DOP pipeline | Lane2 Architecture | Running (internal, non-normative) |
 
 ---
 

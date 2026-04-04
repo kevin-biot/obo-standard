@@ -6,7 +6,7 @@ Real Ed25519 signing. Stdlib + cryptography + flask.
 Two runtime modes:
 
   python agents.py --demo      TravelAgent: issues credentials, sends A2A tasks,
-                               seals evidence envelopes, mints to SAPP. (default)
+                               seals evidence envelopes, mints to Evidence Anchor. (default)
 
   python agents.py --server    FlightSearchAgent: HTTP server accepting A2A tasks,
                                verifying OBO credentials, returning results.
@@ -18,9 +18,9 @@ Environment variables:
     TRAVEL_AGENT_PRINCIPAL_ID     KYC-verified agent/user identifier
     TRAVEL_AGENT_PRIVATE_KEY_B64  base64(PEM PKCS8 Ed25519 private key)
     FLIGHT_SEARCH_URL             http://flight-search:8081
-    SAPP_URL                      http://sapp:8080
-    SAPP_ORG_ID                   (optional) SAPP tenant org_id
-    SAPP_PROFILE_ID               evidence profile: default|regulated|regulated_eu_finance
+    ANCHOR_URL                     http://anchor:8080
+    ANCHOR_ORG_ID                  (optional) Evidence Anchor tenant org_id
+    ANCHOR_PROFILE_ID              evidence profile: default|regulated|regulated_eu_finance
                                   (default: regulated)
 
   FlightSearchAgent (--server):
@@ -40,9 +40,9 @@ Agent Cards (A2A discovery):
     "authentication": { "schemes": ["obo"], "obo": { ... } }
   Any A2A sender reading this card knows it must attach an OBO credential.
 
-SAPP integration:
+Evidence Anchor integration:
   Evidence is minted via POST /v1/evidence/mint (ADR-153 domain-neutral API).
-  Leaves follow the canonical tag:value format, lexicographically sorted by SAPP.
+  Leaves follow the canonical tag:value format, lexicographically sorted by Evidence Anchor.
   After mint, GET /evidence/{evidence_id}/proof fetches the signed Merkle proof
   (JWS compact, ADR-181 E7 signing authority).
 """
@@ -220,7 +220,7 @@ class OBOEvidenceEnvelope:
     """
     OBO Evidence Envelope (§3.2). Sealed post-task. Ed25519 over evidence_digest.
     The A2A task.id is the correlation anchor — links evidence back to the task
-    and forward to SAPP / Merkle / regulator API.
+    and forward to Evidence Anchor / regulator API.
 
     reason_code is populated on deny/escalate outcomes (§5 error taxonomy).
     It is included in the evidence_digest pre-image so the rejection reason
@@ -396,7 +396,7 @@ class A2ATask:
 class TravelAgent:
     """
     Issuing operator. Signs OBO credentials and A2A tasks. Seals evidence envelopes.
-    Submits envelopes to SAPP.
+    Submits envelopes to Evidence Anchor.
     """
 
     def __init__(self):
@@ -412,7 +412,7 @@ class TravelAgent:
         self.flight_search_url = os.environ.get(
             "FLIGHT_SEARCH_URL", "http://localhost:8081"
         )
-        self.sapp_url = os.environ.get("SAPP_URL", "http://localhost:8080")
+        self.anchor_url = os.environ.get("ANCHOR_URL", "http://localhost:8080")
         self._pending: dict[str, OBOCredential] = {}
 
     def discover_agent_card(self) -> dict:
@@ -451,9 +451,9 @@ class TravelAgent:
 
     def _mint_evidence(self, envelope: "OBOEvidenceEnvelope", cred: "OBOCredential") -> dict:
         """
-        POST /v1/evidence/mint — SAPP domain-neutral canonical API (ADR-153).
+        POST /v1/evidence/mint — Evidence Anchor mint API.
 
-        Leaves follow tag:value format. SAPP lexicographically sorts them before
+        Leaves follow tag:value format. Evidence Anchor lexicographically sorts them before
         Merkle construction — order here is for readability only.
 
         Required leaves for 'regulated' profile:
@@ -462,8 +462,8 @@ class TravelAgent:
         OBO-specific leaves carry the full evidence provenance so the Merkle tree
         binds credential identity, intent, outcome and task correlation in one shot.
         """
-        org_id     = os.environ.get("SAPP_ORG_ID", "")
-        profile_id = os.environ.get("SAPP_PROFILE_ID", "regulated")
+        org_id     = os.environ.get("ANCHOR_ORG_ID", "")
+        profile_id = os.environ.get("ANCHOR_PROFILE_ID", "regulated")
 
         body: dict = {
             "evidence_id": envelope.envelope_id,   # idempotency key — safe to replay
@@ -491,21 +491,21 @@ class TravelAgent:
         if org_id:
             body["org_id"] = org_id
 
-        return self._post_json(f"{self.sapp_url}/v1/evidence/mint", body)
+        return self._post_json(f"{self.anchor_url}/v1/evidence/mint", body)
 
     def _fetch_proof(self, evidence_id: str) -> dict:
         """
         GET /evidence/{evidence_id}/proof — signed Merkle proof (ADR-181 E7).
         Returns JWS compact signature over the 3-level proof chain.
-        Falls back gracefully if SAPP version does not yet expose this route.
+        Falls back gracefully if Evidence Anchor version does not yet expose this route.
         """
         try:
-            return self._get_json(f"{self.sapp_url}/evidence/{evidence_id}/proof")
+            return self._get_json(f"{self.anchor_url}/evidence/{evidence_id}/proof")
         except Exception:
-            # Older SAPP or stub — try tenant route
+            # Older Evidence Anchor or stub — try tenant route
             try:
                 return self._get_json(
-                    f"{self.sapp_url}/tenant/evidence/{evidence_id}/proof"
+                    f"{self.anchor_url}/tenant/evidence/{evidence_id}/proof"
                 )
             except Exception as e:
                 return {"_note": f"proof not available: {e}"}
@@ -595,7 +595,7 @@ class TravelAgent:
 
         print(f"{banner}")
         print("  DEMO COMPLETE")
-        print(f"  Inspect:  curl {self.sapp_url}/evidence/{{trace_id}}/proof | jq")
+        print(f"  Inspect:  curl {self.anchor_url}/evidence/{{trace_id}}/proof | jq")
         print(f"{banner}\n")
 
     def _run_scenario(self, label, intent, payload, inject="none"):
@@ -720,8 +720,8 @@ class TravelAgent:
         print(f"        envelope_sig:    Ed25519 ✓  ({envelope.envelope_sig[:20]}…)")
         print(f"        task_ref:        {envelope.task_correlation_ref[:20]}…")
 
-        # ── Step 5: Mint to SAPP ──────────────────────────────────────────────
-        print(f"\n  [5/5] Minting Evidence → SAPP  POST /v1/evidence/mint")
+        # ── Step 5: Mint to Evidence Anchor ──────────────────────────────────────────────
+        print(f"\n  [5/5] Minting Evidence → Evidence Anchor  POST /v1/evidence/mint")
         try:
             mint_resp = self._mint_evidence(envelope, cred)
 
@@ -731,7 +731,7 @@ class TravelAgent:
             tree_size       = mint_resp.get("tree_size", "?")
             created_at      = mint_resp.get("created_at", "?")
 
-            print(f"\n        ── SAPP Mint Response ────────────────────────────")
+            print(f"\n        ── Evidence Anchor Mint Response ────────────────────────────")
             print(f"        evidence_bundle: {str(evidence_bundle)[:30]}…")
             print(f"        merkle_root:     {str(merkle_root)[:20]}…")
             print(f"        checkpoint_idx:  {checkpoint_idx}")
@@ -753,11 +753,11 @@ class TravelAgent:
                 print(f"\n        ── Evidence Chain ────────────────────────────────")
                 print(f"        OBO credential issued  → evidence_digest bound")
                 print(f"        A2A task correlated    → task_ref: {envelope.task_correlation_ref[:16]}…")
-                print(f"        SAPP Merkle anchored   → root: {str(merkle_root)[:16]}…")
+                print(f"        Evidence Anchor Merkle anchored   → root: {str(merkle_root)[:16]}…")
                 print(f"        Proof signed (E7)      → JWS: {str(jws)[:16]}…")
 
         except Exception as e:
-            print(f"        ✗ SAPP mint failed: {e}")
+            print(f"        ✗ Evidence Anchor mint failed: {e}")
 
 
 # ─── FlightSearchAgent (server) ───────────────────────────────────────────────

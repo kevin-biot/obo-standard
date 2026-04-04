@@ -72,7 +72,7 @@ specific time. The scope fence is the piece that answers the judge's question.
 VP credential claims are not it.
 
 **3. OpenID4VP ends at presentation. OBO continues to evidence.**
-There is no equivalent in OpenID4VP to the OBO Evidence Envelope, the SAPP
+There is no equivalent in OpenID4VP to the OBO Evidence Envelope, the Evidence Anchor
 Merkle anchoring, or the post-transaction checkpoint. The VP proves claims were
 valid when presented. It does not produce a cryptographically anchored record
 of what the agent did with them — verifiable offline, by a third party, six
@@ -117,7 +117,7 @@ specific human-approved scope of a specific action.
 
 **3. Still no post-transaction evidence.**
 DIDComm is a messaging protocol. It does not define post-transaction evidence
-records, Merkle anchoring, SAPP submission, or anything equivalent to the OBO
+records, Merkle anchoring, Evidence Anchor submission, or anything equivalent to the OBO
 Evidence Envelope. The message proves a credential was presented. It does not
 produce an independently verifiable record of what the agent did afterward.
 
@@ -237,8 +237,8 @@ edited, deleted, or never written. Even immutable logs (append-only, tamper-
 evident) are typically controlled by one party — the operator — which means the
 operator can omit entries or the log can be lost in an incident. OBO evidence is
 different: the `envelope_sig` is produced by the acting operator *and* committed
-into a SAPP Merkle root *and* (in production) anchored by a second independent
-party (the SAPP operator's EdDSA JWS over the checkpoint). No single party can
+into a Evidence Anchor Merkle root *and* (in production) anchored by a second independent
+party (the Evidence Anchor operator's EdDSA JWS over the checkpoint). No single party can
 alter or suppress the record after the fact. Logs tell you what happened.
 OBO evidence proves it.
 
@@ -435,7 +435,7 @@ OBO is that composition — specified, implemented, and running. The parts:
 | Cross-org operator identity without shared AS | DNS-anchored Ed25519 key (`_obo-key.<domain>`) |
 | Scope fence: what the human approved | `intent_hash = SHA-256(exact phrase)` in credential |
 | Human approval proof (Class C/D) | `principal_sig` in Intent Artifact (§3.4) |
-| Post-transaction evidence | Evidence Envelope, signed, Merkle-anchored in SAPP |
+| Post-transaction evidence | Evidence Envelope, signed, Merkle-anchored in Evidence Anchor |
 | Composability with W3C VCs / DIDs | DID Profile (Appendix F), `kyc_ref` in Intent Artifact |
 
 The "root authority that verifies the agent" in Step 3 is

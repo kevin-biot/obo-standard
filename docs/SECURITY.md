@@ -1,7 +1,7 @@
 # OBO Security Guide
 
 This document is for **implementers** — operators building OBO-issuing agents,
-developers building OBO-verifying services, and operators deploying SAPP
+developers building OBO-verifying services, and operators deploying an Evidence Anchor
 settlement anchors. It complements §9 (Security Considerations) and §10
 (Privacy Considerations) of the spec, which are written for protocol reviewers.
 
@@ -66,15 +66,15 @@ fields including `reason_code` (§4.3); any alteration invalidates
 **Requirement:** Include `reason_code` in the `evidence_digest` pre-image.
 Verifiers MUST check `envelope_sig` before accepting any evidence as valid.
 
-### Fabricated SAPP receipts
-Without a SAPP operator signature on the `merkle_root`, an issuer could claim
-a `merkle_root` was returned by SAPP when it was computed locally and never
+### Fabricated Evidence Anchor receipts
+Without a Evidence Anchor operator signature on the `merkle_root`, an issuer could claim
+a `merkle_root` was returned by Evidence Anchor when it was computed locally and never
 submitted. The `obo_envelope_sig` proves the issuer committed to the record;
-only the SAPP operator's EdDSA JWS proves SAPP received it.
+only the Evidence Anchor operator's EdDSA JWS proves Evidence Anchor received it.
 
 **Requirement (production):** Do not accept settlement evidence without a valid
-SAPP operator JWS over the checkpoint. See ADR-004 and `captures/README.md §
-SAPP Merkle signing`.
+Evidence Anchor operator JWS over the checkpoint. See ADR-004 and `captures/README.md §
+Evidence Anchor Merkle signing`.
 
 ---
 
@@ -88,7 +88,7 @@ These are explicit non-goals. Implementers must address them separately.
 | **Computation integrity** | The agent may have hallucinated or been manipulated | HITL approval for Class C/D; independent verification for critical outputs |
 | **Private key compromise** | If the operator key is stolen, all credentials it issues are valid | Key rotation via DNS update; short credential TTLs; HSM storage |
 | **DNS MITM** | A network-level attacker between verifier and DNS resolver | DNSSEC where available; pinned resolvers; curated registry as Class C/D primary check (§8.6) |
-| **Colluding operator + SAPP** | If both parties collude, fabricated evidence cannot be detected by the parties alone | Epoch roots in Certificate Transparency or public logs; independent audit |
+| **Colluding operator + Evidence Anchor** | If both parties collude, fabricated evidence cannot be detected by the parties alone | Epoch roots in Certificate Transparency or public logs; independent audit |
 | **LLM prompt injection** | An adversarial payload causes the agent to act outside its credential scope | Intent verification at verifier; action class enforcement; HITL for Class C/D |
 
 ---
@@ -176,8 +176,8 @@ track `credential_id` blocklists out-of-band.
       Never over-provision.
 - [ ] Include `reason_code: none` in the `evidence_digest` pre-image even for
       allow outcomes (ensures field is always covered by the signature).
-- [ ] Submit evidence to SAPP immediately post-transaction. Do not batch.
-- [ ] For production: require SAPP operator JWS on checkpoint before treating
+- [ ] Submit evidence to Evidence Anchor immediately post-transaction. Do not batch.
+- [ ] For production: require Evidence Anchor operator JWS on checkpoint before treating
       evidence as settled.
 - [ ] For Class C/D with delegation: sign the delegation chain document
       (`link_sig`) at each hop. Verify chain integrity before issuing

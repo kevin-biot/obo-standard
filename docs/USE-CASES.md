@@ -263,7 +263,7 @@ FlightSearchAgent:
 3. Verifies `intent_hash` matches the presented intent phrase
 4. Checks action class C is permitted for booking endpoint
 5. Executes the booking
-6. Receives evidence bundle from SAPP (`checkpoint_index: 0`, `merkle_root: …`)
+6. Receives evidence bundle from Evidence Anchor (`checkpoint_index: 0`, `merkle_root: …`)
 
 The Merkle root commits to all 14 evidence leaves. The booking is
 cryptographically attributed to Alice's explicit instruction and TravelAgent's
@@ -359,7 +359,7 @@ The bank receives:
 - Cryptographic proof the CFO signed this specific transfer
 - Proof the agent's delegation scope covers this amount
 - KYC and biometric evidence acceptable under PSD2 Art. 74
-- A SAPP merkle_root committing the full 30-leaf evidence set
+- A Evidence Anchor merkle_root committing the full 30-leaf evidence set
 
 One hash. Everything in it. Nothing can be presented or withheld independently.
 
@@ -424,7 +424,7 @@ The Intent Artifact carries the SRE team lead's `principal_sig` over the exact
 instance identifier and incident reference. No agent can substitute a different
 database — the `intent_hash` binds the credential to this specific termination.
 
-Post-incident, the compliance team has a SAPP-anchored evidence record that
+Post-incident, the compliance team has a Evidence Anchor-anchored evidence record that
 proves: who approved it, what was approved, when, under what delegation scope,
 and what happened. The regulatory breach notification includes the cryptographic
 evidence reference.

@@ -48,5 +48,5 @@ proof, transaction binding, and dispute-readiness fields.
 ## Notice
 
 Illustrative examples only. Not legal advice. Not official Mastercard or
-Verifiable Intent artefacts. Derived from SAPP (Secure Agent Payment Protocol)
+Verifiable Intent artefacts. Derived from Evidence Anchor (Secure Agent Payment Protocol)
 evidence framework work.

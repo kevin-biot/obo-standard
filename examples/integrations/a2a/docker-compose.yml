@@ -9,23 +9,23 @@ version: "3.9"
 #   4.  docker-compose up
 #
 # Containers:
-#   sapp           SAPP stub — accepts evidence envelopes, returns receipts
+#   anchor         Evidence Anchor stub — accepts evidence envelopes, returns receipts
 #   flight-search  FlightSearchAgent — verifies OBO credentials, executes tasks
 #   travel-agent   TravelAgent — issues credentials, sends tasks, seals evidence
 
 services:
 
-  sapp:
+  anchor:
     build:
-      context: ./sapp_stub
+      context: ./anchor_stub
     ports:
       - "8080:8080"   # if 8080 is already in use locally, change left side: "9080:8080"
     environment:
       - TRAVEL_AGENT_PUBKEY=${TRAVEL_AGENT_PUBKEY}
-      - SAPP_PORT=8080
-      - SAPP_DATA_DIR=/data
+      - ANCHOR_PORT=8080
+      - ANCHOR_DATA_DIR=/data
     volumes:
-      - sapp_data:/data
+      - anchor_data:/data
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
       interval: 5s
@@ -52,7 +52,7 @@ services:
       context: .
     command: ["--demo"]
     depends_on:
-      sapp:
+      anchor:
         condition: service_healthy
       flight-search:
         condition: service_healthy
@@ -61,10 +61,10 @@ services:
       - TRAVEL_AGENT_PRINCIPAL_ID=${TRAVEL_AGENT_PRINCIPAL_ID:-did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK}
       - TRAVEL_AGENT_PRIVATE_KEY_B64=${TRAVEL_AGENT_PRIVATE_KEY_B64}
       - FLIGHT_SEARCH_URL=http://flight-search:8081
-      - SAPP_URL=http://sapp:8080
-      - SAPP_ORG_ID=${SAPP_ORG_ID:-}
-      - SAPP_PROFILE_ID=${SAPP_PROFILE_ID:-regulated}
+      - ANCHOR_URL=http://anchor:8080
+      - ANCHOR_ORG_ID=${ANCHOR_ORG_ID:-}
+      - ANCHOR_PROFILE_ID=${ANCHOR_PROFILE_ID:-regulated}
       - STARTUP_WAIT_SECONDS=0   # healthcheck handles this
 
 volumes:
-  sapp_data:
+  anchor_data:

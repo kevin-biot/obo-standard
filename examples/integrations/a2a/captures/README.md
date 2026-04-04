@@ -1,6 +1,15 @@
 # Captured Evidence — Live Run 2026-04-04
 
-SAPP mint records from the reference implementation run against `lane2.ai`.
+> **Note on terminology:** The records in this directory were captured against
+> **SAPP (Secure Agent Payment Protocol)**, the internal reference
+> implementation of the Evidence Anchor interface used in this project.
+> SAPP is a product of Lane2. The Evidence Anchor interface it implements
+> is defined generically in the OBO spec (§4); any conforming Evidence Anchor
+> may be substituted. References to SAPP throughout this directory reflect the
+> actual product used in the captured run and are left unchanged as historical
+> record.
+
+Evidence Anchor (SAPP) mint records from the reference implementation run against `lane2.ai`.
 Key resolved live from public DNS — verifiable independently at any time:
 
 ```bash

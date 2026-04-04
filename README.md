@@ -88,7 +88,7 @@ docker-compose up --build                         # three containers, full evide
 ```
 
 Seven test scenarios run automatically — two clean accepts, five rejection
-edge cases with error codes. The output is a real Merkle receipt from SAPP.
+edge cases with error codes. The output is a real Merkle receipt from the Evidence Anchor.
 No infrastructure beyond Docker and one DNS TXT record.
 
 **What is optional vs. required:**
@@ -97,7 +97,7 @@ No infrastructure beyond Docker and one DNS TXT record.
 |---|---|---|
 | OBO Credential + Evidence Envelope | All use cases | Two JSON objects |
 | One DNS TXT record (`_obo-key`) | Cross-org verification | 30 seconds in Route 53 |
-| SAPP / Merkle anchoring | Regulated audit trails | SAPP container in docker-compose |
+| Evidence Anchor / Merkle anchoring | Regulated audit trails | Evidence Anchor container in docker-compose |
 | RTGF / `why_ref` | Regulated high-risk AI, PSD3 | Optional field, ignored if absent |
 | aARP | Intent routing (separate protocol) | Not required for OBO |
 
@@ -525,8 +525,8 @@ dig +short TXT _obo-key.lane2.ai @8.8.8.8
 ```
 [FlightSearchAgent] OBO key ready  source=dns-txt  key=vqiddGZ0skvsek13nUks…
 
-  SCENARIO 1 — Flight search LHR→JFK        → allow  ✓  SAPP checkpoint_idx: 0
-  SCENARIO 2 — Hotel search New York         → allow  ✓  SAPP checkpoint_idx: 1
+  SCENARIO 1 — Flight search LHR→JFK        → allow  ✓  Evidence Anchor checkpoint_idx: 0
+  SCENARIO 2 — Hotel search New York         → allow  ✓  Evidence Anchor checkpoint_idx: 1
   SCENARIO 3 — Tampered intent               → 422    OBO-ERR-005  ✓
   SCENARIO 4 — Missing OBO extension         → 422    OBO-ERR-001  ✓
   SCENARIO 5 — Expired credential            → 422    OBO-ERR-003  ✓
@@ -534,7 +534,7 @@ dig +short TXT _obo-key.lane2.ai @8.8.8.8
   SCENARIO 7 — Replayed credential_id        → 422    OBO-ERR-008  ✓
 ```
 
-For each allowed transaction, 14 leaves are committed to the SAPP Merkle tree —
+For each allowed transaction, 14 leaves are committed to the Evidence Anchor Merkle tree —
 binding operator identity, principal DID, intent hash, task correlation reference,
 outcome, and Ed25519 envelope signature into a single `merkle_root`. For rejected
 transactions the gate fires before any task executes; no evidence is minted.
@@ -545,7 +545,7 @@ OBO credential issued    → credential_sig: Ed25519 over intent_hash + principa
 A2A task dispatched      → extensions.obo carries the credential inline
 FlightSearchAgent verifies  DNS lookup _obo-key.lane2.ai → pubkey → Ed25519 check
 Evidence envelope sealed → evidence_digest + envelope_sig: Ed25519
-SAPP Merkle anchored     → merkle_root: 4f29251a3d5a565c53a1…  checkpoint_idx: 0
+Evidence Anchor Merkle anchored     → merkle_root: 4f29251a3d5a565c53a1…  checkpoint_idx: 0
 ```
 
 **Run it yourself:**
@@ -623,7 +623,7 @@ aARP  — Agentic Authorisation and Routing Protocol
 
         ↓  payment steps settled with evidence anchoring
 
-SAPP  — Secure Agent Payment Protocol
+Evidence Anchor  — Secure Agent Payment Protocol
         Payment settlement for Lane² corridors. Signs PSP receipts,
         verifies regulatory tokens, anchors Merkle evidence so aARP,
         RTGF, and policy gates can deliver deterministic payments.
@@ -635,7 +635,7 @@ alone. Together they close the full loop:
 
 ```
 rationale (RTGF)  →  execution contract (PACT)  →  credential + evidence (OBO)
-                  →  routing (aARP)  →  settlement (SAPP)
+                  →  routing (aARP)  →  settlement (Evidence Anchor)
 ```
 
 **Every layer is built and running as reference implementation code.**
@@ -652,7 +652,7 @@ The OBO fields that connect them:
 | `governance_framework_ref` | PACT pack — the bounded ontology execution contract |
 | `intent_namespace` | PACT pack domain (e.g. `urn:obo:ns:payments`) |
 | `corridor_ref` | aARP corridor — the governed routing layer |
-| `stage3_ref` | SAPP settlement receipt — the payment anchor |
+| `stage3_ref` | Evidence Anchor settlement receipt — the payment anchor |
 
 The chain is tamper-evident end to end.
 

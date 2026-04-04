@@ -2,7 +2,7 @@
 
 End-to-end demonstration of the OBO accountability layer composed with the
 [A2A protocol](https://google.github.io/A2A/). Two autonomous agents, real
-Ed25519 keys, a live DNS trust anchor, and SAPP Merkle evidence — three Docker
+Ed25519 keys, a live DNS trust anchor, and Evidence Anchor Merkle evidence — three Docker
 containers, no pre-shared config, no mocks for the cryptography.
 
 ---
@@ -14,7 +14,7 @@ containers, no pre-shared config, no mocks for the cryptography.
 | **OBO** | Pre-transaction credential issued by TravelAgent, verified by FlightSearchAgent; post-transaction evidence envelope sealed and Merkle-anchored |
 | **A2A** | Agent Card discovery (`GET /.well-known/agent.json`), task dispatch (`POST /tasks`), structured result |
 | **DNS trust anchor** | `_obo-key.lane2.ai IN TXT "v=obo1 ed25519=…"` — key resolved live from public DNS per transaction; independently verifiable with `dig` |
-| **SAPP** | Evidence minted via `POST /v1/evidence/mint` (ADR-153); Merkle proof returned via `GET /evidence/{id}/proof` (ADR-181 E7) |
+| **Evidence Anchor** | Evidence minted via `POST /v1/evidence/mint` (ADR-153); Merkle proof returned via `GET /evidence/{id}/proof` (ADR-181 E7) |
 
 ---
 
@@ -31,16 +31,16 @@ containers, no pre-shared config, no mocks for the cryptography.
 │  │  issues OBO     │                           │             │  │
 │  │  credential     │  ┌──────────────────┐     │ resolves    │  │
 │  │  seals evidence │  │  DNS (public)    │     │ OBO key     │  │
-│  │  mints to SAPP  │  │ _obo-key.lane2.ai│◄────│ via DNS TXT │  │
+│  │  mints to Evidence Anchor  │  │ _obo-key.lane2.ai│◄────│ via DNS TXT │  │
 │  └────────┬────────┘  └──────────────────┘     └─────────────┘  │
 │           │                                                     │
 │           │  POST /v1/evidence/mint                             │
 │           │  GET  /evidence/{id}/proof                          │
 │           ▼                                                     │
 │  ┌─────────────────┐                                            │
-│  │   SAPP stub     │  merkle_root + evidence_bundle             │
+│  │   Evidence Anchor stub     │  merkle_root + evidence_bundle             │
 │  │   :8080         │  checkpoint_index + JWS proof              │
-│  │   /data/*.jsonl │  (stub JWS; production: SAPP operator key) │
+│  │   /data/*.jsonl │  (stub JWS; production: Evidence Anchor operator key) │
 │  └─────────────────┘                                            │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -177,9 +177,9 @@ dig +short TXT _obo-key.lane2.ai @8.8.8.8
         envelope_sig:    Ed25519 ✓  (nvrois4PEAUNY-3MFX82…)
         task_ref:        task-0fe230c3-1a81-4…
 
-  [5/5] Minting Evidence → SAPP  POST /v1/evidence/mint
+  [5/5] Minting Evidence → Evidence Anchor  POST /v1/evidence/mint
 
-        ── SAPP Mint Response ────────────────────────────
+        ── Evidence Anchor Mint Response ────────────────────────────
         evidence_bundle: yBEdJg9rcnI-xyZfigUc9CbU5U3TTI…
         merkle_root:     4f29251a3d5a565c53a1…
         checkpoint_idx:  0
@@ -187,7 +187,7 @@ dig +short TXT _obo-key.lane2.ai @8.8.8.8
         created_at:      2026-04-04T11:55:07.039747+00:00
 
         ── Fetching Signed Proof  GET /evidence/…/proof ──
-        ⚠  stub JWS — production is SAPP operator Ed25519 over inclusion proof
+        ⚠  stub JWS — production is Evidence Anchor operator Ed25519 over inclusion proof
 
 ──────────────────────────────────────────────────────────────
   SCENARIO 2: Hotel search: New York  [expect: allow]
@@ -198,7 +198,7 @@ dig +short TXT _obo-key.lane2.ai @8.8.8.8
         intent_hash:    e2b7c2bfeaeb1d0e7084…
         credential_sig: Ed25519 ✓  (5qPTgCqdoyR74RzF1vr0…)
 
-  [5/5] Minting Evidence → SAPP
+  [5/5] Minting Evidence → Evidence Anchor
         merkle_root:     116234800d9a56a49a8f…
         checkpoint_idx:  1
         tree_size:       2
@@ -243,17 +243,17 @@ dig +short TXT _obo-key.lane2.ai @8.8.8.8
 ══════════════════════════════════════════════════════════════
 ```
 
-**All 7 scenarios produced the expected result.** Scenarios 1–2 produced SAPP
+**All 7 scenarios produced the expected result.** Scenarios 1–2 produced Evidence Anchor
 Merkle receipts with monotonically increasing `checkpoint_index` values.
 Scenarios 3–7 were rejected at the gate with typed OBO error codes — no task
 executed, no evidence minted for the rejected cases.
 
 ---
 
-## Evidence chain — what gets committed to SAPP
+## Evidence chain — what gets committed to Evidence Anchor
 
 For each allowed transaction, 14 leaves are minted under the `regulated`
-profile. SAPP sorts them lexicographically, hashes each as
+profile. Evidence Anchor sorts them lexicographically, hashes each as
 `SHA-256(tag:value)`, and builds a Merkle tree. The `merkle_root` commits
 to all 14 leaves at once:
 
@@ -383,7 +383,7 @@ Full taxonomy: [§5 of the spec](../../draft-obo-agentic-evidence-envelope-01.md
 |------|---------|
 | `agents.py` | TravelAgent + FlightSearchAgent (both modes in one file) |
 | `keygen.py` | Ed25519 keypair generation, DNS TXT output, `.env` template |
-| `sapp_stub/server.py` | SAPP stub — ADR-153 mint + ADR-181 E7 proof routes |
+| `anchor_stub/server.py` | Evidence Anchor stub — Evidence Anchor mint + signed proof routes |
 | `docker-compose.yml` | Three-container orchestration with health checks |
 | `requirements.txt` | `cryptography`, `dnspython`, `flask` |
 | `.env.example` | Template — copy to `.env`, fill from `keygen.py` output |
@@ -398,9 +398,9 @@ Full taxonomy: [§5 of the spec](../../draft-obo-agentic-evidence-envelope-01.md
 |-----------|-----------|------------|
 | Ed25519 signing / verification | ✅ Real | ✅ Real |
 | DNS trust anchor | ✅ Real (Route 53, live) | ✅ Real |
-| SAPP `POST /v1/evidence/mint` | Stub | Real SAPP instance |
+| Evidence Anchor `POST /v1/evidence/mint` | Stub | Real Evidence Anchor instance |
 | Merkle tree | SHA-256 over sorted leaves (real commitment) | Full binary Merkle tree with sibling path |
-| SAPP operator key | No key — stub JWS is `SHA-256(header.payload)` | Ed25519 keypair; pubkey at `_sapp-key.<domain> IN TXT "v=sapp1 ed25519=…"` |
+| Evidence Anchor operator key | No key — stub JWS is `SHA-256(header.payload)` | Ed25519 keypair; pubkey at `_sapp-key.<domain> IN TXT "v=sapp1 ed25519=…"` |
 | JWS proof (`GET /evidence/{id}/proof`) | Structurally valid, not cryptographically signed | Real Ed25519 over `{merkle_root, checkpoint_index, tree_size, iss}` |
 | Inclusion proof | Not returned | `inclusion_proof` sibling array lets verifier recompute root independently |
 | Epoch root anchoring | Not implemented | `_sapp-epoch-N.<domain> IN TXT` or CT log — prevents retroactive rewrite |
@@ -409,7 +409,7 @@ Full taxonomy: [§5 of the spec](../../draft-obo-agentic-evidence-envelope-01.md
 | Key rotation | Not implemented | Required for long-lived operators |
 
 > **The unsigned Merkle gap explained:** `obo_envelope_sig` proves the *issuer*
-> committed to the record. It does not prove SAPP *received* it. A SAPP operator
+> committed to the record. It does not prove Evidence Anchor *received* it. A Evidence Anchor operator
 > Ed25519 signature over the checkpoint is a second independent party attesting
 > receipt — closing the accountability chain. See
 > [`captures/README.md`](captures/README.md#sapp-merkle-signing--what-the-demo-omits-and-best-practice)
