@@ -90,6 +90,91 @@ post-transaction evidence that survives a cross-jurisdictional dispute.
 
 ---
 
+### DIDComm — use DID-based agent messaging, it handles cross-org agent communication
+
+DIDComm is a serious protocol and closer than most. It defines encrypted,
+signed messaging between DID-based agents, supports credential exchange via
+WACI-PEx, and does not require a shared AS — key discovery happens via DID
+Documents, which is philosophically similar to OBO's DNS-anchored key. The
+gaps are infrastructure, scope, and evidence:
+
+**1. Both parties must be DID-based.**
+DIDComm requires sender and receiver to have DIDs and the infrastructure to
+resolve them (a Verifiable Data Registry). Ryanair, Booking.com, and Hertz have
+HTTPS APIs. They do not have DIDs, DID Documents, or DIDComm endpoints, and
+will not in the near term. OBO requires only that the operator controls a domain
+and can publish a DNS TXT record — infrastructure every operator already has.
+An accountability standard that requires the entire travel, payments, and
+healthcare industry to re-platform onto SSI infrastructure before the first
+transaction can be verified is not a practical standard today.
+
+**2. Still no scope fence.**
+A DIDComm message can carry a Verifiable Presentation (see OpenID4VP entry
+above), but the same gap applies: VPs carry identity and attribute claims, not
+`intent_hash = SHA-256("Book cheapest economy LHR→JFK 15 April")`. DIDComm
+defines the envelope; it does not define a cryptographic commitment to the
+specific human-approved scope of a specific action.
+
+**3. Still no post-transaction evidence.**
+DIDComm is a messaging protocol. It does not define post-transaction evidence
+records, Merkle anchoring, SAPP submission, or anything equivalent to the OBO
+Evidence Envelope. The message proves a credential was presented. It does not
+produce an independently verifiable record of what the agent did afterward.
+
+**4. Synchronous API calls and mediators.**
+DIDComm's async delivery model uses mediators for message routing — well-suited
+for wallet-to-wallet credential exchange, less suited for synchronous API calls
+where a response is expected in milliseconds. OBO attaches a credential to an
+HTTPS request in a header or extension field; no routing infrastructure required.
+
+**Use DIDComm** in SSI ecosystems where both parties are DID-based and
+credential exchange is the primary interaction model.
+**Compose it with OBO** when you also need to cross into non-DID infrastructure
+and require post-transaction evidence.
+
+---
+
+### IETF GNAP (RFC 9635) — it's the modern successor to OAuth, it covers this
+
+GNAP (Grant Negotiation and Authorization Protocol) is the most sophisticated
+objection in the OAuth family. It is genuinely more expressive than OAuth 2.0:
+key-based client authentication (no client_id/secret), structured access
+requests, multi-step interactive grants, continuation tokens, and subject
+information. It was designed explicitly to handle complex delegation scenarios
+that OAuth 2.0 handles awkwardly. The same two fundamental gaps remain:
+
+**1. GNAP still requires an Authorization Server.**
+GNAP's interaction model is: client → AS (grant request) → AS decision →
+access token → resource server. The AS is still the trust anchor. For the
+cross-org case — TravelAgent calling Ryanair's API — the question is still
+"whose AS?" Ryanair does not run a GNAP AS that TravelAgent can negotiate with.
+lane2.ai's GNAP AS has no standing at Ryanair. GNAP makes the grant negotiation
+richer; it does not eliminate the shared-AS prerequisite.
+
+**2. Still no intent hash, still no post-transaction evidence.**
+GNAP's `access` array carries structured authorisation details about what a
+token is for — more expressive than OAuth `scope` strings, but still a
+description of access rights, not a SHA-256 commitment to a specific
+human-approved phrase. `principal_sig` — Alice's Ed25519 signature over
+"Book cheapest economy LHR→JFK 15 April" at 11:54:58 — has no equivalent in
+GNAP. And like all token-issuance protocols, GNAP ends when the token is issued.
+There is no post-transaction evidence envelope, no Merkle anchoring, no record
+for the judge.
+
+**A note on OAuth RAR (RFC 9396 — Rich Authorization Requests):**
+RAR adds a structured `authorization_details` parameter to OAuth/OIDC — the
+closest thing to `intent_hash` in the OAuth ecosystem. It can carry fine-grained
+authorisation details: type, actions, locations, identifiers. Still needs an AS.
+Still carries the full structure (not a hash commitment to a canonical phrase).
+Still no post-transaction evidence. RAR narrows the gap on scope expressiveness;
+it does not close the AS dependency or the evidence gap.
+
+**Use GNAP** for complex interactive grant flows within or across trust domains
+that have compatible AS infrastructure.
+**Use OBO** when no shared AS exists and post-transaction evidence is required.
+
+---
+
 ### WIMSE / SPIFFE gives every workload a strong identity
 
 Yes, and that solves the within-org problem cleanly. SPIFFE SVIDs are

@@ -7,6 +7,22 @@ Versioning: IETF draft number (`-NN`) + semantic version (`vX.Y.Z`).
 
 ---
 
+## [draft-01 / v0.3.7] — 2026-04-04
+
+**FAQ: DIDComm and GNAP entries added (pre-emptive).**
+No normative spec changes.
+
+### Changed — Documentation
+- `docs/FAQ.md`: added DIDComm entry — both-parties-must-be-DID-based
+  excludes existing HTTPS APIs; still no scope fence; still no post-transaction
+  evidence; async mediator model doesn't fit synchronous API calls.
+- `docs/FAQ.md`: added GNAP (RFC 9635) entry — more expressive than OAuth
+  but still requires a shared AS; no intent_hash equivalent; no post-transaction
+  evidence. Includes OAuth RAR (RFC 9396) footnote as the nearest thing to
+  intent_hash in the OAuth ecosystem — same AS dependency, same evidence gap.
+
+---
+
 ## [draft-01 / v0.3.6] — 2026-04-04
 
 **FAQ: OpenID4VP entry added.**
