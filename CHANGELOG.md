@@ -7,6 +7,34 @@ Versioning: IETF draft number (`-NN`) + semantic version (`vX.Y.Z`).
 
 ---
 
+## [draft-01 / v0.4.2] — 2026-04-04
+
+**Evidence infrastructure context: Merkle log over blockchain rationale, CT
+analogy, regulatory mandate, and the case that evidence cannot be ignored.**
+
+### Added
+- **`docs/adr/ADR-008-merkle-log-over-blockchain.md`**: technical decision
+  record for the Evidence Anchor architecture. Explains why blockchain/DLT was
+  rejected (wrong problem, wrong latency, wrong privacy model, Byzantine
+  overhead not needed) and why Merkle append-only log was chosen (CT precedent
+  at global scale since 2013, sub-100ms minting, DNS epoch anchoring, no
+  per-transaction fees). Documents the production path: Google Trillian and CT
+  log operators have the infrastructure today; OBO provides the schema.
+  Includes independence requirement (Evidence Anchor operators SHOULD be
+  independent of credential operators for Class C/D, analogous to CT log
+  operators being independent of CAs).
+- **`docs/EVIDENCE-INFRASTRUCTURE.md`**: strategic context document. Makes the
+  case that tamper-evident evidence for agentic transactions is coming whether
+  or not a standard exists, driven by: EU AI Act Article 12 (law since 2024),
+  MiFID II / PSD2 / DORA (financial), MDR/IVDR (healthcare), GDPR Article 30,
+  and legal/insurance/counterparty trust forces. Documents that the
+  infrastructure already exists (Google Trillian, CT log operators), that OBO
+  provides the missing schema and protocol, and that the CT analogy is exact.
+  Includes the reference implementation's role: protocol validation and
+  developer testing, not production deployment.
+
+---
+
 ## [draft-01 / v0.4.1] — 2026-04-04
 
 **EUDI Wallet composability, selective disclosure alignment, EU sovereignty framing.**
