@@ -7,6 +7,34 @@ Versioning: IETF draft number (`-NN`) + semantic version (`vX.Y.Z`).
 
 ---
 
+## [draft-01 / v0.3.4] — 2026-04-04
+
+**The scope problem document.**
+No normative spec changes.
+
+### Added — Documentation
+- `docs/THE-SCOPE-PROBLEM.md` — why a certificate is not enough; the scope
+  fence OBO adds (`intent_hash`, `action_class`, `principal_sig`); what happens
+  in each out-of-scope case (no credential, hash mismatch, class exceeded);
+  scope MUST NOT widen across delegation hops; DNS vs scope (two different
+  problems); the payment dispute resolved in one paragraph without anyone
+  testifying.
+
+---
+
+## [draft-01 / v0.3.3] — 2026-04-04
+
+**Problem framing in USE-CASES, README draft identifier fix.**
+No normative spec changes.
+
+### Changed
+- `docs/USE-CASES.md`: replaced generic opener with full trip-planning problem
+  framing — five organisations, three countries, four questions, single-org
+  case already solved, growth area is cross-org cross-border no shared AS.
+- `README.md`: corrected stale draft identifier `-00` → `-01` in header.
+
+---
+
 ## [draft-01 / v0.3.2] — 2026-04-04
 
 **Use cases document with no-AS assumption clarification.**
