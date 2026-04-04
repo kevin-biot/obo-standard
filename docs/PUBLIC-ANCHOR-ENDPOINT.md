@@ -6,15 +6,25 @@
 
 ## What This Is
 
-Lane2 operates a public Evidence Anchor endpoint running the Lane2 commercial
-Evidence Anchor implementation. It speaks the OBO Evidence Anchor API (§4.4)
-and is available to anyone building against the OBO standard.
+Lane2 operates the `anchor.lane2.ai` Evidence Anchor service — a
+purpose-built, high-performance OBO Evidence Anchor running the Lane2
+commercial implementation (SAPP). It speaks the OBO Evidence Anchor API
+(§4.4) and is available to teams building on the OBO standard.
 
-If you are implementing an OBO pipeline, testing an OBO integration, or
-demonstrating OBO to a counterparty or regulator, you can use this endpoint
-as your Evidence Anchor without standing up your own server. You get real
-Merkle receipts, real inclusion proofs, and a real DNS-published public key —
-everything you need to build and validate a complete OBO deployment.
+**The endpoint is provisioned on request, not running 24/7.** Rather than
+operating a shared public endpoint with no SLA, Lane2 provisions dedicated
+instances for teams with a real use case — PoC development, integration
+testing, or regulatory demonstration. This gives you an isolated endpoint,
+full DNS key material, and direct support rather than a shared service.
+
+To request an instance: **anchor@lane2.ai**. Tell us what you are building.
+Instances are provided at no cost for OBO evaluation and open-source projects.
+
+When your instance is provisioned, you get:
+- A live endpoint at `https://anchor.lane2.ai`
+- The Ed25519 public key for receipt verification
+- DNS records published at `_anchor-key.lane2.ai`
+- Integration support for the duration of your PoC
 
 ---
 
