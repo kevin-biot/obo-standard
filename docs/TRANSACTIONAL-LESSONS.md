@@ -1,6 +1,6 @@
 # Lessons from Transactional Infrastructure
 
-**Version:** 0.4.11
+**Version:** 0.4.13
 **Date:** 2026-04-05
 
 ---
@@ -316,6 +316,141 @@ they are applied before the failures or extracted from them.
 
 The transactional world chose the latter. The invitation here is to
 choose the former.
+
+---
+
+## 9. Automation Has Limits — and the Agent Cannot Choose For You
+
+There is a strong aspiration in the agentic AI community for agents to
+make selection decisions on behalf of humans. The agent finds three
+hotels in Dubai. The agent selects a plumber from ten options. The
+agent chooses a counterparty, a service, a path. Reputation signals,
+attestation graphs, and scoring systems are largely motivated by this
+aspiration: if we give the agent enough signals, it can choose well.
+
+This aspiration should be examined carefully, because it contains a
+hidden assumption that is frequently wrong.
+
+### 9.1 Selection Is Not Execution
+
+There is a meaningful difference between:
+
+- **Execution** — the agent carries out a task whose parameters were
+  defined by a human. Book the cheapest available flight from London
+  to Paris on Tuesday. Transfer €500 to this IBAN. Query my account
+  balance and return it.
+
+- **Selection** — the agent chooses between options whose relative
+  value depends on human judgment, personal context, risk tolerance,
+  and preferences that cannot be fully specified in advance. Which of
+  these ten plumbers should I hire? Which of these three hotels is
+  right for my trip? Which counterparty should I trust with my data?
+
+Execution within declared scope is what agents are for. Selection above
+a consequence threshold is what humans are for.
+
+The distinction is not arbitrary. It reflects the structure of
+accountability. When an agent executes within a declared scope, the
+human who declared that scope is accountable for the outcome — they
+set the parameters, they carry the responsibility. When an agent
+selects on behalf of a human using reputation signals, the
+accountability chain becomes ambiguous: the human did not choose, the
+agent chose, and the agent has no legal personhood. If the plumber
+causes damage, who is liable for the selection?
+
+### 9.2 Reputation Signals Are Not Selection Criteria
+
+The response to this problem in much of the current agentic ecosystem
+is to provide the agent with reputation signals and treat high-scoring
+options as safe selections. This is an anti-pattern for several
+reasons already documented in this repository's analysis of reputation
+systems. But there is a deeper issue specific to selection:
+
+Reputation signals aggregate past behaviour across contexts that may
+be entirely different from the current one. A plumber with 500 positive
+reviews for bathroom installations may be the wrong choice for
+electrical work. A hotel with a 4.9 star rating for business travel
+may be the wrong choice for a family with young children. A financial
+agent with a strong track record in bull markets may be the wrong
+choice in a crisis.
+
+The signal is real. The inference from signal to selection is not.
+Selection requires understanding of the specific context, the specific
+needs, and the specific risk profile of this decision, for this person,
+at this time. Reputation systems do not provide that. They provide an
+average across prior contexts.
+
+Treating reputation signals as selection criteria transfers the
+accountability for a human judgment to a statistical artifact. That is
+not automation. It is accountability laundering.
+
+### 9.3 The Regulatory Direction of Travel
+
+The EU AI Act distinguishes AI systems by risk class and mandates
+human oversight accordingly. For high-risk systems — those affecting
+employment, credit, healthcare, law enforcement, and critical
+infrastructure — human review of consequential decisions is not
+optional. The system may present options. The human must decide.
+
+This is not an arbitrary regulatory preference. It reflects a
+considered judgment that certain decisions require a human accountable
+party, regardless of how capable the automated system is. Capability
+is not the criterion. Accountability is.
+
+The current regulatory scope covers defined high-risk categories.
+The direction of travel — as AI systems become more capable and more
+consequential — is toward broader human oversight requirements, not
+narrower ones. Systems built today on the assumption that agents will
+autonomously select counterparties, service providers, and consequential
+options may find that assumption in tension with regulatory requirements
+that did not exist when the system was designed.
+
+Building human decision points into the architecture from the start is
+not a constraint on capability. It is an architectural decision that
+keeps the system governable as regulatory requirements evolve.
+
+### 9.4 The Anti-Pattern
+
+To be precise: automated selection of consequential counterparties
+using reputation signals as the decision criterion is an anti-pattern
+in accountable agentic system design.
+
+It is a pattern that will appear to work — until it fails in a way
+that cannot be explained, attributed, or remedied, because the
+selection decision was made by a statistical process with no
+accountable principal behind it.
+
+The correct pattern:
+
+- Agents **present options** with transparent criteria to humans
+- Humans **make selection decisions** above defined consequence thresholds
+- Agents **execute** the selected option within a governed scope
+- The evidence of execution is **sealed and attributable**
+
+This is not a limitation of agentic systems. It is the correct
+allocation of judgment and accountability between humans and machines.
+
+### 9.5 A Note on Aspiration
+
+None of this is to say that automation cannot improve selection over
+time. Recommendation systems have genuine value. Filtering, ranking,
+and presenting options based on declared preferences is legitimate
+automation. The line is not between presenting options and selecting —
+it is between presenting options transparently and selecting
+opaquely, between recommendation and decision, between assistance and
+substitution.
+
+The aspiration to have agents decide is understandable. The
+infrastructure being built to realise that aspiration — reputation
+graphs, attestation scores, trust signals — is real work by capable
+people. The concern is not with the aspiration. It is with the
+assumption that sufficient signal quality makes autonomous agent
+selection safe, accountable, and legally sound.
+
+That assumption has not been tested at scale, in regulated contexts,
+under adversarial conditions. The transactional world's experience
+suggests it will not hold when tested. The invitation is to design
+for that outcome before the test occurs.
 
 ---
 

@@ -7,6 +7,38 @@ Versioning: IETF draft number (`-NN`) + semantic version (`vX.Y.Z`).
 
 ---
 
+## [draft-01 / v0.4.13] — 2026-04-05
+
+**Transactional lessons §9: automation limits and the human decision layer.**
+
+### Changed
+- **`docs/TRANSACTIONAL-LESSONS.md`**: Added §9 *"Automation Has
+  Limits — and the Agent Cannot Choose For You"* with five sub-sections:
+  - §9.1 *Selection vs execution* — execution within declared scope is
+    what agents are for; selection above a consequence threshold is what
+    humans are for; accountability chain breaks when the agent selects
+    and the agent has no legal personhood
+  - §9.2 *Reputation signals are not selection criteria* — signals
+    aggregate past behaviour across contexts different from the current
+    one; treating reputation as selection criteria is accountability
+    laundering
+  - §9.3 *The regulatory direction of travel* — EU AI Act mandates
+    human oversight for high-risk decisions; direction of travel is
+    toward broader requirements, not narrower; systems built assuming
+    autonomous agent selection may find that assumption in tension with
+    future regulation
+  - §9.4 *The anti-pattern* — precisely stated: automated selection of
+    consequential counterparties using reputation signals is an
+    anti-pattern; the correct pattern is agents present options, humans
+    decide, agents execute, evidence sealed
+  - §9.5 *A note on aspiration* — respectful acknowledgment that the
+    work is real and the aspiration is understandable; the concern is
+    the assumption that sufficient signal quality makes autonomous
+    selection safe; that assumption has not been tested at scale under
+    adversarial conditions in regulated contexts
+
+---
+
 ## [draft-01 / v0.4.12] — 2026-04-05
 
 **Transactional lessons — educational reference for the agentic ecosystem.**
