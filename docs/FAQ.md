@@ -438,7 +438,7 @@ OBO is that composition — specified, implemented, and running. The parts:
 | Post-transaction evidence | Evidence Envelope, signed, Merkle-anchored in SAPP |
 | Composability with W3C VCs / DIDs | DID Profile (Appendix F), `kyc_ref` in Intent Artifact |
 
-The "root authority that verifies the agent" Pietro described is
+The "root authority that verifies the agent" in Step 3 is
 `_obo-key.lane2.ai IN TXT "v=obo1 ed25519=…"`. Any counterparty resolves it in
 one DNS lookup. No issuer registry. No enrollment. No shared infrastructure.
 
