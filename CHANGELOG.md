@@ -7,6 +7,21 @@ Versioning: IETF draft number (`-NN`) + semantic version (`vX.Y.Z`).
 
 ---
 
+## [draft-01 / v0.3.2] — 2026-04-04
+
+**Use cases document.**
+No normative spec changes.
+
+### Added — Documentation
+- `docs/USE-CASES.md` — nine concrete scenarios across all four action classes
+  (A1/A2 read-only, B1/B2 reversible write, C1/C2 irreversible, D1/D2/D3
+  regulated). Each case: parties, before-OBO situation, after-OBO credential +
+  evidence, accountability value. Covers travel (live demo), finance/PSD2,
+  healthcare, legal, DevOps, and infrastructure. Closes with the
+  two-agent first contact problem framing and a summary table.
+
+---
+
 ## [draft-01 / v0.3.1] — 2026-04-04
 
 **Documentation: architecture, security, and design decision records.**
