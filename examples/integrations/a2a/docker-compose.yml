@@ -62,6 +62,8 @@ services:
       - TRAVEL_AGENT_PRIVATE_KEY_B64=${TRAVEL_AGENT_PRIVATE_KEY_B64}
       - FLIGHT_SEARCH_URL=http://flight-search:8081
       - SAPP_URL=http://sapp:8080
+      - SAPP_ORG_ID=${SAPP_ORG_ID:-}
+      - SAPP_PROFILE_ID=${SAPP_PROFILE_ID:-regulated}
       - STARTUP_WAIT_SECONDS=0   # healthcheck handles this
 
 volumes:
