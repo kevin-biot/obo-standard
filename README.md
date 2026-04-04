@@ -47,16 +47,22 @@ without calling the originator? That is precisely what OBO Evidence Envelopes
 address — and why SWIFT member institutions have been invited to contribute to
 the [ISO 20022 profile](profiles/payments-swift-iso20022.md).
 
-In every one of those cases, existing standards fail at question 4:
+Existing standards answer questions 1–3 well within a trust domain.
+OBO adds question 4 — the accountability layer they were not designed to
+provide — and composes with them rather than replacing them:
 
-- **OAuth** answers 1 and 2 — but requires a live authorisation server both
-  parties trust. When there is no shared AS, there is no verification.
-- **WIMSE / SPIFFE** provide strong workload identity within a trust domain —
-  but a trust domain boundary is exactly what cross-org agentic commerce crosses.
-- **W3C Verifiable Credentials** answer 1 — but cover identity claims, not
-  per-transaction evidence of what happened and what scope was exercised.
-- **A2A agent protocols** enumerate tool surfaces — but do not prove bounded
-  execution or produce tamper-evident post-transaction records.
+- **OAuth** is the right choice inside a trust domain with a shared AS.
+  OBO fills the cross-org, no-shared-AS case: a DNS-anchored credential
+  that any counterparty can verify offline, without calling anyone.
+- **WIMSE / SPIFFE** provide strong workload identity within an organisation.
+  OBO carries that identity *across* the trust domain boundary, where
+  workload certificates have no verifier.
+- **W3C Verifiable Credentials** carry portable identity claims.
+  OBO adds the per-transaction layer: what scope was exercised, what
+  happened, sealed and tamper-evident after the fact.
+- **A2A agent protocols** handle capability discovery and task routing.
+  OBO is the accountability layer A2A explicitly left out of scope —
+  the two compose directly (see `examples/integrations/a2a/`).
 
 ---
 
@@ -301,37 +307,18 @@ be resolved by courts unless standards get ahead of it.
 
 **The emerging dangerous pattern:**
 
-Several current agentic payment approaches — including Mastercard
-Verifiable Intent (VI) at its L3 autonomous mode — give agents their
-own private signing keys. The agent signs transactions independently.
-The payment network receives a cryptographic signature.
+**OBO composes with VI, not against it.**
 
-When a dispute opens, the question becomes: who signed?
+Mastercard VI's delegation chain (L1 → L2 → L3) is serious,
+well-designed work. The VI credential carries delegation authority
+through the chain. An OBO Evidence Envelope wrapping a VI transaction
+adds the post-transaction accountability layer: sealed, tamper-evident,
+offline-verifiable proof of what the agent did within its delegated
+scope. Every VI merchant becomes addressable — OBO adds to what VI
+delivers, not an alternative path.
 
-*"An AI agent signed it."*
-
-That is not a legal answer. Agents are not legal persons. An agent
-cannot be summoned. An agent cannot testify. An agent cannot be held
-liable. The private key exists. The signature exists. The signer —
-as a legally accountable entity — does not exist.
-
-This creates a **liability black hole at payment finalisation** —
-the precise moment when legal accountability must crystallise. Courts
-will eventually resolve this. The resolution will not be clean, and
-it will not be quick. The users who transacted in the meantime carry
-the risk.
-
-This is not a criticism of Mastercard VI as a technical system.
-The VI delegation chain (L1 → L2 → L3) is serious, well-designed
-work. The liability gap is a consequence of L3 autonomous signing
-without a clear legal-entity accountability anchor — a gap that
-affects any approach that treats the agent as a signing principal
-rather than an instrument of a signing principal.
-
-**OBO's design is explicit about this:**
-
-The agent is never the accountable party. The agent carries
-credentials issued by an operator who is a legal entity.
+The structural point applies to any approach that makes the agent the
+signing principal rather than an instrument of a signing principal:
 
 ```
 operator_id   — the legal entity accountable for this agent's actions
@@ -339,21 +326,18 @@ principal_id  — the human who delegated authority
 why_ref       — traces to the human-approved rationale (RTGF token)
 ```
 
-The OBO Evidence Envelope records what the agent did. The
-accountability chain traces to the **operator** — a company, a
-regulated PSP, a legal person who can go to court, produce the sealed
-evidence record, and demonstrate: *"here is what our agent was
-authorised to do, here is what it did, here is the governance pack
-that defined the boundary, here is the human rationale that authorised
-it."*
+Agents are not legal persons. An agent cannot be summoned, cannot
+testify, cannot be held liable. The OBO Evidence Envelope records what
+the agent did and traces accountability to the **operator** — a
+company, a regulated PSP, a legal person who can go to court and
+demonstrate: *"here is what our agent was authorised to do, here is
+what it did, here is the governance pack that defined the boundary."*
 
 **The operator is the legal person. The agent is the instrument.**
 
 This is how payment networks have always worked. Visa and Mastercard
 hold merchants, acquirers, and issuers accountable — not the card
-terminal, not the POS software. OBO extends that proven accountability
-model to agents. L3 autonomous signing without a legal-entity anchor
-breaks it.
+terminal. OBO extends that proven accountability model to agents.
 
 ---
 
@@ -390,8 +374,8 @@ them:
   it can do as it goes, rather than carrying pre-committed, sealed
   authority (§1.4)
 
-Most RFCs describe existing practice. OBO describes correct practice
-before the market has made its mistakes at scale. The RFC format
+Most RFCs describe existing practice. OBO names the patterns and
+antipatterns before the market has made its mistakes at scale. The RFC format
 provides the precision required for interoperability. The narrative
 structure in §1 provides the teachability required for adoption.
 
@@ -401,59 +385,52 @@ successful outcome.
 
 ---
 
-## How OBO fits with other work
+## How OBO composes with other work
 
-Several serious efforts are tackling agentic trust. They are doing
-valuable work. They share a foundational assumption that OBO does not:
-**a live authorization server or identity infrastructure is available
-and trusted by all parties.**
+OBO is a layer, not a replacement. The right mental model:
 
-That assumption holds when one organisation controls the AS — internal
-enterprise automation, single-platform agent deployments, API-to-API
-within a trust domain. Those cases are well served by OAuth, WIMSE,
-SPIFFE, and the frameworks below.
+```
+VI / x402 / A2A / OAuth    →  move the transaction
+OBO                        →  prove what happened and who was accountable
+```
 
-It breaks for the growth area: **cross-organisation, cross-border,
-no shared AS.** An agent booking a flight, hotel, concert, and car
-across four organisations in two countries has no common AS with any
-of them. A healthcare agent crossing NHS and a private clinic crosses
-jurisdictions. A payment agent in a regulated corridor needs
-authorization scope pre-committed and auditable back to a human
-decision — not negotiated at runtime by the agent itself.
+An x402 payment with an OBO Evidence Envelope in the metadata gets
+the Visa/Mastercard/Stripe settlement infrastructure *plus* the
+accountability chain that regulators and courts will eventually require.
+An A2A agent carrying an OBO credential composes the two directly —
+see `examples/integrations/a2a/` for a runnable reference.
 
-OBO is built for those cases. DNS is the only shared infrastructure
-assumed. The comparison is honest about where the lines are.
+OBO fills one specific gap: **cross-organisation, cross-border,
+no shared AS.** Inside a trust domain with a shared authorisation
+server, use OAuth. At the boundary where no shared AS exists — two
+organisations meeting for the first time, no prior relationship,
+different jurisdictions — OBO is the layer that makes the interaction
+auditable without either party calling anyone.
 
-### The shared mental model in existing work
+DNS is the only shared infrastructure assumed. Every organisation on
+the internet already has it.
 
-| Standard / protocol | Implementation state | Mental model | What it solves well | What it leaves open |
-|---|---|---|---|---|
-| [AAuth](https://github.com/dickhardt/AAuth) — Dick Hardt, IETF draft | Early draft. Requirements text. No reference implementation. | Agent as dynamic OAuth client. Async HTTP negotiation at the door. `purpose` parameter. | First-contact authorization without pre-registration. Open-web agent interactions. | Scope determined at runtime — negotiable, not pre-committed. No sealed post-transaction evidence. AS required. |
-| [draft-klrc-aiagent-auth](https://github.com/PieterKas/agent2agent-auth-framework) — IETF draft | Early draft. Abstract layer model and requirements text. No wire format specified. No reference implementation. | Agent as workload. WIMSE + SPIFFE + OAuth unified stack. AIMS layered model. | Unified agent identity, credential lifecycle, cross-domain token chaining. Audit logs required. | Audit log **format explicitly out of scope**. Wire format unspecified. Policy format out of scope. Compliance/jurisdiction out of scope. AS required. |
-| OAuth 2.0 / RFC 8693 Token Exchange | Mature RFC. Widely deployed. Multiple production implementations. | API client getting a scoped token from a live AS. | Delegated access, scopes, token exchange. Mature, widely deployed. | Live AS required. No per-transaction sealed evidence. Scope negotiated not pre-committed. |
-| W3C Verifiable Credentials | W3C Recommendation. Multiple implementations. | Portable identity claims, DID-anchored. | Cryptographic credential presentation. Offline-capable identity. | No bounded-execution evidence. No per-transaction sealed record. |
-| A2A agent protocols | Evolving. Protocol-level spec, no evidence standard. | Agent as tool-calling API client. Capability discovery at runtime. | Enumerating what an agent can call. Tool surface negotiation. | Runtime negotiation — agent discovers and expands scope as it goes. No proof of bounded execution. |
-| **OBO** — this standard | Working draft. Running Go reference implementation exercised end-to-end. JSON examples and DNS zone templates in this repository. | Pre-committed credential + sealed post-transaction evidence. DNS as universal trust anchor. | Cross-org, cross-border, no shared AS. Offline-verifiable by any party. Tamper-evident audit record specified and portable. | Early draft. Single reference implementation. Seeking independent implementations for IETF submission. |
+### Where each layer composes
 
-The pattern for the first four: **OAuth and API-centric thinking extended to agents.**
-Valuable. Necessary. Not sufficient for the hardest cases. OBO is in the table
-because the comparison should be honest — including about where OBO itself sits.
-
-### What OBO does differently
-
-OBO starts from a different assumption: **there is no shared
-infrastructure except DNS.**
-
-| | OAuth/API-centric approaches | OBO |
+| Layer | What it does well | Where OBO adds |
 |---|---|---|
-| Trust root | Live authorization server | DNS TXT record — universally resolvable, no AS |
-| Agent scope | Negotiated at runtime | Pre-committed at credential issuance, sealed in DNS |
-| Evidence format | Audit logs — format undefined or implementation-specific | OBO Evidence Envelope — specified, portable, offline-verifiable by any party |
-| Offline verification | No | Yes — DNS only |
-| Rationale chain | Token `sub` claim | `why_ref` — traces authorization to human-approved rationale |
-| Jurisdiction/compliance | Out of scope | OBO profiles (PSD3, NHS, UAE…) |
-| Two agents, no prior relationship | Requires shared AS or federation | OBO Credential verifiable from DNS alone |
-| Reference implementation | None (AAuth, draft-klrc) or protocol-only (A2A) | Running Go implementation, end-to-end exercised |
+| **OAuth / RFC 8693** | Delegated access within a trust domain. Mature, widely deployed. | OBO adds the cross-org case where no shared AS exists, plus sealed post-transaction evidence OAuth does not produce. |
+| **Mastercard VI / Visa TAP** | Delegation chain through the card network (L1→L2→L3). | OBO wraps the VI transaction and adds tamper-evident post-transaction proof. Every VI merchant is addressable. |
+| **x402 / HTTP payment protocols** | Payment rail — moves money over HTTP. | OBO is the accountability layer riding on the settlement. The Foundation's infrastructure plus OBO = complete regulated stack. |
+| **A2A agent protocols** | Capability discovery, task routing, Agent Cards. | OBO fills the accountability gap A2A explicitly left out of scope. Declared in the Agent Card as `authentication.schemes: ["obo"]`. |
+| **WIMSE / SPIFFE** | Workload identity within an organisation. | OBO carries identity *across* the trust domain boundary where workload certificates have no external verifier. |
+| **W3C Verifiable Credentials** | Portable identity claims, DID-anchored. | OBO adds per-transaction bounded-execution evidence — what scope was exercised, what happened, sealed after the fact. |
+| **AAuth / draft-klrc** | Dynamic authorisation flow, agent-as-OAuth-client. | OBO adds the no-AS case and the sealed evidence record both leave open. |
+| **OBO** — this standard | Cross-org, no-AS accountability. Offline-verifiable by any party. | Working draft. Running Go reference implementation. Seeking independent implementations. |
+
+### The one thing OBO does that the others do not
+
+**Sealed, portable, offline-verifiable post-transaction evidence,
+anchored to a legal-entity accountability chain, verifiable by any
+party with DNS.**
+
+No AS required. No prior relationship required. No shared
+infrastructure required beyond DNS — which every counterparty already has.
 
 ### The audit gap — named explicitly
 
