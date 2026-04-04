@@ -429,6 +429,133 @@ proves: who approved it, what was approved, when, under what delegation scope,
 and what happened. The regulatory breach notification includes the cryptographic
 evidence reference.
 
+### D4. AI travel agent with EUDI Wallet identity — cross-border, regulated spend
+
+**Parties:** EU citizen / Marie (principal) → AI travel agent (acting agent) →
+Operator platform (issuer) → Airline booking API (verifier 1) →
+Corporate card issuer (verifier 2) → Evidence Anchor
+
+**Sovereign identity layer:** EUDI Wallet issued by ANTS (Agence Nationale
+des Titres Sécurisés), France. PID format: SD-JWT (Selective Disclosure JWT).
+
+**Scenario:** Marie is a consultant travelling frequently for work. Her
+employer has deployed an AI travel agent to handle bookings. A Paris–London
+flight costs €480. Company policy requires Class D authorisation for all
+travel on the corporate card — any spend that leaves a booking record, incurs
+non-refundable commitment, and charges regulated financial instruments must
+carry a full EU AI Act Article 12 audit chain.
+
+Marie is French, holds an EUDI Wallet on her phone (issued by ANTS), and
+uses it as her primary digital identity. She does not have a Google account
+or an Apple ID. Her sovereign identity is her EUDI PID credential.
+
+**The cross-border problem without OBO:**
+
+The airline's booking API is operated by a UK company. The corporate card
+issuer is Dutch. The operator platform is French. None of these parties share
+an Authorization Server. Without OBO, the only accountability records are
+server logs per-organisation — no cryptographic proof of who authorised what,
+no way for an auditor to verify the chain across borders, and no technical
+compliance with EU AI Act Article 12 transparency requirements.
+
+**After OBO (Class D) + EUDI Wallet:**
+
+**Step 1 — Identity verification via selective disclosure.**
+The operator platform requests an EUDI Wallet presentation via OpenID4VP.
+Marie's wallet presents only the attributes required: full name and
+nationality. Date of birth, national identifier, and address are not
+disclosed — selective disclosure means the operator gets the minimum
+necessary. The operator verifies the SD-JWT presentation (signed by ANTS).
+
+**Step 2 — Biometric authorisation.**
+Marie looks at her phone camera. The liveness check was performed by ANTS
+during wallet provisioning — the wallet's holder binding serves as the
+biometric authorisation method at Class D level (`biometric_provider:
+ants.gouv.fr`). Match score: 0.994.
+
+**Step 3 — Intent Artifact construction.**
+```json
+{
+  "intent_id": "urn:obo:intent:e3c7a912-…",
+  "phrase": "Book Paris CDG to London LHR tomorrow morning, business class, corporate card ending 4821",
+  "principal_id": "did:key:z6MkMarie…",
+  "authorised_at": "2026-04-05T08:14:22Z",
+  "authorisation_method": "explicit_approval",
+  "authorisation_evidence": {
+    "method": "face_id",
+    "provider": "ants.gouv.fr",
+    "match_score": 0.994,
+    "verified_at": "2026-04-05T08:14:19Z",
+    "kyc_ref": "sha256:3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b",
+    "kyc_level": "qualified",
+    "eudi_pid_issuer": "ants.gouv.fr",
+    "eudi_presentation_alg": "sd-jwt"
+  },
+  "intent_hash": "SHA-256('Book Paris CDG to London LHR tomorrow morning, business class, corporate card ending 4821')"
+}
+```
+
+Note what is NOT in the Intent Artifact: Marie's name, date of birth,
+national identifier, or address. The `kyc_ref` is a SHA-256 hash of the
+EUDI presentation bytes — a commitment to the verification, not the data.
+The Merkle tree proves identity verification occurred. The PID attributes
+stay with the operator under GDPR. See §3.4.4.1 and ADR-007.
+
+**Step 4 — OBO Credential issued (Class D).**
+```json
+{
+  "action_class": "D",
+  "intent_hash": "SHA-256('Book Paris CDG to London LHR…')",
+  "issuer_id": "travel-agent-platform.fr",
+  "principal_id": "did:key:z6MkMarie…",
+  "expiry": "2026-04-05T08:44:22Z"
+}
+```
+
+**Step 5 — Agent crosses borders.**
+The AI agent carries the OBO Credential to:
+- **Airline booking API (UK operator):** Verifies credential, resolves
+  `travel-agent-platform.fr` key from DNS, checks Class D requirement, confirms
+  delegation chain and Intent Artifact are present. Executes booking.
+- **Corporate card issuer (Dutch operator):** Same verification. Charges card.
+  Regulatory requirement (PSD2 SCA): satisfied by the Class D Intent Artifact
+  carrying `kyc_level: qualified` and `biometric_provider: ants.gouv.fr`.
+
+Neither the airline nor the card issuer has a relationship with ANTS. Neither
+needs one. The OBO trust chain is DNS-anchored. The EUDI reference is in the
+Merkle tree. The downstream verifier sees proof that qualified identity
+verification occurred — without receiving Marie's PID attributes.
+
+**Step 6 — Evidence Anchor submission.**
+
+Merkle leaves include:
+```
+kyc_ref:sha256:3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b
+kyc_level:qualified
+eudi_pid_issuer:ants.gouv.fr
+eudi_presentation_alg:sd-jwt
+biometric_method:face_id
+biometric_provider:ants.gouv.fr
+biometric_score:0.994
+intent_id:urn:obo:intent:e3c7a912-…
+obo_outcome:allow
+obo_credential_id:urn:obo:cred:…
+```
+
+**What the audit trail proves:**
+1. A specific human (identified via EUDI PID, qualified LoA) explicitly
+   approved this specific booking
+2. That human's identity was verified by a EU national authority (ANTS)
+   to qualified level
+3. Biometric liveness was confirmed at the moment of authorisation
+4. The AI agent acted within the exact scope approved — no more
+5. The booking and card charge both verified the credential before acting
+6. The complete record is cryptographically sealed, independently verifiable,
+   and satisfies EU AI Act Article 12 transparency requirements
+
+No PID attribute appears in the audit trail. One Merkle root commits to
+the entire chain across three countries and five organisations.
+
 ---
 
 ## The two-agent first contact problem
@@ -475,6 +602,7 @@ answer to "what do we do when it doesn't."
 | D1 | Wire transfer | D | Full PSD2-compliant audit chain including SCA evidence |
 | D2 | Contract execution | D | Legally producible authorisation + identity proof |
 | D3 | Production DB termination | D | Who approved what, exactly, for post-incident compliance |
+| D4 | EUDI Wallet + AI travel agent | D | EU-sovereign identity chain + Art. 12 audit across 3 countries, 0 PID attributes in the tree |
 
 The action class determines the verification requirement. The verification
 requirement determines the evidence artifacts needed. The evidence artifacts

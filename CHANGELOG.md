@@ -7,6 +7,51 @@ Versioning: IETF draft number (`-NN`) + semantic version (`vX.Y.Z`).
 
 ---
 
+## [draft-01 / v0.4.1] — 2026-04-04
+
+**EUDI Wallet composability, selective disclosure alignment, EU sovereignty framing.**
+
+### Added
+- **`docs/adr/ADR-007-selective-disclosure.md`**: normative decision that PID
+  attributes MUST NOT enter the Merkle tree. `kyc_ref` MUST be
+  `sha256:<hex>` of the EUDI presentation bytes for selective-disclosure
+  credentials. Rationale: GDPR Article 5(1)(e), GDPR Article 25, and the
+  end-to-end preservation of EUDI selective disclosure guarantees.
+- **`docs/integrations/EUDI-WALLET-COMPOSABILITY.md`**: full technical and
+  strategic integration reference. Covers: EUDI + OBO composability table,
+  transaction flow, selective disclosure alignment, PSD2 SCA mapping, EU AI
+  Act Article 12 compliance map, known limitations. Includes strategic section
+  "EU Digital Sovereignty and the Agentic Layer" — EUDI as the EU's sovereign
+  answer to Google/Apple ID, and OBO as the agentic accountability layer that
+  makes EUDI useful beyond human-to-service interactions.
+- **`docs/USE-CASES.md` — D4**: new Class D use case: EU citizen (Marie) uses
+  ANTS-issued EUDI Wallet + AI travel agent for a regulated cross-border
+  booking across UK airline, Dutch corporate card, French operator platform.
+  Demonstrates: selective disclosure (name + nationality only), `kyc_ref` as
+  hash not attribute, PSD2 SCA satisfaction, Article 12 audit chain across 3
+  countries with 0 PID attributes in the Merkle tree.
+
+### Changed
+- **Spec §3.4.4 `authorisation_evidence`**: updated field definitions:
+  - `kyc_ref`: now MUST be `sha256:<hex>` for EUDI/selective-disclosure
+    presentations; opaque refs remain valid for non-SD KYC providers
+  - `provider`: clarified to use PID issuer domain for EUDI integrations
+  - `kyc_level`: `qualified` maps to eIDAS Level of Assurance High
+  - Added `eudi_pid_issuer` (OPTIONAL): domain of EUDI PID issuing authority
+  - Added `eudi_presentation_alg` (OPTIONAL): `sd-jwt` or `mdoc`
+- **Spec §3.4.4.1** (new sub-section): normative selective disclosure rule —
+  operators MUST NOT include raw PID attributes as Merkle leaves; `kyc_ref`
+  is the only permitted identity commitment; rationale and GDPR alignment.
+- **Spec §3.4.6 Evidence Anchor Leaves example**: updated to show EUDI format
+  (`kyc_ref:sha256:…`, `eudi_pid_issuer:ants.gouv.fr`, `eudi_presentation_alg:sd-jwt`);
+  replaced `apple_faceid` with `ants.gouv.fr` as biometric provider example;
+  added explanatory note on selective disclosure.
+- **Spec §3.4.2 schema example**: `kyc_ref` now shows `sha256:<hex>` format;
+  `provider` updated to `ants.gouv.fr`; `kyc_level` updated to `qualified`;
+  `eudi_pid_issuer` and `eudi_presentation_alg` fields added.
+
+---
+
 ## [draft-01 / v0.4.0] — 2026-04-04
 
 **SAPP → Evidence Anchor: remove proprietary product name from normative text.**

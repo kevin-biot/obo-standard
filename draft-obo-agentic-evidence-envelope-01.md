@@ -768,12 +768,14 @@ frameworks require for Class B and above.
   "authorisation_method": "explicit_approval",
   "authorisation_evidence": {
     "method": "face_id",
-    "provider": "apple_faceid",
+    "provider": "ants.gouv.fr",
     "session_id": "fid-session-7f3a9b…",
     "match_score": 0.987,
     "verified_at": "2026-04-04T11:54:55Z",
-    "kyc_ref": "jumio-kyc-abc123",
-    "kyc_level": "enhanced"
+    "kyc_ref": "sha256:3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b",
+    "kyc_level": "qualified",
+    "eudi_pid_issuer": "ants.gouv.fr",
+    "eudi_presentation_alg": "sd-jwt"
   },
   "intent_hash": "b98d4238ecb978415a304d0a86578c1e5f0fecc377df6355a3b3b6f60fba439c",
   "phrase_hash_alg": "sha-256",
@@ -811,17 +813,45 @@ demonstrated approval. It is the structured form of the
 | Field | Description |
 |-------|-------------|
 | `method` | `face_id`, `pin`, `passkey`, `sms_otp`, `email_link`, `qualified_esig`, `pre_authorised` |
-| `provider` | System or device that performed the check (e.g. `apple_faceid`, `yubikey`, `jumio`). |
+| `provider` | System or authority that performed the check (e.g. `ants.gouv.fr`, `yubikey`, `jumio`). For EUDI presentations, SHOULD be the PID issuer domain. |
 | `session_id` | Opaque session identifier from the provider. Enables cross-reference with provider logs. |
 | `match_score` | For biometric methods: confidence score in [0, 1]. |
 | `verified_at` | ISO 8601 UTC. Time of the authentication check. MUST precede `authorised_at`. |
-| `kyc_ref` | Reference to the KYC or AML check that established the principal's identity. |
-| `kyc_level` | `basic`, `enhanced`, `qualified`. Corresponds to the verification tier required by applicable regulation. |
+| `kyc_ref` | Reference to the KYC or identity verification check that established the principal's identity. For EUDI Wallet presentations and any selective-disclosure credential, MUST be `sha256:<lowercase hex>` of the exact presentation bytes. Opaque provider references (e.g. `jumio-kyc-abc123`) remain valid for non-selective-disclosure KYC providers. See §3.4.4.1. |
+| `kyc_level` | `basic`, `enhanced`, `qualified`. Corresponds to the verification tier required by applicable regulation. `qualified` maps to eIDAS Level of Assurance High. |
+| `eudi_pid_issuer` | OPTIONAL. Domain of the EUDI PID issuing authority (e.g. `ants.gouv.fr`). Present when identity was verified via an EUDI Wallet presentation. |
+| `eudi_presentation_alg` | OPTIONAL. Format of the EUDI presentation: `sd-jwt` or `mdoc`. |
 
 `authorisation_evidence` is RECOMMENDED for Class B and above, and
 REQUIRED for Class C and D. It closes the gap between "an agent was
 delegated authority" and "a specific human explicitly approved this
 specific act, with this verification confidence, at this time."
+
+#### 3.4.4.1 Selective Disclosure and the `kyc_ref` Commitment
+
+EUDI Wallet credentials (and any credential using Selective Disclosure JWT or
+ISO 18013-5 mdoc) allow the holder to reveal only the attributes needed for a
+specific transaction. The operator receives a disclosure-bound presentation and
+verifies the disclosed subset. Only a reference to this verification — not the
+disclosed attributes — enters the OBO evidence chain.
+
+**Operators MUST NOT include raw PID attributes (name, national identifier,
+date of birth, address, or equivalent) as Merkle leaves in the Evidence Anchor
+submission.** The `kyc_ref` leaf is the only permitted commitment to identity
+verification material.
+
+This design ensures:
+
+- The selective disclosure guarantee of the EUDI Wallet is preserved end-to-end
+- GDPR Article 5(1)(e) storage limitation is satisfied — personal data is not
+  permanently committed to an append-only public log
+- Evidence Anchor operators are not data controllers for PID attributes
+- Cross-border audit under EU AI Act Article 12 can proceed via the Merkle root
+  without requiring PID data to cross organisational boundaries
+
+The operator retains the original EUDI presentation under applicable law.
+An auditor or regulator may obtain it from the operator and verify that
+`SHA-256(presentation_bytes)` matches the committed `kyc_ref` leaf.
 
 #### 3.4.5 Binding to the OBO Credential and Evidence Envelope
 
@@ -848,14 +878,22 @@ intent_authorised_at:2026-04-04T11:54:58Z
 intent_authorisation_method:explicit_approval
 intent_principal_sig:<base64url Ed25519 by principal>
 intent_operator_sig:<base64url Ed25519 by operator>
-kyc_level:enhanced
-kyc_ref:<opaque ref to KYC record>
+kyc_level:qualified
+kyc_ref:sha256:3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b
+eudi_pid_issuer:ants.gouv.fr
+eudi_presentation_alg:sd-jwt
 biometric_method:face_id
-biometric_provider:apple_faceid
+biometric_provider:ants.gouv.fr
 biometric_session_id:fid-session-7f3a9b…
 biometric_score:0.987
 biometric_verified_at:2026-04-04T11:54:55Z
 ```
+
+The `kyc_ref` leaf is a SHA-256 hash of the EUDI SD-JWT presentation
+bytes — not the disclosed attributes themselves. The biometric check
+(liveness verification performed at wallet provisioning by the issuing
+authority) is referenced by provider domain, not by raw biometric data.
+No PID attributes appear in the tree. See §3.4.4.1 and ADR-007.
 
 The critical property: the biometric check, the KYC level, the
 principal's explicit approval signature, and the transaction outcome
