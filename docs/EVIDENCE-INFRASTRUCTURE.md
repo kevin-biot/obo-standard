@@ -1,6 +1,6 @@
 # Evidence Infrastructure: What Is Coming and Why It Cannot Be Ignored
 
-**Version:** 0.4.2
+**Version:** 0.4.3
 **Date:** 2026-04-04
 
 ---
@@ -291,3 +291,121 @@ CT log operators who already have the stack — on top of OBO's schema and
 protocol.
 
 Evidence is coming. The infrastructure exists. OBO provides the missing piece.
+
+---
+
+## The Lane2 Evidence Anchor: Purpose-Built, Not Trillian-Wrapped
+
+OBO defines the Evidence Anchor API. It does not mandate the implementation.
+Any conformant server that accepts `tag:value` leaf submissions, constructs a
+Merkle tree, issues signed receipts, and serves inclusion proofs is a valid
+Evidence Anchor.
+
+Lane2 built one. It is the commercial implementation that OBO was designed
+alongside — the standard and the implementation informed each other
+throughout development. It is called SAPP (Secure Agent Payment Protocol
+Evidence Anchor) internally, and it is a production-grade commercial product.
+The OBO standard is open; the implementation is ours.
+
+### Why not wrap Trillian?
+
+Trillian (Google, Apache 2.0) is an excellent general-purpose Merkle log.
+It powers Certificate Transparency log operations at scale. But it is designed
+as a distributed, multi-tenant infrastructure component — not as a
+purpose-built Evidence Anchor for the OBO workload. The architectural
+differences matter:
+
+| Dimension | Trillian | Lane2 Evidence Anchor |
+|-----------|----------|----------------------|
+| Architecture | Separate log server process + external storage backend (MySQL / Spanner / PostgreSQL) + gRPC internal transport | Single-process, embedded storage, direct in-memory Merkle construction |
+| Minting latency (single leaf batch) | 10–50 ms typical (storage roundtrip + gRPC) | Sub-millisecond (in-process, batched Merkle) |
+| Inclusion proof generation | External RPC to log server | In-process, no network hop |
+| OBO leaf schema awareness | None — leaves are opaque bytes | Native: validates `tag:value` format, enforces required leaf sets per action class |
+| Epoch anchoring | Not built in; requires separate tooling | First-class: DNS TXT record publication per epoch |
+| Operational complexity | Requires log server + storage + personality + front-end | Single binary, single config |
+| Licence | Apache 2.0 (implementation open; you operate it) | Commercial (Lane2-operated or licensed) |
+
+The performance gap exists because Trillian was designed to be general —
+a Merkle log for any data, at any scale, operated by any party. Lane2's
+implementation was designed to be specific: the OBO Evidence Anchor API,
+and nothing else, as fast as possible.
+
+For PoC work, the reference stub (`anchor_stub/`) is sufficient. For
+production deployments where minting latency feeds into real-time agent
+transaction pipelines, the sub-millisecond path matters. An agent transaction
+must await the Evidence Anchor receipt before proceeding — every millisecond
+of anchor latency is latency the human experiences.
+
+### The commercial model is compatible with the open standard
+
+SAPP is a commercial product built on an open standard. This is the same
+model as:
+- Nginx (open source) → Nginx Plus (commercial)
+- Let's Encrypt (open, free CT log) → DigiCert (commercial CA with paid CT logging)
+- OpenSSL (open source) → commercial TLS appliances
+
+OBO defines the interface. Anyone can implement it — including using Trillian
+as the backend. Lane2's implementation competes on performance, operational
+simplicity, and support — not on protocol lock-in. The receipts Lane2 issues
+are verifiable by anyone with the OBO spec and the Evidence Anchor's public
+key. There is no proprietary wrapper around the evidence itself.
+
+This matters for the open standard: the existence of a high-performance
+commercial implementation demonstrates that the standard is production-viable,
+not merely academically correct. The spec was stress-tested against a real
+implementation, at real transaction volumes, under real latency constraints.
+That is why the leaf schema is `tag:value` strings rather than JSON (ADR-004),
+why the sort is done by the Evidence Anchor not the submitter (ADR-004), and
+why epoch anchoring uses DNS rather than a blockchain (ADR-008) — these
+decisions were made by people running the system, not only designing it.
+
+---
+
+## Public Reference Endpoint: PoC and Validation
+
+Lane2 operates a public Evidence Anchor endpoint for the OBO community:
+
+```
+POST https://anchor.lane2.ai/v1/evidence/mint
+GET  https://anchor.lane2.ai/v1/evidence/{id}/proof
+GET  https://anchor.lane2.ai/v1/status
+```
+
+**This endpoint is available for:**
+- PoC development against the live OBO Evidence Anchor API
+- Integration testing of OBO Credential pipelines end-to-end
+- Validation of Evidence Envelope construction and leaf schemas
+- Demonstration to counterparties, regulators, and auditors that OBO works
+
+**Terms:**
+- No SLA. Best-effort availability.
+- Evidence records are retained for 90 days then purged.
+- Rate limited: 100 requests/minute per IP.
+- Not for production use. Do not submit real personal data.
+- The endpoint's Ed25519 public key is published at
+  `_anchor-key.lane2.ai IN TXT "v=anchor1 ed25519=<pubkey>"` and in
+  `/.well-known/obo-anchor` on the endpoint itself.
+
+**To use it in your implementation:**
+
+Set your Evidence Anchor URL to `https://anchor.lane2.ai` in your agent
+or pipeline configuration. The endpoint accepts the standard OBO Evidence
+Anchor submission format (§4.4) and returns signed receipts with Merkle
+roots, checkpoint indices, and inclusion proof paths.
+
+Any receipt issued by this endpoint can be independently verified by:
+1. Resolving the Lane2 anchor public key from DNS
+2. Verifying the `envelope_sig` in the receipt
+3. Recomputing the Merkle root from the submitted leaves
+4. Comparing against the checkpoint
+
+This is the same verification path any Evidence Anchor receipt follows,
+regardless of the operator. The verification is the proof — not trust in Lane2.
+
+**To request increased rate limits or a dedicated PoC environment**, open a
+discussion at `https://github.com/kevin-biot/obo-standard/discussions` or
+contact Lane2 directly. Enterprise PoC environments with dedicated capacity,
+extended retention, and priority support are available.
+
+See [`docs/PUBLIC-ANCHOR-ENDPOINT.md`](PUBLIC-ANCHOR-ENDPOINT.md) for full
+integration instructions, key material, and example receipts.

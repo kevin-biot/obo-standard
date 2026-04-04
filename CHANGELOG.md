@@ -7,6 +7,32 @@ Versioning: IETF draft number (`-NN`) + semantic version (`vX.Y.Z`).
 
 ---
 
+## [draft-01 / v0.4.3] — 2026-04-04
+
+**Lane2 commercial Evidence Anchor, public PoC endpoint, and performance context.**
+
+### Added
+- **`docs/PUBLIC-ANCHOR-ENDPOINT.md`**: complete integration guide for the
+  Lane2 public Evidence Anchor endpoint (`https://anchor.lane2.ai`). Covers:
+  all API paths, DNS trust material, mint/proof request/response examples,
+  independent receipt verification (Python snippet, no Lane2 trust required),
+  code examples in Python and Go, A2A integration wiring, terms of use (90-day
+  retention, 100 req/min, free for PoC). Performance note: sub-5ms p99 minting
+  latency for standard OBO submissions from co-region AWS.
+
+### Changed
+- **`docs/EVIDENCE-INFRASTRUCTURE.md`**: added two new sections:
+  - *The Lane2 Evidence Anchor: Purpose-Built, Not Trillian-Wrapped* —
+    comparison table (latency, architecture, OBO leaf schema awareness, epoch
+    anchoring, operational complexity) vs. Trillian. The commercial model is
+    compatible with the open standard; the spec was stress-tested against a
+    real production implementation at real transaction volumes.
+  - *Public Reference Endpoint* — pointer to the public PoC endpoint with
+    terms, rate limits, DNS key resolution instructions, and enterprise PoC
+    contact path.
+
+---
+
 ## [draft-01 / v0.4.2] — 2026-04-04
 
 **Evidence infrastructure context: Merkle log over blockchain rationale, CT
