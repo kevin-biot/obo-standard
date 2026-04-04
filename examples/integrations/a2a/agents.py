@@ -92,6 +92,48 @@ def load_private_key_from_env() -> Ed25519PrivateKey:
     return load_pem_private_key(pem, password=None)
 
 
+def resolve_obo_key_from_dns(operator_id: str) -> tuple[Optional[Ed25519PublicKey], str]:
+    """
+    Resolve operator public key from DNS TXT record.
+
+    Lookup:  _obo-key.<operator_id>  IN TXT  "v=obo1 ed25519=<base64url>"
+    Returns: (public_key, source_label) where source_label is one of:
+               "dns-txt"   — resolved live from DNS
+               "env"       — DNS lookup failed, fell back to TRAVEL_AGENT_PUBKEY env var
+               "none"      — neither source available
+
+    Production behaviour (§3.4 of draft):
+      - MUST NOT cache-only for Class C/D actions; re-resolve per transaction.
+      - For known counterparties: curated registry is ground truth; DNS is trip-wire.
+    """
+    try:
+        import dns.resolver  # dnspython>=2.4
+        qname = f"_obo-key.{operator_id}"
+        answers = dns.resolver.resolve(qname, "TXT", lifetime=5.0)
+        for rdata in answers:
+            for txt_string in rdata.strings:
+                txt = txt_string.decode("utf-8") if isinstance(txt_string, bytes) else txt_string
+                txt = txt.strip()
+                if txt.startswith("v=obo1 "):
+                    for part in txt.split():
+                        if part.startswith("ed25519="):
+                            pubkey_b64 = part[len("ed25519="):]
+                            raw = _b64url_decode(pubkey_b64)
+                            key = Ed25519PublicKey.from_public_bytes(raw)
+                            return key, "dns-txt"
+    except Exception as dns_err:
+        # DNS unavailable or record not set — fall through to env fallback
+        _ = dns_err
+
+    # Env fallback (local dev / pre-DNS-propagation)
+    b64 = os.environ.get("TRAVEL_AGENT_PUBKEY", "")
+    if b64:
+        raw = _b64url_decode(b64)
+        return Ed25519PublicKey.from_public_bytes(raw), "env"
+
+    return None, "none"
+
+
 def load_public_key_from_env() -> Ed25519PublicKey:
     """Load Ed25519 public key from TRAVEL_AGENT_PUBKEY env var (base64url raw 32 bytes)."""
     b64 = os.environ.get("TRAVEL_AGENT_PUBKEY", "")
@@ -734,14 +776,17 @@ def run_flight_search_server():
     app = Flask("flight-search")
     port = int(os.environ.get("FLIGHT_SEARCH_PORT", 8081))
 
-    # Load verifying public key
-    try:
-        public_key = load_public_key_from_env()
-        raw = public_key.public_bytes(Encoding.Raw, PublicFormat.Raw)
-        print(f"[FlightSearchAgent] OBO verifying key loaded: {_b64url_encode(raw)[:20]}…")
-    except RuntimeError as e:
-        print(f"[FlightSearchAgent] WARNING: {e}")
-        public_key = None
+    # Warm startup check — resolve key once at boot to confirm reachability.
+    # The actual per-request verification always calls resolve_obo_key_from_dns()
+    # so the key is fresh for every transaction (spec §3.4).
+    _startup_key, _startup_source = resolve_obo_key_from_dns(
+        os.environ.get("TRAVEL_AGENT_OPERATOR_ID", "lane2.ai")
+    )
+    if _startup_key:
+        _raw = _startup_key.public_bytes(Encoding.Raw, PublicFormat.Raw)
+        print(f"[FlightSearchAgent] OBO key ready  source={_startup_source}  key={_b64url_encode(_raw)[:20]}…")
+    else:
+        print(f"[FlightSearchAgent] WARNING: OBO key not resolved at startup — will retry per-request")
 
     # Replay detection — seen credential_ids within this server lifetime
     _seen_credential_ids: set = set()
@@ -825,16 +870,21 @@ def run_flight_search_server():
             return _reject(task, OBO_ERR_INTENT_MISMATCH,
                            "SHA-256(task.intent) does not match OBO intent_hash")
 
-        # ── OBO-ERR-004  Ed25519 signature invalid ────────────────────────────
-        if public_key is not None:
-            try:
-                cred.verify(public_key)
-                print(f"[FlightSearchAgent] ✓ Ed25519 credential_sig verified")
-            except InvalidSignature:
-                return _reject(task, OBO_ERR_SIG_INVALID,
-                               "Ed25519 credential_sig verification failed")
-        else:
-            print(f"[FlightSearchAgent] ⚠  Ed25519 verify skipped (no pubkey configured)")
+        # ── OBO-ERR-006 / OBO-ERR-004  DNS key resolution + Ed25519 verify ─────
+        # Resolve key fresh for every transaction (spec §3.4 — no stale cache
+        # for write-bearing actions).  Falls back to env var if DNS not reachable.
+        resolved_key, key_source = resolve_obo_key_from_dns(cred.operator_id)
+        if resolved_key is None:
+            return _reject(task, OBO_ERR_KEY_NOT_FOUND,
+                           f"Could not resolve OBO key for operator '{cred.operator_id}' "
+                           f"from DNS (_obo-key.{cred.operator_id}) or env fallback")
+        try:
+            cred.verify(resolved_key)
+            _raw = resolved_key.public_bytes(Encoding.Raw, PublicFormat.Raw)
+            print(f"[FlightSearchAgent] ✓ Ed25519 verified  source={key_source}  key={_b64url_encode(_raw)[:20]}…")
+        except InvalidSignature:
+            return _reject(task, OBO_ERR_SIG_INVALID,
+                           f"Ed25519 credential_sig verification failed (key from {key_source})")
 
         # ── OBO-ERR-008  Replay ───────────────────────────────────────────────
         if cred.credential_id in _seen_credential_ids:

@@ -507,6 +507,59 @@ disputed by any party.
 
 ---
 
+## Reference implementation
+
+A working end-to-end demo ships in this repository. Three Docker containers,
+real Ed25519 keys, a live DNS trust anchor, and seven test scenarios covering
+both the happy path and five failure modes.
+
+**Verify the trust anchor right now — no setup needed:**
+
+```bash
+dig +short TXT _obo-key.lane2.ai @8.8.8.8
+# → "v=obo1 ed25519=vqiddGZ0skvsek13nUksdu9NfLq7fDN3BmtCsKkEysU"
+```
+
+**Results from the live run (2026-04-04):**
+
+```
+[FlightSearchAgent] OBO key ready  source=dns-txt  key=vqiddGZ0skvsek13nUks…
+
+  SCENARIO 1 — Flight search LHR→JFK        → allow  ✓  SAPP checkpoint_idx: 0
+  SCENARIO 2 — Hotel search New York         → allow  ✓  SAPP checkpoint_idx: 1
+  SCENARIO 3 — Tampered intent               → 422    OBO-ERR-005  ✓
+  SCENARIO 4 — Missing OBO extension         → 422    OBO-ERR-001  ✓
+  SCENARIO 5 — Expired credential            → 422    OBO-ERR-003  ✓
+  SCENARIO 6 — Forged Ed25519 signature      → 422    OBO-ERR-004  ✓
+  SCENARIO 7 — Replayed credential_id        → 422    OBO-ERR-008  ✓
+```
+
+For each allowed transaction, 14 leaves are committed to the SAPP Merkle tree —
+binding operator identity, principal DID, intent hash, task correlation reference,
+outcome, and Ed25519 envelope signature into a single `merkle_root`. For rejected
+transactions the gate fires before any task executes; no evidence is minted.
+
+**The evidence chain for Scenario 1:**
+```
+OBO credential issued    → credential_sig: Ed25519 over intent_hash + principal_id
+A2A task dispatched      → extensions.obo carries the credential inline
+FlightSearchAgent verifies  DNS lookup _obo-key.lane2.ai → pubkey → Ed25519 check
+Evidence envelope sealed → evidence_digest + envelope_sig: Ed25519
+SAPP Merkle anchored     → merkle_root: 4f29251a3d5a565c53a1…  checkpoint_idx: 0
+```
+
+**Run it yourself:**
+```bash
+cd examples/integrations/a2a
+python3 keygen.py --operator-id your-domain.com
+# Set DNS TXT record, fill .env, then:
+docker compose up --build
+```
+
+Full runbook → [`examples/integrations/a2a/README.md`](examples/integrations/a2a/README.md)
+
+---
+
 ## Status and roadmap
 
 | Phase | Description | Status |
@@ -514,6 +567,7 @@ disputed by any party.
 | 0 | RFC draft | ✅ Complete — this repository |
 | 1 | JSON Schemas and examples | ✅ In this repository |
 | 2 | DNS zone templates (deployable today) | ✅ In this repository |
+| 2a | A2A reference implementation (Docker, live DNS) | ✅ In this repository |
 | 3 | Independent implementation reports | 🔲 Seeking contributors |
 | 4 | Jurisdiction profiles (PSD3, UAE, NHS) | 🔲 Seeking contributors |
 | 5 | E.4b suffix privacy circuit review | 🔲 Seeking cryptographic reviewers |

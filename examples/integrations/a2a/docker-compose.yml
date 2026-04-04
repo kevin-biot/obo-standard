@@ -19,7 +19,7 @@ services:
     build:
       context: ./sapp_stub
     ports:
-      - "8080:8080"
+      - "8080:8080"   # if 8080 is already in use locally, change left side: "9080:8080"
     environment:
       - TRAVEL_AGENT_PUBKEY=${TRAVEL_AGENT_PUBKEY}
       - SAPP_PORT=8080
@@ -37,7 +37,7 @@ services:
       context: .
     command: ["--server"]
     ports:
-      - "8081:8081"
+      - "8081:8081"   # if 8081 is already in use locally, change left side: "9081:8081"
     environment:
       - TRAVEL_AGENT_PUBKEY=${TRAVEL_AGENT_PUBKEY}
       - FLIGHT_SEARCH_PORT=8081
