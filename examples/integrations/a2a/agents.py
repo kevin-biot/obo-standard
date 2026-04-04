@@ -29,6 +29,17 @@ Environment variables:
                                   In production: resolved from DNS
                                   _obo-key.<operator_id>  IN TXT  "v=obo1 ed25519=<value>"
 
+Agent Cards (A2A discovery):
+  FlightSearchAgent serves GET /.well-known/agent.json advertising its skills
+  and declaring OBO as the required authentication scheme. TravelAgent fetches
+  this card on startup — discovers the OBO requirement, confirms the endpoint,
+  then proceeds. This is the correct A2A discovery pattern: the card is the
+  contract, not out-of-band configuration.
+
+  The OBO entry in authentication.schemes is the key signal:
+    "authentication": { "schemes": ["obo"], "obo": { ... } }
+  Any A2A sender reading this card knows it must attach an OBO credential.
+
 SAPP integration:
   Evidence is minted via POST /v1/evidence/mint (ADR-153 domain-neutral API).
   Leaves follow the canonical tag:value format, lexicographically sorted by SAPP.
@@ -205,6 +216,81 @@ class OBOEvidenceEnvelope:
         public_key.verify(sig_bytes, self.evidence_digest.encode())
 
 
+# ─── A2A Agent Card ───────────────────────────────────────────────────────────
+
+# FlightSearchAgent's Agent Card — served at GET /.well-known/agent.json
+# This is the discovery artefact. The authentication.schemes entry is the
+# machine-readable signal that OBO credentials are required.
+FLIGHT_SEARCH_AGENT_CARD = {
+    "schema_version": "1.0",
+    "name": "FlightSearchAgent",
+    "description": (
+        "Searches flights and hotels across carriers. "
+        "Cross-org requests require an OBO credential in extensions.obo."
+    ),
+    "version": "1.0.0",
+    "url": "",          # populated at runtime from FLIGHT_SEARCH_URL
+    "provider": {
+        "name": "flight-search.example.com",
+        "url":  "https://flight-search.example.com",
+    },
+    "capabilities": {
+        "streaming":           False,
+        "push_notifications":  False,
+    },
+    "authentication": {
+        # OBO is the declared authentication scheme for cross-org requests.
+        # A sender reading this card knows it must attach extensions.obo.
+        # Within a shared trust domain, bearer tokens would also be listed here.
+        "schemes": ["obo"],
+        "obo": {
+            "spec_version":     "draft-obo-agentic-evidence-envelope-00",
+            "required_fields":  [
+                "credential_id", "operator_id", "principal_id",
+                "intent_hash", "credential_sig", "expires_at",
+            ],
+            "key_resolution":   "dns-txt",
+            "dns_record_format": "_obo-key.{operator_id}  IN TXT  \"v=obo1 ed25519=<pubkey>\"",
+            "did_alternative":  "did:web:{operator_id}",
+        },
+    },
+    "skills": [
+        {
+            "id":          "flight-search",
+            "name":        "Flight Search",
+            "description": "Search available flights between two airports on a given date.",
+            "tags":        ["travel", "flights"],
+            "examples":    ["search flights from LHR to JFK on 2025-06-15"],
+            "input_schema": {
+                "type": "object",
+                "required": ["origin", "destination", "date"],
+                "properties": {
+                    "origin":      {"type": "string", "description": "IATA airport code"},
+                    "destination": {"type": "string", "description": "IATA airport code"},
+                    "date":        {"type": "string", "format": "date"},
+                },
+            },
+        },
+        {
+            "id":          "hotel-search",
+            "name":        "Hotel Search",
+            "description": "Search available hotels in a city for a date range.",
+            "tags":        ["travel", "hotels"],
+            "examples":    ["search hotels in New York 2025-06-15 to 2025-06-18"],
+            "input_schema": {
+                "type": "object",
+                "required": ["city", "check_in", "check_out"],
+                "properties": {
+                    "city":      {"type": "string"},
+                    "check_in":  {"type": "string", "format": "date"},
+                    "check_out": {"type": "string", "format": "date"},
+                },
+            },
+        },
+    ],
+}
+
+
 # ─── A2A Task ─────────────────────────────────────────────────────────────────
 
 @dataclasses.dataclass
@@ -264,6 +350,18 @@ class TravelAgent:
         )
         self.sapp_url = os.environ.get("SAPP_URL", "http://localhost:8080")
         self._pending: dict[str, OBOCredential] = {}
+
+    def discover_agent_card(self) -> dict:
+        """
+        Fetch FlightSearchAgent's Agent Card from /.well-known/agent.json.
+        This is the A2A discovery step — confirms the endpoint, skills, and
+        that OBO is declared as the required authentication scheme.
+        """
+        try:
+            card = self._get_json(f"{self.flight_search_url}/.well-known/agent.json")
+            return card
+        except Exception as e:
+            return {"_error": str(e)}
 
     def _post_json(self, url: str, body: dict) -> dict:
         import urllib.request
@@ -352,6 +450,22 @@ class TravelAgent:
         print(f"\n{banner}")
         print("  OBO + A2A DEMO — Cross-org task with real evidence chain")
         print(f"{banner}\n")
+
+        # ── Agent Card discovery ──────────────────────────────────────────────
+        print(f"  [discovery] GET {self.flight_search_url}/.well-known/agent.json")
+        card = self.discover_agent_card()
+        if "_error" in card:
+            print(f"  ⚠  Agent Card unavailable: {card['_error']}")
+        else:
+            auth_schemes = card.get("authentication", {}).get("schemes", [])
+            skills       = [s["id"] for s in card.get("skills", [])]
+            obo_required = "obo" in auth_schemes
+            print(f"  agent:       {card.get('name', '?')}  v{card.get('version', '?')}")
+            print(f"  skills:      {', '.join(skills)}")
+            print(f"  auth.obo:    {'✓ required' if obo_required else '✗ not declared'}")
+            if not obo_required:
+                print(f"  ⚠  WARNING — agent card does not declare OBO; proceeding anyway")
+            print()
 
         scenarios = [
             {
@@ -524,6 +638,14 @@ def run_flight_search_server():
     except RuntimeError as e:
         print(f"[FlightSearchAgent] WARNING: {e}")
         public_key = None
+
+    # Build Agent Card with runtime URL
+    agent_card = dict(FLIGHT_SEARCH_AGENT_CARD)
+    agent_card["url"] = os.environ.get("FLIGHT_SEARCH_URL", f"http://localhost:{port}")
+
+    @app.route("/.well-known/agent.json")
+    def agent_card_route():
+        return jsonify(agent_card)
 
     @app.route("/health")
     def health():
