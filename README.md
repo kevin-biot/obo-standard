@@ -68,6 +68,11 @@ provide — and composes with them rather than replacing them:
 
 ## Start here — two artefacts, zero infrastructure
 
+> **New to the problem space?** Start with
+> [Fly Away Little Bird](docs/FLY-AWAY-LITTLE-BIRD.md) — the six patterns
+> of agent deployment in 2026 and the papers none of them carry today.
+> Then come back here for the runnable quickstart.
+
 OBO is two JSON objects. That is the minimum. Everything else is optional.
 
 ```
