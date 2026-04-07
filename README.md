@@ -658,6 +658,40 @@ The chain is tamper-evident end to end.
 
 ---
 
+## Discussion and feedback
+
+A note on where the conversation happens.
+
+Substantive critique of OBO sometimes arrives through channels that are
+not the issue tracker — LinkedIn comments, private DMs, email, conference
+hallways. We think that is a problem for a standard that expects to be
+reviewed and adopted by third parties, because the argument and the
+response end up scattered across private threads and feeds that nobody
+else can find later.
+
+Our policy: **any substantive technical concern raised about OBO, in any
+channel, will be captured as an issue in this repository, answered in the
+issue body with specific references to the specification, and closed
+with a resolution label.** Feedback from public forums is attributed by
+name when the originator posted publicly. Feedback from private channels
+is attributed as *"raised in private discussion"* without a name.
+
+The goal is that anyone evaluating OBO — reviewers, implementers,
+regulators, future contributors — can read the full set of objections and
+responses in one place, alongside the spec they reference. If you
+disagree with a closed issue's resolution, you are welcome to reopen it
+or file a follow-up. Issues #16–#20 are recent examples of this pattern:
+each was opened from external feedback, answered with spec references,
+and closed by-design.
+
+If you would rather keep a discussion private, that is fine — but the
+technical content of the concern will still be captured (without
+attribution) so the argument is part of the public record. Standards
+that cannot survive written critique in public should not be adopted in
+private.
+
+---
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). All contributions welcome:
