@@ -278,6 +278,34 @@ See [ADR-001](adr/ADR-001-dns-trust-anchor.md) for the full rationale.
 
 ---
 
+### DNS feels like a hack — what legitimises it as the identity anchor?
+
+Owning a domain is not free and not anonymous at scale. Every domain
+registration produces a chain of legal artefacts: ICANN-accredited
+registrar, WHOIS record tying the domain to a legal entity and
+jurisdiction, enforceable registrar contract, payment trail, DNSSEC for
+resolution integrity, and TLS certificates already anchored to domain
+control via ACME. A commercial operator with a domain is, by definition,
+a legal entity that can be sued, regulated, and held accountable —
+exactly what OBO needs as the root of the accountability chain.
+
+The "DNS TXT record for public keys" pattern is not novel. It is the
+same pattern used by DKIM (RFC 6376) to authenticate email senders since
+2007, and by SPF, DMARC, MTA-STS, CAA records, and ACME DNS-01. Billions
+of emails are verified per day using DKIM's Ed25519/RSA keys in DNS TXT
+records. Nobody calls DKIM a hack.
+
+The apparent "hackiness" comes from reusing proven infrastructure rather
+than building new infrastructure. That is a feature: no new servers, no
+new protocols, no new authorities, no new legal frameworks — DNS
+registration is already covered by existing commercial law. At some
+point "hack" and "pragmatic reuse of proven infrastructure at internet
+scale" become the same thing.
+
+See [ADR-001](adr/ADR-001-dns-trust-anchor.md) and [issue #17](https://github.com/kevin-biot/obo-standard/issues/17).
+
+---
+
 ### Why not require human approval for every agent action?
 
 OBO is the accountability layer, not the gating layer. For Class A and B
@@ -317,6 +345,42 @@ See [ADR-002](adr/ADR-002-ed25519-only.md) for the full rationale.
 
 ---
 
+### Why not use blockchain for the evidence layer?
+
+Blockchain solves trustless consensus among mutually distrustful parties
+with no shared authority. OBO has the opposite situation: every operator
+is a legally accountable entity anchored to DNS, so Byzantine fault
+tolerance is not required. The costs of blockchain are disqualifying for
+per-transaction evidence:
+
+- **Finality latency** — Ethereum ~12 s, Bitcoin ~10 min. OBO targets
+  sub-100 ms evidence sealing. A user at checkout cannot wait for block
+  confirmation.
+- **Transaction fees** — variable gas costs incompatible with
+  per-transaction evidence volume.
+- **Commercial data exposure** — public chains expose transaction
+  metadata to the world, permanently.
+- **GDPR incompatibility** — once written to a public chain, data cannot
+  be erased. Article 17 cannot be satisfied.
+
+OBO uses the parts of blockchain that are useful (Merkle trees,
+cryptographic signatures, hash-linked append-only logs) and not the
+parts that are costly. The reference model is Certificate Transparency
+(RFC 9162), which has operated at internet scale since 2013 using
+exactly this pattern. Google's Trillian is the reference implementation.
+DNS epoch root anchoring provides decentralised finality without
+consensus — and has not been broken in 13 years of CT production use.
+
+A common counter-suggestion is "use blockchain as the epoch root anchor
+for the Merkle log." DNS already provides tamper-evident epoch anchoring
+via DNSSEC and multi-resolver observation; adding a blockchain layer
+adds all the finality, cost, and exposure problems above without
+adding verifiability DNS does not already provide.
+
+See [ADR-008](adr/ADR-008-merkle-log-over-blockchain.md) and [issue #20](https://github.com/kevin-biot/obo-standard/issues/20).
+
+---
+
 ## "What about..."
 
 ---
@@ -349,6 +413,45 @@ See [ADR-006](adr/ADR-006-intent-hash.md) for the intent hash privacy rationale.
 
 ---
 
+### Isn't signed intent too vague and too broad to constrain agents?
+
+No — intent in OBO is structured, not a free-form phrase. §3.4 defines
+the Intent Artifact as two linked fields: `phrase` (natural language,
+for human audit) and `structured` (machine-readable action with
+explicit parameters — action, domain, origin, destination, date,
+class, max_price, currency). Example:
+
+```json
+{
+  "phrase": "book LHR→JFK on 2026-06-15, economy, under £800",
+  "structured": {
+    "action": "book",
+    "domain": "travel:flights",
+    "origin": "LHR", "destination": "JFK",
+    "date": "2026-06-15", "class": "economy",
+    "max_price": {"amount": 800, "currency": "GBP"}
+  }
+}
+```
+
+The corridor validates every action against the `structured` field
+deterministically, before execution. Any attempt to exceed the declared
+bounds is rejected (fail-closed, ADR-003). Beyond per-transaction intent,
+OBO references a PACT governance pack via `governance_framework_ref`:
+a machine-readable policy ontology with closed-world semantics and
+SHACL validation (ADR-009). Actions not explicitly permitted by the
+pack are denied. Agents cannot invent new action types at runtime.
+
+This is strictly more precise than OAuth scopes (coarse strings like
+`read:orders`), API keys (all-or-nothing), or RBAC (role-based, not
+action-based). OBO specifies the exact action, exact parameters, and
+exact bounds in machine-verifiable form, bound cryptographically to the
+human who approved it.
+
+See §3.4, [ADR-005](adr/ADR-005-action-classes.md), [ADR-009](adr/ADR-009-domain-shacl-profiles.md), and [issue #18](https://github.com/kevin-biot/obo-standard/issues/18).
+
+---
+
 ### What if the operator's private key is stolen?
 
 Rotate immediately: generate a new key pair, update the DNS TXT record, wait
@@ -358,6 +461,75 @@ DNS record no longer contains that key. There is no revocation mechanism in the
 current spec (v0.3.x) — rotation via DNS is the primary mitigation. For Class
 C/D operators, HSM storage (FIPS 140-2 Level 3) and short credential TTLs
 (minutes) limit the blast radius of a key compromise.
+
+---
+
+### What if the operator claims their agent was hijacked?
+
+This is the strongest argument *for* OBO's design, not against it.
+Without sealed evidence, every dispute today *is* "my agent was
+hijacked" — an unfalsifiable defence. OBO makes that defence impossible
+because the merchant can show:
+
+- The credential was signed by the operator's DNS-published Ed25519 key
+  (verifiable offline by anyone with DNS access)
+- The intent was dual-signed by the principal and the operator (§3.4)
+- The Evidence Envelope was sealed and Merkle-anchored at transaction
+  time
+- The action was within the declared `action_class` ceiling enforced
+  deterministically by the corridor (ADR-005)
+
+If the operator says "my agent was hijacked," the merchant points at
+the chain: *your DNS-published key signed the credential, your key
+countersigned the intent, the evidence was committed to the Merkle log
+before settlement.* Either the transaction is valid, or the operator is
+admitting key custody failure — which is the operator's legal liability
+either way. There is no third option.
+
+OBO does not eliminate agent compromise. It makes compromise legally
+and financially the operator's problem, which is exactly where the
+accountability belongs. The deployer of an agent assumes the risk of
+deploying that agent, and the chain makes that assumption legally
+provable — you cannot deploy an agent under OBO and externalise misfire
+risk onto merchants or users.
+
+See §3.4, §4, §9, [ADR-010](adr/ADR-010-agent-instance-binding.md), and [issue #16](https://github.com/kevin-biot/obo-standard/issues/16).
+
+---
+
+### Does OBO only prove the trace without preventing the action?
+
+No — OBO has both the leash and the trace. They operate at different
+points in the transaction lifecycle and are complementary, not
+alternatives.
+
+**The leash — runtime containment, before execution:**
+
+- Action class ceiling (ADR-005) enforced by the corridor
+- Structured intent bounds validated against the request (§3.4)
+- Governance pack closed-world semantics (ADR-009)
+- Fail-closed verification (ADR-003)
+- Multi-party approval for Class D actions (§4)
+- Agent instance binding (ADR-010)
+
+**The trace — post-transaction evidence, for attribution and dispute:**
+
+- Sealed Evidence Envelope (§4)
+- Merkle append-only log with DNS epoch roots (ADR-008)
+- Independently verifiable by any party, offline
+
+Prevention happens in the corridor layer — the leash — where cross-org
+enforcement can actually happen. The trace makes the remainder legally
+assignable when something does go wrong. A leash without a trace leaves
+the dispute unfalsifiable; a trace without a leash produces audit
+records of damage that could have been prevented. OBO has both.
+
+What OBO deliberately does not do: inspect or control the agent's
+internals. The internals are the operator's responsibility. A cross-org
+protocol cannot verify what is running inside someone else's agent, and
+any attempt to do so creates a false sense of security.
+
+See §3.4, §4, [ADR-003](adr/ADR-003-fail-closed.md), [ADR-005](adr/ADR-005-action-classes.md), [ADR-009](adr/ADR-009-domain-shacl-profiles.md), and [issue #19](https://github.com/kevin-biot/obo-standard/issues/19).
 
 ---
 
