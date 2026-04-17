@@ -7,6 +7,70 @@ Versioning: IETF draft number (`-NN`) + semantic version (`vX.Y.Z`).
 
 ---
 
+## [draft-01 / v0.4.14] — 2026-04-17
+
+**CoSAI AIAM alignment — and the deeper category error it exposes:
+the agent-operator IS an authorization server.**
+
+Incorporates analysis of CoSAI Workstream 4 *Agentic Identity and
+Access Management* (OASIS Open, v1.0, 20 March 2026). The alignment
+work surfaced a framing error that was implicit in earlier drafts:
+"cross-organisation verification without a shared AS" still pictures
+the AS as a separate enterprise service the agent is a client of.
+This release corrects the framing. Every agent-operator is itself an
+authorization server — it holds the signing key, issues its own
+credentials, binds its own governance pack, publishes verifying key
+material into DNS. DNS is the federation layer. The "no shared AS"
+problem dissolves because the specification does not presume ASes
+were ever shared in the first place.
+
+A related clarification: the LLM is execution substrate, not
+protocol. The identity, delegation, and evidence layers are
+substrate-independent — the same credential, corridor admission,
+and sealed envelope apply whether the agent is a large language
+model, a rule engine, or a compiled binary. Treating the LLM as a
+central protocol concern is a category error.
+
+### Added
+- **§1.2.1 *The Deeper Category Error: The Agent Is Not a Client of
+  an AS***: new sub-section promoting the agent-is-not-a-client-of-
+  an-AS framing to a first-class structural claim. Names the operator
+  as an AS, DNS as the federation layer, and the large body of "agent
+  registry" work as workarounds for an absent shared AS that was
+  never actually required.
+- **§1.9 — the LLM is execution substrate, not protocol**: new
+  design principle alongside *"the LLM is not the judge."* Clarifies
+  that OBO's protocol surface contains no model identifiers, model
+  versions, or prompt content; attestation binds the execution
+  environment but does not make the model a party to the protocol.
+- **§8.4 CoSAI Agentic Identity and Access Management**: relationship
+  section describing convergence points (distinct agent/OBO rights,
+  attestation scope, cascade revocation, HITL, fail-closed gateways)
+  and divergences. Divergence #1 rewritten in the "operator-as-AS,
+  DNS-as-federation-layer" framing — not "OBO removes the AS
+  requirement" but "OBO does not presume ASes are shared."
+- **§C.4 Correspondence with CoSAI AIAM OBO-JWT Claims**: claim-level
+  mapping for `sub`, `act.sub`, `scope`, `authorization_details`,
+  `azp`, `csc`, with coexistence pattern for agents that carry both
+  an OBO-JWT inside the operator's perimeter and an OBO Credential
+  across it.
+- **§G.9 RFC 7009 interoperation note**: when an OBO Credential is
+  bound to an OAuth token obtained via token exchange, RFC 7009
+  revocation MUST propagate to the nullifier sink so internal and
+  peer revocation converge.
+- **References**: added RFC 7009, RFC 9396, [COSAI-AIAM],
+  [COSAI-MCP-SEC], [NIST-SP-800-63].
+- **`docs/COSAI-COMPOSITION.md`**: informative companion document.
+  Peer-to-peer topology (not stacked): each operator is an AS,
+  interoperation is peer-to-peer mediated by DNS. Includes
+  convergence/divergence table and the combined-deployment pattern.
+
+### Notes
+- No normative changes to credential or evidence envelope schemas.
+- No schema file changes; alignment is documentary.
+
+---
+
 ## [draft-01 / v0.4.13] — 2026-04-05
 
 **Transactional lessons §9: automation limits and the human decision layer.**
