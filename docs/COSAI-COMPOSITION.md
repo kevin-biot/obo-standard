@@ -17,6 +17,33 @@ views of the same accountable legal entity: how it governs its
 agents internally, and how its agents' authority travels when they
 act outside its perimeter.
 
+### A note on "identity"
+
+An earlier version of this document described the split as "CoSAI
+does identity, OBO does evidence." That framing is imprecise and
+worth correcting here so the rest of the document reads cleanly.
+
+An agent has no independent legal standing. An agent identifier
+without a delegation is therefore a workload tag, not an identity
+(OBO draft §1.2.1, §1.9). *Identity* in the legally meaningful sense
+— the sense that matters to a counterparty, a regulator, or a
+court — is always a delegation: on whose authority is this agent
+currently acting, within what limits, under what governance.
+
+Two consequences for this document:
+
+1. **OBO does identity, and does so more completely than CoSAI
+   AIAM.** OBO's credential *is* the identity, expressed as a
+   delegation of a legal entity (`principal_id` → `operator_id` →
+   `agent_id`, plus intent, scope, depth, governance pack). CoSAI
+   AIAM's OBO-JWT is a narrower two-layer expression of the same
+   thing (principal + agent, within a single operator's perimeter).
+2. **Workload-identity primitives are inputs, not substitutes.**
+   SPIFFE SVIDs, enterprise service accounts, and verifiable-
+   credential-based agent badges (such as AGNTCY Badges —
+   see below) populate the `agent_id` and `operator_id` fields;
+   they do not replace the credential as a whole.
+
 ---
 
 ## The two reference documents
@@ -263,16 +290,65 @@ supplies:
 
 ---
 
+## AGNTCY Badges as a workload-identity input
+
+AGNTCY Identity (Linux Foundation) is a running implementation of
+verifiable-credential-based agent identity badges — Go code, Apache
+2.0, Issuer CLI + Node Backend, supporting BYOID from Okta, A2A
+agent cards, and W3C DIDs. CoSAI WS4 is actively evaluating it in
+issues #47–#49 at the time of writing.
+
+AGNTCY Badges are a **workload-identity primitive with issuer
+attestation**. In the terms of this document: a Badge identifies
+the agent and attests the Issuer, but does not carry the delegation
+of a legal entity. AGNTCY does not define a principal, an intent
+artefact, a scope narrowing mechanism across delegation hops, or a
+per-transaction evidence envelope — and properly so. That is not
+its scope.
+
+This makes AGNTCY a clean composition target:
+
+```
+AGNTCY Badge  ──►  OBO Credential  ──►  OBO Evidence Envelope
+(workload          (delegation of a        (sealed record of
+ identity,          legal entity, with      what was done
+ Issuer-            intent, scope,          under that
+ attested)          depth, governance)      delegation)
+```
+
+An AGNTCY Badge MAY populate the `agent_id` and `operator_id` fields
+of an OBO Credential. The OBO Credential supplies the remaining
+layers: `principal_id`, intent, scope, delegation depth, governance
+pack reference, corridor binding. The Evidence Envelope seals the
+transaction.
+
+Trust-anchor observation. AGNTCY currently anchors trust in Issuer
+registration at a Node Backend, with BYOID variants rooting in Okta
+or W3C DIDs. An AGNTCY Issuer that additionally publishes its
+signing key in DNS (OBO Appendix E.3) obtains universal offline
+verifiability without requiring a live Node Backend at verification
+time. This is the operator-as-AS / DNS-as-federation-layer option
+that §1.2.1 describes. It is compatible with AGNTCY's current
+design, not in tension with it, and it resolves the
+centralised-CA-vs-W3C-DIDs tension visible in AGNTCY discussions
+today.
+
+OBO draft §8.5 carries the normative version of this positioning.
+
+---
+
 ## Further reading
 
 - CoSAI AIAM: *Agentic Identity and Access Management*, OASIS CoSAI
   Workstream 4, v1.0, 20 March 2026. (Referenced as [COSAI-AIAM] in
   the OBO draft §13.)
-- OBO §1.2 — the category errors: microservice-with-an-LLM, and
-  agent-as-client-of-an-AS.
+- OBO §1.2 — the category errors: microservice-with-an-LLM,
+  agent-as-client-of-an-AS, and identity-as-separable-from-
+  delegation.
 - OBO §1.9 — design principles, including the LLM as execution
   substrate rather than protocol primitive.
 - OBO §8.4: Relationship to CoSAI AIAM.
+- OBO §8.5: Relationship to AGNTCY Identity Badges.
 - OBO Appendix C.4: Correspondence with CoSAI AIAM OBO-JWT claims.
 - OBO Appendix E: DNS Anchoring Profile.
 - [THE-SCOPE-PROBLEM.md](THE-SCOPE-PROBLEM.md) — why intent is the

@@ -63,6 +63,12 @@ provide — and composes with them rather than replacing them:
 - **A2A agent protocols** handle capability discovery and task routing.
   OBO is the accountability layer A2A explicitly left out of scope —
   the two compose directly (see `examples/integrations/a2a/`).
+- **AGNTCY Agent Identity Badges** (Linux Foundation) provide
+  verifiable-credential-based workload identity for agents and MCP
+  servers. A Badge answers "who is this agent and who runs it";
+  OBO's credential answers "on whose legal authority is this agent
+  acting, for what intent, within what limits." Badges may populate
+  OBO's `agent_id` / `operator_id` fields — see draft §8.5.
 
 ---
 

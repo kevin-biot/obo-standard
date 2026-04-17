@@ -179,6 +179,24 @@ inside a solved problem. OBO is about the case where neither framing
 applies — the operator-as-AS, publishing into the namespace, issuing
 portable credentials for cross-domain use.
 
+A third framing error follows from the second, and should be named
+explicitly: treating "agent identity" as a separable layer from
+delegation. Much of the current work uses *identity* to mean a
+unique, issuer-attested identifier for an agent — a verifiable badge,
+a DID, a workload certificate — and treats delegation as something
+later and optional. That is back-to-front. An agent has no
+independent legal standing (§1.9). An agent identifier without a
+delegation is a workload tag, not an identity. Identity in the legal
+sense is always *who is this agent currently acting for, under what
+authority, within what limits* — i.e. the delegation chain itself.
+Workload-identity primitives (SPIFFE SVIDs, enterprise service
+accounts, verifiable-credential-based agent badges such as AGNTCY's)
+are legitimate and useful as inputs to the `agent_id` and
+`operator_id` fields, but they do not themselves constitute the
+identity that matters across a transaction. The OBO Credential is
+not "delegation wrapped around an identity" — the credential *is*
+the identity, expressed as a delegation of a legal entity.
+
 ### 1.3 The Four Questions No Existing Standard Answers Together
 
 The current standards landscape does not provide a minimum evidence
@@ -558,6 +576,27 @@ security function — but that classification does not transfer legal
 authority to the agent. The delegation chain always traces back to a
 human or legal entity. There is no mechanism in OBO by which an agent
 acquires independent legal standing.
+
+**An agent identifier without a delegation is a workload tag, not an
+identity.** Agent-identity work in the current landscape often treats
+the agent as a standalone identity-bearing entity: a unique ID, an
+issued credential, a verifiable badge. Taken in isolation, this is
+not identity in any legally meaningful sense — it is workload
+identification with issuer attestation, the same category as SPIFFE
+SVIDs or service-account tokens. Identity in the legal sense is
+always a delegation: *this agent is currently acting on behalf of
+this principal, operated by this accountable legal entity, for this
+intent, within this scope, at this depth in the delegation chain,
+under this governance pack.* Strip those fields and what remains is
+a process tag, not a party to a transaction. OBO's credential model
+is therefore not separable into "identity" and "other" layers: the
+whole credential — `agent_id` + `operator_id` + `principal_id` +
+intent + scope + delegation depth + governance pack reference — is
+the identity, because the identity of an agent in a transaction is
+the delegation it is exercising. Workload-identity primitives (such
+as SPIFFE SVIDs, enterprise service accounts, or verifiable-credential-
+based agent badges) may populate the `agent_id` and `operator_id`
+fields; they do not replace the credential as a whole.
 
 ---
 
@@ -1629,6 +1668,57 @@ matrix (§3.2) are useful ordinal scales for classifying agents;
 they compose with OBO's action-class taxonomy without conflict and
 are cited informatively here.
 
+### 8.5 AGNTCY Agent Identity Badges
+
+AGNTCY Identity [AGNTCY-ID] is a Linux Foundation project providing
+verifiable-credential-based agent identity badges. Each agent (or
+MCP server, or Multi-Agent System) receives a universally unique
+identifier bound to a Verifiable Credential that carries the agent's
+ID, a schema definition (typically OASF), and metadata for
+authentication. The model supports bring-your-own-ID — identifiers
+may originate from enterprise IdPs such as Okta, from A2A agent
+cards, or from W3C DIDs. The reference implementation consists of
+an Issuer CLI and a Node Backend (Go + Postgres) under Apache 2.0.
+
+AGNTCY Badges are a **workload-identity primitive with issuer
+attestation**. In the framing of §1.2.1 and §1.9, a Badge identifies
+the agent and attests the Issuer (the operator or organisation that
+vouches for it) — it does not carry the delegation of a legal
+entity. AGNTCY does not specify a principal in the legal sense, an
+intent artefact, a scope narrowing mechanism across delegation hops,
+or a per-transaction evidence envelope. These are out of AGNTCY's
+scope and properly so; AGNTCY is doing workload identity, not legal
+delegation.
+
+**Composition with OBO.** An AGNTCY Badge MAY be used as the
+workload-identity input to an OBO Credential's `agent_id` and
+`operator_id` fields. The Badge provides the portable, issuer-
+attested workload identifier; the OBO Credential adds the
+`principal_id`, `intent_namespace` / `intent_hash`, `action_classes`,
+`delegation_depth`, `parent_credential_ref`, governance pack
+reference, and corridor binding that together constitute the legal
+delegation. The OBO Evidence Envelope seals the transaction that
+exercises this delegation. The three artefacts compose into a
+single accountable chain:
+
+```
+AGNTCY Badge  ──►  OBO Credential  ──►  OBO Evidence Envelope
+(workload          (delegation of a        (sealed record of
+ identity,          legal entity, with      what was done
+ Issuer-            intent, scope,          under that
+ attested)          depth, governance)      delegation)
+```
+
+**Trust-anchor observation.** AGNTCY's current model anchors trust
+in the Issuer registration at a Node Backend, with bring-your-own-ID
+variants rooting in Okta or W3C DIDs. The operator-as-AS /
+DNS-as-federation-layer model (§1.2.1, Appendix E) is a third
+anchor option that is not yet present in AGNTCY but is compatible
+with it: an AGNTCY Issuer that publishes its signing key into DNS
+(§E.3) obtains universal offline verifiability without requiring a
+live Node Backend at verification time. This is an informative
+observation only; AGNTCY's trust-anchor choices are theirs to make.
+
 ## 9. Security Considerations
 
 ### 9.1 Credential Replay
@@ -2368,6 +2458,12 @@ may request registration of the `application/obo-credential+json` and
   https://github.com/cosai-oasis/ws4-secure-design-agentic-systems/blob/main/model-context-protocol-security.pdf
 - [NIST-SP-800-63] National Institute of Standards and Technology,
   "Digital Identity Guidelines", NIST SP 800-63, current revision.
+- [AGNTCY-ID] AGNTCY (Linux Foundation), "Identity — verifiable
+  credential-based agent identity badges for the Internet of
+  Agents", https://github.com/agntcy/identity and
+  https://spec.identity.agntcy.org
+- [OASF] AGNTCY, "Open Agent Schema Framework", agent and MCP server
+  schema definitions, https://schema.oasf.agntcy.org
 
 ---
 

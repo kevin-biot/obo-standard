@@ -7,6 +7,61 @@ Versioning: IETF draft number (`-NN`) + semantic version (`vX.Y.Z`).
 
 ---
 
+## [draft-01 / v0.4.15] — 2026-04-17
+
+**Identity is delegation of a legal entity — AGNTCY positioning.**
+
+Fixes a framing error that entered earlier material: describing OBO as
+"doing evidence" while a separate layer (CoSAI AIAM, AGNTCY, etc.)
+"does identity." That framing concedes too much. An agent has no
+independent legal standing (§1.9), so an agent identifier without a
+delegation is a workload tag, not an identity. *Identity* in the
+legally meaningful sense — the sense that matters to a counterparty,
+a regulator, or a court — is always the delegation itself: on whose
+authority is this agent currently acting, within what limits, under
+what governance. OBO therefore does identity, and does so more
+completely than the workload-identity systems it is sometimes
+contrasted with.
+
+This release reflects that correction across the draft and the
+CoSAI composition note, and adds an explicit relationship section
+for AGNTCY Identity (the Linux Foundation project CoSAI WS4 is
+currently evaluating).
+
+### Added
+- **§1.2.1 — third framing error**: extended with the
+  identity-as-separable-from-delegation error. Workload-identity
+  primitives (SPIFFE SVIDs, service accounts, agent badges) are
+  inputs to `agent_id`/`operator_id`; they do not constitute the
+  identity that matters across a transaction.
+- **§1.9 — new principle**: *"An agent identifier without a
+  delegation is a workload tag, not an identity."* Sits with the
+  existing *"Agents execute under delegated authority"* principle.
+  States that the OBO Credential *is* the identity, expressed as a
+  delegation of a legal entity, not "delegation wrapped around an
+  identity."
+- **§8.5 Relationship to AGNTCY Agent Identity Badges**: new
+  section. Positions AGNTCY as a workload-identity primitive that
+  composes into OBO's `agent_id`/`operator_id` fields, with the
+  AGNTCY Badge → OBO Credential → OBO Evidence Envelope stack made
+  explicit. Notes the trust-anchor option of publishing an AGNTCY
+  Issuer's signing key in DNS (§E.3) to resolve the
+  centralised-CA-vs-W3C-DIDs tension visible in AGNTCY discussions.
+- **References**: added [AGNTCY-ID] and [OASF].
+- **README**: AGNTCY added to the "composes with" list alongside
+  OAuth, WIMSE/SPIFFE, W3C VCs, and A2A.
+- **`docs/COSAI-COMPOSITION.md`**: new *A note on "identity"*
+  subsection at the top correcting the earlier identity/evidence
+  split; new *AGNTCY Badges as a workload-identity input* section
+  at the end mirroring draft §8.5.
+
+### Notes
+- No schema changes. No normative changes to the credential or
+  evidence envelope. Alignment is documentary and positions the
+  specification correctly against adjacent work.
+
+---
+
 ## [draft-01 / v0.4.14] — 2026-04-17
 
 **CoSAI AIAM alignment — and the deeper category error it exposes:
