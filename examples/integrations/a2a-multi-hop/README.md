@@ -5,7 +5,7 @@ multi-hop agent-agent-agent topology used as a **negative control** for a
 Sentinel-framework experiment in the DOP repo.
 
 The DOP-side experiment lives at:
-**`github.com/kevin-biot/DOP` @ `main`, `research/agent-topology-comparison/`**
+**`github.com/kevin-biot/DOP` @ `main`, `research/sentinel-a2a/agent-topology-comparison/`**
 
 ## Why this exists
 
@@ -87,7 +87,7 @@ SeatAgent + MealAgent (T2).
 ## Sentinel measurement
 
 The DOP-side wire-tap proxy + scraper in
-`github.com/kevin-biot/DOP/research/agent-topology-comparison/code/`
+`github.com/kevin-biot/DOP/research/sentinel-a2a/agent-topology-comparison/code/`
 sits in front of each agent's `/tasks` endpoint, captures
 `narrative_text` in/out, and feeds the existing Go monitor.
 
@@ -113,7 +113,7 @@ README.md              This file
 
 ## Cross-references
 
-- DOP-side experiment plan: `research/agent-topology-comparison/PLAN.md`
+- DOP-side experiment plan: `research/sentinel-a2a/agent-topology-comparison/PLAN.md`
 - DOP-230 §14.9 5-run replication (the positive case being contrasted):
-  `research/dop-230-soak-v2/feedback/report.md`
+  `research/sentinel-a2a/dop-230-soak-v2/feedback/report.md`
 - Sibling A2A reference impl (production-shaped): `../a2a/README.md`
