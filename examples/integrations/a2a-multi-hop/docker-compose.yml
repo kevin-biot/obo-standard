@@ -1,0 +1,118 @@
+version: "3.9"
+
+# Multi-hop agent topology for the Sentinel-monitor negative-control
+# experiment (companion to DOP @ research/agent-topology-comparison/).
+#
+# Two topologies, selected at compose-up time:
+#   T1: docker compose --profile t1 up   (linear: TravelAgent → FlightAgent → SeatAgent)
+#   T2: docker compose --profile t2 up   (fan-out: FlightAgent → {SeatAgent, MealAgent})
+#
+# All agents call LM Studio at host.docker.internal:1234 (the OpenAI-compat
+# endpoint). Set LMSTUDIO_URL in .env to override.
+
+services:
+
+  # ----- T1 (linear chain) -----
+
+  seat-agent-t1:
+    build: .
+    profiles: ["t1"]
+    environment:
+      - AGENT_ROLE=SeatAgent
+      - AGENT_PORT=8083
+      - DOWNSTREAM_URLS=
+      - LMSTUDIO_URL=${LMSTUDIO_URL:-http://host.docker.internal:1234}
+    ports:
+      - "8083:8083"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8083/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  flight-agent-t1:
+    build: .
+    profiles: ["t1"]
+    environment:
+      - AGENT_ROLE=FlightAgent
+      - AGENT_PORT=8081
+      - DOWNSTREAM_URLS=http://seat-agent-t1:8083/tasks
+      - LMSTUDIO_URL=${LMSTUDIO_URL:-http://host.docker.internal:1234}
+    ports:
+      - "8081:8081"
+    depends_on:
+      seat-agent-t1: { condition: service_healthy }
+
+  travel-agent-t1:
+    build: .
+    profiles: ["t1"]
+    environment:
+      - AGENT_ROLE=TravelAgent
+      - AGENT_PORT=8082
+      - DOWNSTREAM_URLS=http://flight-agent-t1:8081/tasks
+      - LMSTUDIO_URL=${LMSTUDIO_URL:-http://host.docker.internal:1234}
+    ports:
+      - "8082:8082"
+    depends_on:
+      flight-agent-t1: { condition: service_started }
+
+  # ----- T2 (interim fan-out) -----
+
+  seat-agent-t2:
+    build: .
+    profiles: ["t2"]
+    environment:
+      - AGENT_ROLE=SeatAgent
+      - AGENT_PORT=8083
+      - DOWNSTREAM_URLS=
+      - LMSTUDIO_URL=${LMSTUDIO_URL:-http://host.docker.internal:1234}
+    ports:
+      - "8083:8083"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8083/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  meal-agent-t2:
+    build: .
+    profiles: ["t2"]
+    environment:
+      - AGENT_ROLE=MealAgent
+      - AGENT_PORT=8084
+      - DOWNSTREAM_URLS=
+      - LMSTUDIO_URL=${LMSTUDIO_URL:-http://host.docker.internal:1234}
+    ports:
+      - "8084:8084"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8084/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  flight-agent-t2:
+    build: .
+    profiles: ["t2"]
+    environment:
+      - AGENT_ROLE=FlightAgent
+      - AGENT_PORT=8081
+      - DOWNSTREAM_URLS=http://seat-agent-t2:8083/tasks,http://meal-agent-t2:8084/tasks
+      - LMSTUDIO_URL=${LMSTUDIO_URL:-http://host.docker.internal:1234}
+    ports:
+      - "8081:8081"
+    depends_on:
+      seat-agent-t2: { condition: service_healthy }
+      meal-agent-t2: { condition: service_healthy }
+
+  travel-agent-t2:
+    build: .
+    profiles: ["t2"]
+    environment:
+      - AGENT_ROLE=TravelAgent
+      - AGENT_PORT=8082
+      - DOWNSTREAM_URLS=http://flight-agent-t2:8081/tasks
+      - LMSTUDIO_URL=${LMSTUDIO_URL:-http://host.docker.internal:1234}
+    ports:
+      - "8082:8082"
+    depends_on:
+      flight-agent-t2: { condition: service_started }
