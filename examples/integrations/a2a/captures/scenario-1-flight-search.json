@@ -25,7 +25,7 @@
       "obo_reason_code:none",
       "obo_task_ref:task-0fe230c3-1a81-4c48-b192-c8faa95a1385",
       "producer_id:lane2.ai",
-      "schema_ref:draft-obo-agentic-evidence-envelope-00"
+      "schema_ref:draft-obo-agentic-evidence-envelope-01"
     ],
     "_note": "Leaves shown lexicographically sorted — the order SAPP uses for Merkle construction"
   },

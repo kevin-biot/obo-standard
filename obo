@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+"""Tiny OBO verifier CLI.
+
+Usage:
+  ./obo verify credential.json --intent "search flights from LHR to JFK" --dns
+"""
+
+from __future__ import annotations
+
+import argparse
+import base64
+import hashlib
+import json
+import subprocess
+import sys
+import time
+from pathlib import Path
+from typing import Any
+
+
+def b64url_decode(value: str) -> bytes:
+    padding = "=" * ((4 - len(value) % 4) % 4)
+    return base64.urlsafe_b64decode(value + padding)
+
+
+def strip_sig_prefix(value: str) -> str:
+    return value.split(":", 1)[1] if value.startswith("Ed25519:") else value
+
+
+def sha256_hex(data: bytes) -> str:
+    return "sha256:" + hashlib.sha256(data).hexdigest()
+
+
+def canonical_json(value: dict[str, Any]) -> bytes:
+    return json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
+
+
+def credential_digest(credential: dict[str, Any]) -> str:
+    payload = {
+        key: value
+        for key, value in credential.items()
+        if key not in {"credential_digest", "credential_sig"}
+    }
+    return sha256_hex(canonical_json(payload))
+
+
+def resolve_obo_key(operator_id: str) -> str:
+    name = f"_obo-key.{operator_id}"
+    try:
+        import dns.resolver
+
+        answers = dns.resolver.resolve(name, "TXT", lifetime=10)
+        values = ["".join(part.decode() for part in answer.strings) for answer in answers]
+    except ImportError:
+        proc = subprocess.run(
+            ["dig", "+short", "TXT", name],
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        values = [line.strip().strip('"') for line in proc.stdout.splitlines() if line.strip()]
+
+    for value in values:
+        parts = dict(part.split("=", 1) for part in value.split() if "=" in part)
+        if parts.get("v") == "obo1" and "ed25519" in parts:
+            return parts["ed25519"]
+    raise RuntimeError(f"no OBO Ed25519 key found at {name}")
+
+
+def verify_ed25519(public_key_b64: str, signature: str, message: bytes) -> None:
+    try:
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+    except ImportError as exc:
+        raise RuntimeError("cryptography is required for signature verification") from exc
+
+    public_key = Ed25519PublicKey.from_public_bytes(b64url_decode(public_key_b64))
+    public_key.verify(b64url_decode(strip_sig_prefix(signature)), message)
+
+
+def verify_credential(args: argparse.Namespace) -> int:
+    credential = json.loads(Path(args.path).read_text())
+    failures: list[str] = []
+
+    actual_digest = credential_digest(credential)
+    expected_digest = credential.get("credential_digest")
+    if actual_digest != expected_digest:
+        failures.append(f"credential_digest mismatch: expected {expected_digest}, got {actual_digest}")
+
+    if args.intent is not None:
+        actual_intent_hash = sha256_hex(args.intent.encode())
+        if actual_intent_hash != credential.get("intent_hash"):
+            failures.append(
+                f"intent_hash mismatch: expected {credential.get('intent_hash')}, got {actual_intent_hash}"
+            )
+
+    if not args.ignore_expiry:
+        now = int(time.time())
+        expires_at = int(credential.get("expires_at", 0))
+        if expires_at and now > expires_at:
+            failures.append(f"credential expired at {expires_at}")
+
+    public_key_b64 = args.public_key
+    if args.dns:
+        try:
+            public_key_b64 = resolve_obo_key(credential["operator_id"])
+        except Exception as exc:
+            failures.append(f"DNS key resolution failed: {exc}")
+
+    if public_key_b64:
+        try:
+            verify_ed25519(public_key_b64, credential["credential_sig"], actual_digest.encode())
+        except Exception as exc:
+            failures.append(f"credential_sig verification failed: {exc}")
+
+    if failures:
+        for failure in failures:
+            print(f"FAIL: {failure}", file=sys.stderr)
+        return 1
+
+    print("credential OK")
+    print(f"  obo_credential_id: {credential['obo_credential_id']}")
+    print(f"  operator_id:       {credential['operator_id']}")
+    print(f"  principal_id:      {credential['principal_id']}")
+    print(f"  intent_hash:       {credential['intent_hash']}")
+    if public_key_b64:
+        print("  credential_sig:    verified")
+    else:
+        print("  credential_sig:    not checked (pass --dns or --public-key)")
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(prog="obo")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    verify = subparsers.add_parser("verify", help="verify an OBO credential")
+    verify.add_argument("path", help="path to an OBO Credential JSON file")
+    verify.add_argument("--intent", help="canonical intent phrase to hash and compare")
+    verify.add_argument("--dns", action="store_true", help="resolve _obo-key.<operator_id> and verify signature")
+    verify.add_argument("--public-key", help="base64url raw Ed25519 public key for signature verification")
+    verify.add_argument("--ignore-expiry", action="store_true", help="skip expires_at check for archived examples")
+    verify.set_defaults(func=verify_credential)
+
+    args = parser.parse_args()
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

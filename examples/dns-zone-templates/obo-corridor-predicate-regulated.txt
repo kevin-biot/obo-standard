@@ -1,5 +1,5 @@
 ; OBO Corridor Admission Predicate — Tier: regulated
-; draft-obo-agentic-evidence-envelope-00 Appendix E / aARP ADR-077
+; draft-obo-agentic-evidence-envelope-01 Appendix E / aARP ADR-077
 ;
 ; A regulated corridor requires the agent's operator to hold a valid
 ; RTGF token from the named issuer. This proves the operator has completed

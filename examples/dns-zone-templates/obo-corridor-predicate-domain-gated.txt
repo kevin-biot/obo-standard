@@ -1,5 +1,5 @@
 ; OBO Corridor Admission Predicate — Tier: domain-gated
-; draft-obo-agentic-evidence-envelope-00 Appendix E / aARP ADR-077
+; draft-obo-agentic-evidence-envelope-01 Appendix E / aARP ADR-077
 ;
 ; A domain-gated corridor requires the agent to prove control of a domain
 ; with the declared suffix. The ccTLD IS the jurisdiction registry.

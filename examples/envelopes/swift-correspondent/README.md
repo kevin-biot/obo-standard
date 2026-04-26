@@ -30,18 +30,18 @@ from the sending bank's DNS-anchored OBO key.
 
 | File | Event | Party | Notes |
 |---|---|---|---|
-| [01-instruction-initiated.json](01-instruction-initiated.json) | Instruction issued by agent | Treasury agent | OBO Credential ref + full swift_evidence |
+| [01-instruction-initiated.json](01-instruction-initiated.json) | Instruction issued by agent | Treasury agent | OBO Credential ref + full profile_evidence |
 | [02-sending-bank-accepted.json](02-sending-bank-accepted.json) | HSBC accepts and forwards | HSBC London | prior_evidence_ref → 01 |
 | [03-payment-confirmed.json](03-payment-confirmed.json) | Emirates NBD confirms receipt | Receiving bank | prior_evidence_ref → 02, stage3_ref → camt.025 |
 
 ## What these demonstrate
 
-- **UETR as trace_id** — same UUID across all three envelopes, crosses
+- **UETR in `profile_evidence`** — same UUID across all three envelopes, crosses
   the full correspondent chain
 - **`prior_evidence_ref` chain** — tamper-evident lineage from
   instruction to confirmation
 - **`correspondent_chain`** — full BIC/jurisdiction map in the
-  `swift_evidence` extension
+  `profile_evidence` extension
 - **Multi-jurisdiction corridor** — `regulated` tier, RTGF rationale
   from human CFO approval anchored via `why_ref`
 - **DNS-only verification** — no envelope requires the correspondent

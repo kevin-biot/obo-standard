@@ -59,7 +59,7 @@ transactions. OBO answers all five.
   │  2. Verify credential_sig                                          │
   │  3. Check action_class ≤ permitted for this endpoint               │
   │  4. Verify intent_hash matches presented intent                    │
-  │  5. Check expiry, replay (seen credential_ids set)                 │
+  │  5. Check expiry, replay (seen obo_credential_ids set)             │
   │  6. For Class C/D: verify full delegation chain + intent artifact  │
   │                                                                    │
   │  ALLOW → execute task                                              │

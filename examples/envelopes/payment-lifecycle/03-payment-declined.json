@@ -1,86 +1,35 @@
 {
-  "_comment": "OBO Evidence Envelope — payment_declined. Separate order (corr_order_8479), different user. outcome=deny. Illustrative example only. Not legal advice.",
-  "obo_version": "1.0",
-  "envelope_id": "env_pay_declined_20260401_0003",
-  "credential_ref": "cred_vi_pay_20260402_0001",
-  "credential_hash": "sha256:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+  "evidence_id": "urn:obo:ev:payments:20260401:declined",
+  "obo_credential_ref": "urn:obo:cred:payments:vi:20260401:0001",
+  "credential_digest_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "principal_id": "did:example:principal:user-anon-002",
   "agent_id": "agent.pay42.psp.eu.example",
   "operator_id": "psp.eu.example",
-  "intent_phrase": "authorise SEPA card payment EUR 30.49 to merchant_paris_014 order corr_order_8479",
+  "intent_hash": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+  "intent_class": "urn:obo:ns:payments:card-payment-authorize",
   "action_class": "C",
   "outcome": "deny",
-  "reason_codes": [
-    "ontology:payments.initiate.sepa.risk_declined",
-    "policy:risk_score_threshold_exceeded"
-  ],
-  "sealed_at": "2026-04-01T12:18:06Z",
-  "trace_id": "3bf92f3577b34da6a3ce929d0e0e1111",
-  "envelope_hash": "sha256:c50cd32c2f932910f5f3b712c86b5dbf435f251f6185f9e1fd6c2577b708cfa8",
-  "envelope_signature": "Ed25519:ZGVjbGluZV9zaWduYXR1cmVfZXhhbXBsZV92MQ",
+  "reason_code": "policy:risk_score_threshold_exceeded",
+  "policy_snapshot_ref": "urn:policy:vi:psd3:risk:v1",
+  "governance_framework_ref": "urn:pack:rtgf:psd3:sha256:fed987cba654",
+  "sealed_at": 1775045886,
   "corridor_ref": "payments-psd3.corridor.eu.example",
   "corridor_admission_tier": "regulated",
   "corridor_predicate_digest": "sha256:d3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4",
-  "why_ref": "https://rtgf.regulator.eu.example/rationale/rtgf-token-abc123",
-  "vi_evidence": {
-    "chain_mode": "autonomous",
-    "vi_chain_refs": {
-      "chain_mode": "autonomous",
-      "l1_hash": "7483f4d0d99f9ac9ff196f8b18e8a0f9ce84b10cc84fdb5dd9f0f27f9e8b3e68",
-      "l2_hash": "01cc4f334bce64efea7d2a3e56d073e7528dd53d43f1a71b2a223bbf86ce4fd2",
-      "l2_sd_hash": "1a6f5ec384aa583e70d66cf6d14eb4ef36f16f411f34ce43922e4f0f6ad8f11a",
-      "l3a_hash": "dd2b34e7a8fe613f847cf4f57c8ce18d7d90fc8924624f3e11f59f05a31e43f1",
-      "l3b_hash": "6ed58bb6ed0f4e2b7c43b0bd7be4e25f72a334f4ab42d6e6fb2e17b6f99a5f2a",
-      "l3_sd_hash": "2f9ef7aa09177fc9d1afee84c4f8c25cc7cb88df4632adf5d60cf349e4f4db38",
-      "disclosure_set_hash": "8b232g86327e55g81c2g7d9f9fe51g5eeg0a3908dcg51cc74g02cee14290ce9f",
-      "signing_key_ref": "did:example:agent-pay42-key-1#k1"
-    },
-    "counterparty_verification": {
-      "verifier_id": "risk_decision_service_eu",
-      "verifier_role": "psp",
-      "decision": "rejected",
-      "policy_ref": "vi_risk_policy_psd3_v1",
-      "receipt_hash": "9f4e8b1d097269664615e61e90e65a66765b8e92e6e06ebbbe4e7505a8ee1e23"
-    },
-    "authorization_context": {
-      "mode": "sca",
-      "sca_method": "possession+inherence",
-      "user_auth_assurance": "aal2_plus",
-      "user_auth_event_ref": "auth_evt_8479_01",
-      "auth_artifact_ref": "auth_artifact_ref_device_attestation"
-    },
-    "delegation_context": {
-      "delegator_ref": "user_anon_002",
-      "delegate_agent_ref": "agent.pay42.psp.eu.example",
-      "delegation_proof_hash": "5e8d6c7a4f02bff35a05d27d484bd97eef75d072bc90a27841304ef7cf4de19a",
-      "delegation_scope_hash": "8a1e937ff59ad7e6c68a2de72d9472baf33f66f9e2f38175a6b9ec22f76d8d0f",
-      "liability_profile": "eu_psd3_vi_v1"
-    },
-    "transaction_binding": {
-      "alg": "sha256",
-      "binding_hash": "d4fc19a5726192a3eb6f3fcce83019087b563f14b41c0c4ffd0f16e4ef40a4a1",
-      "bound_fields": [
-        "transaction_id",
-        "amount_minor",
-        "currency",
-        "payee_id",
-        "merchant_id",
-        "nonce",
-        "checkout_hash",
-        "event_time"
-      ]
-    },
-    "dispute_readiness": {
-      "evidence_bundle_ref": "bundle_20260401_0003",
-      "immutable_log_anchor": "merkle_root:c50cd32c2f932910f5f3b712c86b5dbf435f251f6185f9e1fd6c2577b708cfa8",
-      "retention_until": "2031-04-01T00:00:00Z"
-    }
-  },
-  "_lifecycle": {
+  "target_id": "merchant_paris_014",
+  "stage3_ref": "txn_20260401_91339:decline",
+  "profile_id": "payments-mastercard-vi",
+  "profile_evidence": {
     "event_type": "payment_declined",
     "correlation_id": "corr_order_8479",
-    "idempotency_key": "idem_checkout_3049_01",
-    "delegation_chain_id": "dlg_vi_chain_20260401_b3",
-    "span_id": "30f067aa0ba902ba",
-    "parent_span_id": "b7ad6b7169203344"
-  }
+    "trace_id": "3bf92f3577b34da6a3ce929d0e0e1111",
+    "amount_minor": 3049,
+    "currency": "EUR",
+    "reason_codes": [
+      "ontology:payments.initiate.sepa.risk_declined",
+      "policy:risk_score_threshold_exceeded"
+    ]
+  },
+  "evidence_digest": "sha256:3030303030303030303030303030303030303030303030303030303030303030",
+  "envelope_sig": "Ed25519:GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
 }

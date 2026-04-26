@@ -1,5 +1,5 @@
 ; OBO DNS Anchoring Profile — Sub-profile D.2: Governance Pack Digest
-; draft-obo-agentic-evidence-envelope-00 Appendix D.4
+; draft-obo-agentic-evidence-envelope-01 Appendix D.4
 ;
 ; Publish the canonical SHA-256 digest of the current governance pack.
 ; The governance_framework_ref in OBO Credentials resolves to this record.

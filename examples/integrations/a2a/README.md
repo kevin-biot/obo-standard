@@ -111,7 +111,7 @@ for the public key.
 ```bash
 cp .env.example .env
 # Fill TRAVEL_AGENT_OPERATOR_ID, TRAVEL_AGENT_PRIVATE_KEY_B64,
-# TRAVEL_AGENT_PUBKEY (fallback if DNS unreachable), SAPP_PROFILE_ID
+# TRAVEL_AGENT_PUBKEY (fallback if DNS unreachable), ANCHOR_PROFILE_ID
 ```
 
 `.env` is gitignored. The private key lives here and nowhere else.
@@ -171,7 +171,7 @@ dig +short TXT _obo-key.lane2.ai @8.8.8.8
           VS3    LHR→JFK  $512.0
 
   [4/5] Sealing OBO Evidence Envelope
-        envelope_id:     urn:obo:env:523068f5-8f09-4969-b7e6-ed61…
+        evidence_id:     urn:obo:ev:523068f5-8f09-4969-b7e6-ed61…
         outcome:         allow
         evidence_digest: f07160c23ddd9b9f111e…
         envelope_sig:    Ed25519 ✓  (nvrois4PEAUNY-3MFX82…)
@@ -235,7 +235,7 @@ dig +short TXT _obo-key.lane2.ai @8.8.8.8
   SCENARIO 7: Replayed credential  [expect: OBO-ERR-008]
 ──────────────────────────────────────────────────────────────
 
-  ⚠ INJECT replay: reusing credential_id urn:obo:cred:1d8d3842…
+  ⚠ INJECT replay: reusing obo_credential_id urn:obo:cred:1d8d3842…
   ✗ request failed: HTTP Error 422  reason_code: OBO-ERR-008
 
 ══════════════════════════════════════════════════════════════
@@ -271,7 +271,7 @@ obo_principal_id:did:key:z6MkhaXgBZ…
 obo_reason_code:none
 obo_task_ref:task-0fe230c3…
 producer_id:lane2.ai
-schema_ref:draft-obo-agentic-evidence-envelope-00
+schema_ref:draft-obo-agentic-evidence-envelope-01
 ```
 
 The `evidence_bundle` handle is the stable reference for proof retrieval.
@@ -332,7 +332,7 @@ requirement, confirms the endpoint, proceeds. No out-of-band configuration.
 
 | OBO Credential field | A2A location |
 |---------------------|-------------|
-| `credential_id` | `extensions.obo.credential_id` |
+| `obo_credential_id` | `extensions.obo.obo_credential_id` |
 | `operator_id` | `extensions.obo.operator_id` |
 | `principal_id` | `extensions.obo.principal_id` |
 | `intent_hash` | `extensions.obo.intent_hash` |
@@ -353,8 +353,8 @@ requirement, confirms the endpoint, proceeds. No out-of-band configuration.
 # List all minted evidence records
 curl -s http://localhost:8080/v1/envelopes | jq
 
-# Fetch Merkle proof for a specific envelope
-curl -s http://localhost:8080/evidence/<envelope_id>/proof | jq
+# Fetch Merkle proof for a specific evidence envelope
+curl -s http://localhost:8080/evidence/<evidence_id>/proof | jq
 
 # Copy the full JSONL log off the volume
 docker compose cp sapp:/data/envelopes.jsonl ./evidence-capture.jsonl
@@ -371,7 +371,7 @@ cat evidence-capture.jsonl | jq .
 | 4 — Missing extension | `OBO-ERR-001` | `extensions.obo` absent entirely |
 | 5 — Expired credential | `OBO-ERR-003` | `expires_at` in the past |
 | 6 — Forged signature | `OBO-ERR-004` | Ed25519 verification failed |
-| 7 — Replayed credential | `OBO-ERR-008` | `credential_id` already seen |
+| 7 — Replayed credential | `OBO-ERR-008` | `obo_credential_id` already seen |
 
 Full taxonomy: [§5 of the spec](../../draft-obo-agentic-evidence-envelope-01.md).
 

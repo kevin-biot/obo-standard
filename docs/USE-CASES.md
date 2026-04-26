@@ -117,12 +117,12 @@ purpose, or whether Alice explicitly asked it to.
 
 ```json
 {
-  "credential_id": "urn:obo:cred:…",
+  "obo_credential_id": "urn:obo:cred:…",
   "operator_id":   "assistant.example.com",
   "principal_id":  "did:key:z6Mk…",
-  "action_class":  "A",
+  "action_classes": ["A"],
   "intent_hash":   "SHA-256('Find a free 1-hour slot next week for a 30-minute call')",
-  "not_after":     "2026-04-04T12:05:00Z"
+  "expires_at":    1775083500
 }
 ```
 

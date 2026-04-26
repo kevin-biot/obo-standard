@@ -1,86 +1,40 @@
 {
-  "_comment": "OBO Evidence Envelope — payment_authorized. Illustrative example only. Not legal advice.",
-  "obo_version": "1.0",
-  "envelope_id": "env_pay_authorized_20260401_0001",
-  "credential_ref": "cred_vi_pay_20260402_0001",
-  "credential_hash": "sha256:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+  "evidence_id": "urn:obo:ev:payments:20260401:authorized",
+  "obo_credential_ref": "urn:obo:cred:payments:vi:20260401:0001",
+  "credential_digest_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "principal_id": "did:example:principal:user-anon-001",
   "agent_id": "agent.pay42.psp.eu.example",
   "operator_id": "psp.eu.example",
-  "intent_phrase": "authorise SEPA card payment EUR 12.99 to merchant_berlin_001 order corr_order_8472",
+  "intent_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "intent_class": "urn:obo:ns:payments:card-payment-authorize",
   "action_class": "C",
   "outcome": "allow",
-  "reason_codes": [
-    "ontology:payments.initiate.sepa.approved",
-    "sca:autonomous.possession+inherence.aal2_plus"
-  ],
-  "sealed_at": "2026-04-01T12:15:31Z",
-  "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
-  "envelope_hash": "sha256:f19f3b2cf6b315eef98a53c3db34ba5b9a77cd26f78bfed7e995819221b4cb90",
-  "envelope_signature": "Ed25519:c2lnbmVkX2J5X2V2aWRlbmNlX2tleV92MQ",
+  "reason_code": "none",
+  "policy_snapshot_ref": "urn:policy:vi:psd3:v1",
+  "governance_framework_ref": "urn:pack:rtgf:psd3:sha256:fed987cba654",
+  "sealed_at": 1775045731,
   "corridor_ref": "payments-psd3.corridor.eu.example",
   "corridor_admission_tier": "regulated",
   "corridor_predicate_digest": "sha256:d3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4",
-  "why_ref": "https://rtgf.regulator.eu.example/rationale/rtgf-token-abc123",
-  "vi_evidence": {
-    "chain_mode": "autonomous",
+  "target_id": "merchant_berlin_001",
+  "stage3_ref": "txn_20260401_91331",
+  "profile_id": "payments-mastercard-vi",
+  "profile_evidence": {
+    "event_type": "payment_authorized",
+    "correlation_id": "corr_order_8472",
+    "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+    "amount_minor": 1299,
+    "currency": "EUR",
+    "reason_codes": [
+      "ontology:payments.initiate.sepa.approved",
+      "sca:autonomous.possession+inherence.aal2_plus"
+    ],
     "vi_chain_refs": {
       "chain_mode": "autonomous",
       "l1_hash": "14b2017f67a59c5126d0d3151dce0f6d2fd0d9f8d227a8d9b93f2b52d6dd0d61",
-      "l2_hash": "ad68f34a840eebde37cd7dff2f9abdd86685a4f7da9d1b60db3d6f0a01dbfe77",
-      "l2_sd_hash": "1a6f5ec384aa583e70d66cf6d14eb4ef36f16f411f34ce43922e4f0f6ad8f11a",
-      "l3a_hash": "9d499e7f82a9e10d0a7a6ddb06be5f80af4a1d260f71f034f54f513c8c0d2c27",
-      "l3b_hash": "6ed58bb6ed0f4e2b7c43b0bd7be4e25f72a334f4ab42d6e6fb2e17b6f99a5f2a",
-      "l3_sd_hash": "2f9ef7aa09177fc9d1afee84c4f8c25cc7cb88df4632adf5d60cf349e4f4db38",
-      "disclosure_set_hash": "7a121f75216d44f70b1f6d7c8ed40f4ddf9a2807cbf40bb63f91bdd03189bd8e",
-      "signing_key_ref": "did:example:agent-pay42-key-1#k1"
-    },
-    "counterparty_verification": {
-      "verifier_id": "psp_eu_node_01",
-      "verifier_role": "psp",
-      "decision": "accepted",
-      "policy_ref": "vi_verifier_policy_psd3_v1",
-      "receipt_hash": "0b3f7a2c088369775726f72f90f76a77876c9f03f7f07fccfc5f8616b9ff2f34"
-    },
-    "authorization_context": {
-      "mode": "sca",
-      "sca_method": "possession+inherence",
-      "user_auth_assurance": "aal2_plus",
-      "user_auth_event_ref": "auth_evt_8472_01",
-      "auth_artifact_ref": "auth_artifact_ref_device_attestation"
-    },
-    "delegation_context": {
-      "delegator_ref": "user_anon_001",
-      "delegate_agent_ref": "agent.pay42.psp.eu.example",
-      "delegation_proof_hash": "33b53f4c3f585eb5e2458d8e90d874b249f90e2141ac6f75f856709f8fa8f3d1",
-      "delegation_scope_hash": "5f9cd3f5702867ad4e8f2d2f4df3617ac4bf8aa9831b6679df61f02d1ea7c80a",
-      "liability_profile": "eu_psd3_vi_v1"
-    },
-    "transaction_binding": {
-      "alg": "sha256",
-      "binding_hash": "af43f9be05dc1f634060f5d580f1c8c8e9b9ce505f4b6514c6d3088e61f29c65",
-      "bound_fields": [
-        "transaction_id",
-        "amount_minor",
-        "currency",
-        "payee_id",
-        "merchant_id",
-        "nonce",
-        "checkout_hash",
-        "event_time"
-      ]
-    },
-    "dispute_readiness": {
-      "evidence_bundle_ref": "bundle_20260401_0001",
-      "immutable_log_anchor": "merkle_root:f19f3b2cf6b315eef98a53c3db34ba5b9a77cd26f78bfed7e995819221b4cb90",
-      "retention_until": "2031-04-01T00:00:00Z"
+      "l2_hash": "ad68f34a840eebde37cd7dff2f9abdd86685a4f7da9d1b60db3d6f0a01dbfe77"
     }
   },
-  "_lifecycle": {
-    "event_type": "payment_authorized",
-    "correlation_id": "corr_order_8472",
-    "idempotency_key": "idem_checkout_1299_01",
-    "delegation_chain_id": "dlg_vi_chain_20260401_a1",
-    "span_id": "00f067aa0ba902b7",
-    "parent_span_id": "b7ad6b7169203331"
-  }
+  "evidence_digest": "sha256:1010101010101010101010101010101010101010101010101010101010101010",
+  "envelope_sig": "Ed25519:EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
 }

@@ -84,6 +84,14 @@ obo:EvidenceEnvelopeShape
         sh:maxCount  1 ;
     ] ;
 
+    sh:property [
+        sh:path      obo:operator_id ;
+        sh:datatype  xsd:string ;
+        sh:minCount  1 ;
+        sh:maxCount  1 ;
+        sh:message   "operator_id is required for standalone accountability and signature verification" ;
+    ] ;
+
     # ── Required digest fields — all MUST be sha256:<64 hex chars> ───────────
 
     sh:property [
@@ -113,6 +121,15 @@ obo:EvidenceEnvelopeShape
         sh:message   "evidence_digest MUST be sha256:<hex>" ;
     ] ;
 
+    sh:property [
+        sh:path      obo:envelope_sig ;
+        sh:datatype  xsd:string ;
+        sh:pattern   "^Ed25519:[A-Za-z0-9_-]{43,}$" ;
+        sh:minCount  1 ;
+        sh:maxCount  1 ;
+        sh:message   "envelope_sig MUST be an Ed25519 signature over evidence_digest" ;
+    ] ;
+
     # ── Required classification fields ───────────────────────────────────────
 
     sh:property [
@@ -131,6 +148,15 @@ obo:EvidenceEnvelopeShape
         sh:minCount  1 ;
         sh:maxCount  1 ;
         sh:message   "outcome MUST be one of allow, deny, escalate, error" ;
+    ] ;
+
+    sh:property [
+        sh:path      obo:reason_code ;
+        sh:datatype  xsd:string ;
+        sh:pattern   "^(none|OBO-ERR-[0-9]{3}|[A-Za-z0-9_.:-]+)$" ;
+        sh:minCount  1 ;
+        sh:maxCount  1 ;
+        sh:message   "reason_code MUST be none, an OBO-ERR code, or a profile/policy code" ;
     ] ;
 
     sh:property [
@@ -231,6 +257,19 @@ obo:EvidenceEnvelopeShape
     sh:property [
         sh:path      obo:prior_evidence_ref ;
         sh:datatype  xsd:string ;
+        sh:maxCount  1 ;
+    ] ;
+
+    # ── Optional: profile extensions ────────────────────────────────────────
+
+    sh:property [
+        sh:path      obo:profile_id ;
+        sh:datatype  xsd:string ;
+        sh:maxCount  1 ;
+    ] ;
+
+    sh:property [
+        sh:path      obo:profile_evidence ;
         sh:maxCount  1 ;
     ] ;
 

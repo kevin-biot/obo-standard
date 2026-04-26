@@ -7,6 +7,60 @@ Versioning: IETF draft number (`-NN`) + semantic version (`vX.Y.Z`).
 
 ---
 
+## [draft-01 / v0.4.16] — 2026-04-26
+
+**Public offering hardening — canonical wire model, conformance, and verifier path.**
+
+This release turns the OBO public repository from a narrative-heavy draft into
+a more testable public offering: one canonical wire model, examples that validate
+against it, CI checks that prevent drift, and a small verifier path for people
+who want to see a credential checked rather than just read about it.
+
+### Added
+- **`docs/OBO-8-MAPPING.md`**: public bridge from the market framing around
+  "OBO 8" to the concrete OBO Credential and Evidence Envelope fields.
+- **`docs/STANDARD-FAMILY.md`**: moved the longer standards-family narrative
+  out of the README so the public entry point can stay focused.
+- **`obo` verifier CLI**: `obo verify credential.json --intent "..." --dns`
+  verifies credential digest, intent hash, expiry, DNS key lookup, and Ed25519
+  signature checks.
+- **`examples/credentials/signed-demo.json`**: signed credential fixture for
+  verifier and CI use.
+- **Conformance scripts**:
+  - `scripts/validate_examples.py`
+  - `scripts/check_draft_version.py`
+  - `scripts/check_dns_fixture.py`
+- **GitHub Actions conformance workflow** running schema validation, draft drift
+  checks, live DNS fixture verification, verifier CLI checks, Python compile
+  checks, and the Docker A2A reference demo.
+
+### Changed
+- **Canonical wire model frozen across spec, schemas, examples, and demo**:
+  - credential identifiers use `obo_credential_id`
+  - timestamps use Unix epoch integers
+  - `intent_hash` is a required credential and evidence field
+  - `credential_sig` and `envelope_sig` are required Ed25519 signature fields
+  - `operator_id` and `reason_code` are required in evidence envelopes
+  - DNS operator keys use `_obo-key.<operator-domain>` TXT records shaped as
+    `v=obo1 ed25519=<base64url-public-key>`
+- **A2A integration demo** now emits canonical OBO Credentials and Evidence
+  Envelopes, validates failure scenarios with typed `OBO-ERR-*` reason codes,
+  and mints both allow and deny evidence.
+- **README** rewritten as a public entry point: problem statement, two artifacts,
+  canonical wire model, 10-minute demo, verifier path, conformance status,
+  optional versus required fields, and "what OBO is not."
+- **Payment lifecycle and SWIFT examples** now use base envelope fields plus
+  `profile_id` and `profile_evidence` for profile-specific data.
+- **DNS templates and public docs** updated to the canonical `_obo-key` operator
+  key shape and draft `-01` references.
+
+### Notes
+- This is a wire-model and public-conformance release. It intentionally favors
+  fewer names, fewer aliases, and executable examples over broader explanatory
+  surface area in the repository root.
+
+---
+
 ## [draft-01 / v0.4.15] — 2026-04-17
 
 **Identity is delegation of a legal entity — AGNTCY positioning.**

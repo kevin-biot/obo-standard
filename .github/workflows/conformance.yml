@@ -1,0 +1,48 @@
+name: conformance
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  conformance:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install validation dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install cryptography dnspython flask jsonschema
+
+      - name: Static conformance
+        run: |
+          python scripts/check_draft_version.py
+          python scripts/validate_examples.py
+          python scripts/check_dns_fixture.py
+          python -m py_compile \
+            obo \
+            examples/integrations/a2a/agents.py \
+            examples/integrations/a2a/keygen.py \
+            examples/integrations/a2a/anchor_stub/server.py
+          ./obo verify examples/credentials/signed-demo.json \
+            --intent "search flights from LHR to JFK on 2026-06-15" \
+            --public-key m2OHbJ8-t7ch8YxL5vFU7K7ysDQfi8SJ58PDHxcc2qw
+
+      - name: Run A2A reference demo
+        working-directory: examples/integrations/a2a
+        run: |
+          python keygen.py --operator-id ci.example.test --keys-dir keys
+          {
+            echo "TRAVEL_AGENT_OPERATOR_ID=ci.example.test"
+            echo "TRAVEL_AGENT_PRINCIPAL_ID=did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK"
+            echo "TRAVEL_AGENT_PRIVATE_KEY_B64=$(base64 -w0 keys/private_key.pem)"
+            echo "TRAVEL_AGENT_PUBKEY=$(cat keys/public_key.b64)"
+            echo "ANCHOR_PROFILE_ID=regulated"
+          } > .env
+          docker compose up --build --abort-on-container-exit --exit-code-from travel-agent

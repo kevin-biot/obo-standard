@@ -75,9 +75,9 @@ operator.
 
 | OBO field | ISO 20022 equivalent | Notes |
 |---|---|---|
-| `trace_id` | `UETR` (Unique End-to-End Transaction Reference) | RFC 4122 UUID — the natural cross-chain correlation key |
-| `envelope_id` | `MsgId` | Per-envelope unique identifier |
-| `intent_phrase` | `Purp` / `RmtInf` (remittance information) | Human-readable statement of the payment intent |
+| `profile_evidence.uetr` | `UETR` (Unique End-to-End Transaction Reference) | RFC 4122 UUID — the natural cross-chain correlation key |
+| `evidence_id` | `MsgId` / evidence handle | Per-envelope unique identifier |
+| `intent_hash` | `Purp` / `RmtInf` commitment | Hash of the canonical payment intent |
 | `action_class` | Message type class | pacs.008 → C; pacs.009 → D; camt.056 recall → C |
 | `outcome` | `TxSts` (transaction status) | allow → ACSC/ACCC; deny → RJCT |
 | `stage3_ref` | `OrgnlMsgId` / confirmation receipt | Points to the SWIFT payment confirmation or camt.025 |
@@ -86,15 +86,17 @@ operator.
 
 ---
 
-## 3. `swift_evidence` extension object
+## 3. `profile_evidence` extension object
 
 For SWIFT/ISO 20022 transactions, the OBO Evidence Envelope **SHOULD**
-carry a `swift_evidence` extension containing ISO 20022 message
+carry `profile_id: "payments-swift-iso20022"` and a `profile_evidence`
+extension containing ISO 20022 message
 identifiers and correspondent chain references:
 
 ```json
 {
-  "swift_evidence": {
+  "profile_id": "payments-swift-iso20022",
+  "profile_evidence": {
     "message_type": "pacs.008",
     "message_id": "msg-20260403-001",
     "uetr": "123e4567-e89b-12d3-a456-426614174000",
@@ -117,13 +119,13 @@ identifiers and correspondent chain references:
 }
 ```
 
-### 3.1 `swift_evidence` field definitions
+### 3.1 `profile_evidence` field definitions
 
 | Field | Required | Description |
 |---|---|---|
 | `message_type` | required | ISO 20022 message type: `pacs.008`, `pacs.009`, `camt.056`, etc. |
 | `message_id` | required | ISO 20022 `MsgId` — unique per message |
-| `uetr` | required | RFC 4122 UUID — maps to OBO `trace_id`; crosses the full correspondent chain |
+| `uetr` | required | RFC 4122 UUID; crosses the full correspondent chain |
 | `instruction_id` | required | ISO 20022 `InstrId` |
 | `end_to_end_id` | required | ISO 20022 `EndToEndId` |
 | `sending_bic` | required | BIC of the instructing/sending institution |
@@ -177,15 +179,15 @@ The UETR (Unique End-to-End Transaction Reference) is the natural
 backbone of the OBO evidence chain across a correspondent payment:
 
 ```
-OBO Credential issued        →  trace_id = UETR assigned
+OBO Credential issued        →  UETR assigned by payment context
         ↓
-pacs.008 sent (envelope 01)  →  trace_id = UETR, prior_evidence_ref = credential_id
+pacs.008 sent (envelope 01)  →  profile_evidence.uetr = UETR, prior_evidence_ref = obo_credential_id
         ↓
-Correspondent 1 processes    →  trace_id = UETR, prior_evidence_ref = envelope 01
+Correspondent 1 processes    →  profile_evidence.uetr = UETR, prior_evidence_ref = envelope 01
         ↓
-Correspondent 2 processes    →  trace_id = UETR, prior_evidence_ref = envelope 02
+Correspondent 2 processes    →  profile_evidence.uetr = UETR, prior_evidence_ref = envelope 02
         ↓
-Receiving bank confirms      →  trace_id = UETR, prior_evidence_ref = envelope 03
+Receiving bank confirms      →  profile_evidence.uetr = UETR, prior_evidence_ref = envelope 03
 stage3_ref = camt.025 confirmation
 ```
 

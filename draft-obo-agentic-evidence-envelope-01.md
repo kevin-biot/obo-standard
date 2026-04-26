@@ -672,12 +672,14 @@ OBO-REQ-001: An OBO Credential MUST contain the following fields:
 | `operator_id` | string | Identifier of the entity operating the agent. MAY equal `principal_id` for self-operated agents. |
 | `binding_proof_ref` | string | Reference to the proof of binding between principal and agent (e.g. signed delegation record, consent receipt, legal instrument). |
 | `intent_namespace` | string | The governed intent namespace within which this credential is valid (e.g. `urn:lane2:ns:payments`, `urn:lane2:ns:healthcare`). |
+| `intent_hash` | string | SHA-256 digest of the canonical normalised intent phrase. This transaction-scoped fence MUST match the Intent Artifact and the Evidence Envelope. |
 | `action_classes` | array[string] | The action classes this credential authorises. Values: `A` (read-only), `B` (reversible write), `C` (irreversible write), `D` (systemic). |
 | `governance_framework_ref` | string | Stable pointer to the machine-readable governance framework (ontology pack digest, policy snapshot ref, or equivalent). |
 | `issued_at` | integer | Unix epoch seconds at issuance. |
 | `expires_at` | integer | Unix epoch seconds at expiry. MUST be present. Short-lived credentials are RECOMMENDED. |
 | `issuer_id` | string | Identifier of the credential issuer. |
-| `credential_digest` | string | SHA-256 digest of the canonical JSON serialisation of this credential (excluding this field). Enables tamper detection. |
+| `credential_digest` | string | SHA-256 digest of the canonical JSON serialisation of this credential with `credential_digest` and `credential_sig` excluded. Enables tamper detection. |
+| `credential_sig` | string | Ed25519 signature by `issuer_id` over `credential_digest`, using the operator key published at `_obo-key.<operator-domain>`. |
 
 ### 3.2 Optional Fields
 
@@ -1046,14 +1048,17 @@ OBO-REQ-010: An OBO Evidence Envelope MUST contain the following fields:
 | `credential_digest_ref` | string | The `credential_digest` of the credential at time of transaction. Detects post-issuance credential tampering. |
 | `principal_id` | string | Repeated from credential for standalone verifiability. |
 | `agent_id` | string | Repeated from credential for standalone verifiability. |
+| `operator_id` | string | Repeated from credential for standalone accountability and signature verification. |
 | `intent_hash` | string | SHA-256 of the canonical normalised intent phrase. Binds the evidence to the specific intent that was admitted. |
 | `intent_class` | string | The governed intent class to which the intent was mapped. |
 | `action_class` | string | The action class of the executed action (`A`, `B`, `C`, or `D`). MUST be within the `action_classes` declared in the credential. |
 | `outcome` | string | Transaction outcome. Values: `allow`, `deny`, `escalate`, `error`. |
+| `reason_code` | string | `none`, an `OBO-ERR-*` rejection code, or a governed policy code. MUST be included in `evidence_digest`. |
 | `policy_snapshot_ref` | string | Reference to the policy snapshot under which the action was evaluated. |
 | `governance_framework_ref` | string | Repeated from credential. Enables standalone verification without credential lookup. |
 | `sealed_at` | integer | Unix epoch seconds at which this envelope was sealed. |
-| `evidence_digest` | string | SHA-256 of the canonical JSON serialisation of this envelope (excluding this field). |
+| `evidence_digest` | string | SHA-256 of the canonical JSON serialisation of this envelope with `evidence_digest` and `envelope_sig` excluded. |
+| `envelope_sig` | string | Ed25519 signature by `operator_id` over `evidence_digest`, using the operator key published at `_obo-key.<operator-domain>`. |
 
 ### 4.2 Optional Fields
 
@@ -1072,9 +1077,9 @@ OBO-REQ-011: An OBO Evidence Envelope MAY contain the following fields:
 ### 4.3 Integrity
 
 OBO-REQ-012: The `evidence_digest` MUST be computed over the canonical
-JSON serialisation of the envelope with all fields present and
-`evidence_digest` set to the empty string. The canonical form uses
-lexicographically sorted keys and no insignificant whitespace.
+JSON serialisation of the envelope with `evidence_digest` and
+`envelope_sig` excluded. The canonical form uses lexicographically
+sorted keys and no insignificant whitespace.
 
 OBO-REQ-013: When `why_ref` is present and non-empty, the
 `why_ref.rationale_digest` MUST be included in the canonical
@@ -1088,14 +1093,15 @@ violated.
 ### 4.4 Submission Integrity
 
 The `evidence_digest` field establishes tamper-evidence over the
-envelope content. It does not establish non-repudiation of the
-submission act — proof that a specific operator submitted a specific
-envelope to a specific endpoint at a specific time.
+envelope content. The `envelope_sig` field establishes that the
+operator committed to that digest. Neither field alone establishes
+non-repudiation of the submission act — proof that a specific operator
+submitted a specific envelope to a specific endpoint at a specific time.
 
 OBO-REQ-015: Submission of OBO Evidence Envelopes to an Evidence Anchor, Merkle,
 or audit endpoints MUST use HTTP Message Signatures [RFC 9421], signed
 with the submitting operator's OBO signing key (the key published in
-`_obo-key._domainkey.<operator-domain>`). This is the same Ed25519 key
+`_obo-key.<operator-domain>`). This is the same Ed25519 key
 used to sign OBO Credentials per §3.5 — no additional key material or
 infrastructure is required. The signature MUST cover at minimum:
 
@@ -1213,7 +1219,7 @@ appear in three places to be useful:
 | `OBO-ERR-005` | `intent_hash_mismatch` | Integrity | `SHA-256(task.intent)` does not match `intent_hash`. The task intent has drifted or been modified after the credential was issued. The sender MUST NOT retry with the same credential. |
 | `OBO-ERR-006` | `operator_key_not_found` | Resolution | DNS TXT record `_obo-key.<operator_id>` could not be resolved, or the resolved record did not contain a valid `v=obo1 ed25519=` entry. The receiving agent cannot verify the credential. |
 | `OBO-ERR-007` | `operator_key_conflict` | Resolution | DNS key and `did:web` key resolved to different values. This MUST be treated as a misconfiguration or active attack. The receiving agent MUST fail closed and MUST NOT proceed. |
-| `OBO-ERR-008` | `credential_replayed` | Replay | `credential_id` has been seen before. Per-session or per-window nullifier check failed. The sender MUST issue a new credential with a fresh `credential_id`. |
+| `OBO-ERR-008` | `credential_replayed` | Replay | `obo_credential_id` has been seen before. Per-session or per-window nullifier check failed. The sender MUST issue a new credential with a fresh `obo_credential_id`. |
 | `OBO-ERR-009` | `clock_skew` | Temporal | `issued_at` is in the future beyond an acceptable tolerance (RECOMMENDED: 5 seconds). Possible clock misconfiguration or pre-issued credential. |
 | `OBO-ERR-010` | `intent_scope_drift` | Policy | The action class implied by `task.intent` exceeds the action class scope recorded in the credential or governance framework. |
 | `OBO-ERR-020` | `envelope_sig_invalid` | Cryptographic | Ed25519 verification of `envelope_sig` failed at the Evidence Anchor boundary. The evidence envelope has been tampered with after sealing. |
@@ -1234,7 +1240,7 @@ a JSON body containing at minimum `error` (human-readable) and `reason_code`
 {
   "error": "SHA-256(task.intent) does not match OBO intent_hash",
   "reason_code": "OBO-ERR-005",
-  "credential_id": "urn:obo:cred:6c693e0b-…",
+  "obo_credential_id": "urn:obo:cred:6c693e0b-…",
   "task_id": "task-969a89d4-…"
 }
 ```
@@ -1263,7 +1269,7 @@ cryptographically bound and cannot be altered after sealing.
 The RECOMMENDED `evidence_digest` pre-image construction for rejection envelopes:
 
 ```
-SHA-256( credential_id : "deny" : reason_code : task_id : result_summary )
+SHA-256( obo_credential_id : "deny" : reason_code : task_id : result_summary )
 ```
 
 This extends the allow-path pre-image with `reason_code` between `outcome` and
@@ -1293,7 +1299,7 @@ For allow outcomes, the leaf value MUST be `obo_reason_code:none`.
 | `OBO-ERR-005` | No | Intent was modified; reissue only if intent genuinely changed |
 | `OBO-ERR-006` | Maybe — after DNS TTL | Resolution failure; check DNS propagation |
 | `OBO-ERR-007` | No | Key conflict is an attack signal; escalate |
-| `OBO-ERR-008` | Yes — issue fresh credential | New `credential_id` required |
+| `OBO-ERR-008` | Yes — issue fresh credential | New `obo_credential_id` required |
 | `OBO-ERR-009` | Yes — after clock sync | Fix NTP; reissue with corrected `issued_at` |
 | `OBO-ERR-010` | No — review scope | Intent class mismatch is a policy violation |
 
@@ -1522,13 +1528,15 @@ do. How the agent does it internally is not the protocol's concern.
 
 A verifier receiving an OBO Credential MUST:
 
-1. Verify the cryptographic signature against the declared `issuer_id`.
-2. Confirm `expires_at` has not passed.
-3. Confirm `credential_digest` matches the recomputed digest of the
+1. Confirm `credential_digest` matches the recomputed digest of the
    canonical serialisation.
-4. Confirm the `intent_namespace` is within the verifier's accepted
+2. Verify `credential_sig` over `credential_digest` against the declared
+   `issuer_id` / `operator_id` key.
+3. Confirm `expires_at` has not passed.
+4. Confirm `intent_hash` matches the presented intent phrase.
+5. Confirm the `intent_namespace` is within the verifier's accepted
    namespaces.
-5. Confirm the declared `action_classes` are within the verifier's
+6. Confirm the declared `action_classes` are within the verifier's
    accepted action class ceiling for the target operation.
 
 ### 7.2 Evidence Envelope Verification
@@ -1536,14 +1544,19 @@ A verifier receiving an OBO Credential MUST:
 A verifier receiving an OBO Evidence Envelope MUST:
 
 1. Confirm `evidence_digest` matches the recomputed digest.
-2. Confirm `credential_digest_ref` matches the digest of the referenced
+2. Verify `envelope_sig` over `evidence_digest` against the `operator_id`
+   key.
+3. Confirm `credential_digest_ref` matches the digest of the referenced
    OBO Credential.
-3. Confirm `action_class` is within the `action_classes` of the
+4. Confirm `action_class` is within the `action_classes` of the
    referenced credential.
-4. Confirm `outcome` is consistent with the claimed action class (a
+5. Confirm `outcome` is consistent with the claimed action class (a
    `deny` outcome with action class `D` is valid; an `allow` outcome
    with action class `D` on a credential scoped to `A` only is not).
-5. When `why_ref` is present and the lane is regulated: confirm
+6. Confirm `reason_code` is present. For `allow` outcomes the value MUST
+   be `none`; for `deny`, `escalate`, or `error` outcomes it SHOULD carry
+   an `OBO-ERR-*` or governed policy code.
+7. When `why_ref` is present and the lane is regulated: confirm
    `why_ref.rationale_digest` is non-empty.
 
 ### 7.3 Fail-Closed Behaviour
@@ -2474,15 +2487,17 @@ may request registration of the `application/obo-credential+json` and
   "obo_credential_id": "urn:obo:cred:2026:a1b2c3d4",
   "principal_id": "did:example:principal:alice",
   "agent_id": "urn:agent:lane2:travel-assistant:v1",
-  "operator_id": "urn:org:lane2:ai",
+  "operator_id": "lane2.ai",
   "binding_proof_ref": "urn:consent:2026:xyz789",
   "intent_namespace": "urn:lane2:ns:travel",
+  "intent_hash": "sha256:7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069",
   "action_classes": ["A", "B"],
   "governance_framework_ref": "urn:pack:lane2:travel:sha256:abc123",
   "issued_at": 1743552000,
   "expires_at": 1743638400,
-  "issuer_id": "urn:org:lane2:ai:issuer",
-  "credential_digest": "sha256:def456..."
+  "issuer_id": "lane2.ai",
+  "credential_digest": "sha256:def456...",
+  "credential_sig": "Ed25519:..."
 }
 ```
 
@@ -2495,16 +2510,19 @@ may request registration of the `application/obo-credential+json` and
   "credential_digest_ref": "sha256:def456...",
   "principal_id": "did:example:principal:alice",
   "agent_id": "urn:agent:lane2:travel-assistant:v1",
-  "intent_hash": "sha256:book-hotel-dublin-2nights...",
+  "operator_id": "lane2.ai",
+  "intent_hash": "sha256:7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069",
   "intent_class": "urn:lane2:ns:travel:accommodation-booking",
   "action_class": "B",
   "outcome": "allow",
+  "reason_code": "none",
   "policy_snapshot_ref": "urn:policy:lane2:travel:v1.2.3",
   "governance_framework_ref": "urn:pack:lane2:travel:sha256:abc123",
   "sealed_at": 1743552300,
   "corridor_ref": "urn:aarp:corridor:lane2:travel:abc",
   "stage3_ref": "urn:payment:stripe:pi_xyz123",
-  "evidence_digest": "sha256:ghi789..."
+  "evidence_digest": "sha256:ghi789...",
+  "envelope_sig": "Ed25519:..."
 }
 ```
 
@@ -2685,12 +2703,11 @@ equivalent to DNSSEC-signed records for regulated lane verification.
 
 ### E.3 Sub-Profile E.1: Operator Signing Key (obo-dns-key)
 
-An operator MAY publish its OBO Credential signing key in DNS,
-following the DKIM [RFC6376] key record pattern:
+An operator MAY publish its OBO Credential signing key in DNS:
 
 ```
-_obo-key._domainkey.<operator-domain>   TXT
-  "v=obo1; k=ed25519; p=<base64url-encoded-public-key>"
+_obo-key.<operator-domain>   TXT
+  "v=obo1 ed25519=<base64url-encoded-public-key>"
 ```
 
 Field definitions:
@@ -2698,14 +2715,12 @@ Field definitions:
 | Field | Value |
 |---|---|
 | `v` | Protocol version. MUST be `obo1`. |
-| `k` | Key type. `ed25519` RECOMMENDED. `rsa` permitted for legacy deployments. |
-| `p` | Base64url-encoded public key. |
+| `ed25519` | Base64url-encoded raw 32-byte Ed25519 public key. |
 
 **Credential verification using obo-dns-key:**
 
-1. Extract the domain component of the `issuer_id` field from the
-   OBO Credential.
-2. Resolve `_obo-key._domainkey.<issuer-domain>` TXT record.
+1. Extract the operator domain from `operator_id` / `issuer_id`.
+2. Resolve `_obo-key.<operator-domain>` TXT record.
 3. Verify the credential signature against the published public key.
 4. No authorization server contact is required.
 
@@ -2796,7 +2811,7 @@ where `metadata_payload` is the canonical JSON serialisation of:
   "agent_id":    "<agent_id from OBO Credential>",
   "audience":    "<target_id of this transaction>",
   "expires_at":  <unix-epoch>,
-  "credential_digest": "<obo_credential_id digest>"
+  "credential_digest": "<credential_digest from OBO Credential>"
 }
 ```
 

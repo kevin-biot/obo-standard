@@ -50,7 +50,7 @@ transaction. For VI-backed deployments the following mappings apply.
 |---|---|---|
 | `agent_id` | L1 agent key identifier | Must match the key used to sign the VI chain |
 | `operator_id` | L1 identity context (PSP / merchant) | The entity that bound the user to the agent |
-| `credential_id` | — | OBO credential UUID; no direct VI equivalent |
+| `obo_credential_id` | — | OBO credential UUID; no direct VI equivalent |
 | `issued_at` | L1 issuance time | Should be ≤ L1 issuance |
 | `expires_at` | L2 delegation expiry | Must not exceed L2 constraint window |
 | `action_classes` | L2 constraint scope | See §5 below |
@@ -63,8 +63,8 @@ transaction. For VI-backed deployments the following mappings apply.
 ## 3. Additional Required Fields
 
 For payment transactions using VI chain evidence, the OBO Evidence Envelope
-**SHOULD** carry an extension object `vi_evidence` (in `metadata` or as a
-top-level optional extension) containing the following:
+**SHOULD** carry VI chain evidence in `profile_evidence` with
+`profile_id: "payments-mastercard-vi"`.
 
 ### 3.1 `vi_evidence` Extension Object
 
@@ -78,7 +78,9 @@ top-level optional extension) containing the following:
     "delegation_context": { ... },
     "transaction_binding": { ... },
     "dispute_readiness": { ... }
-  }
+  },
+  "evidence_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "envelope_sig": "Ed25519:..."
 }
 ```
 
@@ -236,19 +238,20 @@ also available:
 
 ```json
 {
-  "obo_version": "1.0",
-  "credential_id": "cred_vi_pay_20260402_0001",
+  "obo_credential_id": "urn:obo:cred:payments:vi:20260402:0001",
+  "principal_id": "did:example:principal:user-anon-001",
   "agent_id": "agent.pay42.psp.eu.example",
   "operator_id": "psp.eu.example",
-  "issued_at": "2026-04-02T09:00:00Z",
-  "expires_at": "2026-04-02T10:00:00Z",
-  "action_classes": ["A", "B", "C"],
+  "binding_proof_ref": "urn:vi:delegation:l2:20260402:0001",
   "intent_namespace": "urn:obo:ns:payments",
-  "human_readable_summary": "Pay42 agent may initiate SEPA credit transfers on behalf of user up to €10,000, SCA-authenticated, within this session.",
-  "issuer_id": "as.psp.eu.example",
-  "credential_hash": "sha256:...",
-  "signature": "Ed25519:...",
-  "why_ref": "https://rtgf.regulator.eu.example/rationale/rtgf-token-abc123",
+  "intent_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "action_classes": ["A", "B", "C"],
+  "governance_framework_ref": "urn:pack:rtgf:psd3:sha256:fed987cba654",
+  "issued_at": 1775110800,
+  "expires_at": 1775114400,
+  "issuer_id": "psp.eu.example",
+  "credential_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "credential_sig": "Ed25519:...",
   "corridor_binding": "payments-psd3.corridor.eu.example",
   "offline_verifiable": true
 }
@@ -258,26 +261,28 @@ also available:
 
 ```json
 {
-  "obo_version": "1.0",
-  "envelope_id": "env_vi_pay_20260402_0001",
-  "credential_ref": "cred_vi_pay_20260402_0001",
-  "credential_hash": "sha256:...",
+  "evidence_id": "urn:obo:ev:payments:vi:20260402:0001",
+  "obo_credential_ref": "urn:obo:cred:payments:vi:20260402:0001",
+  "credential_digest_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "principal_id": "did:example:principal:user-anon-001",
   "agent_id": "agent.pay42.psp.eu.example",
   "operator_id": "psp.eu.example",
-  "intent_phrase": "initiate SEPA credit transfer EUR 4500 to payee DE89370400440532013000",
+  "intent_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "intent_class": "urn:obo:ns:payments:credit-transfer",
   "action_class": "C",
   "outcome": "allow",
-  "reason_codes": ["ontology:payments.credit_transfer.sepa.approved", "sca:autonomous.aal2_plus"],
-  "sealed_at": "2026-04-02T09:14:22Z",
-  "trace_id": "trace_vi_20260402_8472",
-  "envelope_hash": "sha256:...",
-  "envelope_signature": "Ed25519:...",
+  "reason_code": "none",
+  "policy_snapshot_ref": "urn:policy:vi:psd3:v1",
+  "governance_framework_ref": "urn:pack:rtgf:psd3:sha256:fed987cba654",
+  "sealed_at": 1775111662,
   "corridor_ref": "payments-psd3.corridor.eu.example",
   "corridor_admission_tier": "regulated",
   "corridor_predicate_digest": "sha256:...",
   "stage3_ref": "https://api.psp.eu.example/payments/pa_20260402_8472/sepa-confirmation",
-  "why_ref": "https://rtgf.regulator.eu.example/rationale/rtgf-token-abc123",
-  "vi_evidence": {
+  "profile_id": "payments-mastercard-vi",
+  "profile_evidence": {
+    "trace_id": "trace_vi_20260402_8472",
+    "reason_codes": ["ontology:payments.credit_transfer.sepa.approved", "sca:autonomous.aal2_plus"],
     "chain_mode": "autonomous",
     "vi_chain_refs": {
       "chain_mode": "autonomous",
@@ -330,7 +335,9 @@ also available:
       "immutable_log_anchor": "merkle_anchor_2026-04-02T09:14:22Z",
       "retention_until": "2031-04-02T00:00:00Z"
     }
-  }
+  },
+  "evidence_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "envelope_sig": "Ed25519:..."
 }
 ```
 

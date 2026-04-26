@@ -44,8 +44,8 @@ OBO Credential:
   intent_hash:   SHA-256(             ← the exact scope, hash-locked
                    "Book cheapest economy flight LHR→JFK 15 April"
                  )
-  action_class:  C                    ← ceiling: irreversible, not regulated
-  not_after:     2026-04-04T12:05:00Z ← expires in minutes
+  action_classes: ["C"]               ← ceiling: irreversible, not regulated
+  expires_at:    1775083500           ← expires in minutes
   credential_sig: Ed25519(all of the above, operator private key)
 ```
 
@@ -145,14 +145,14 @@ mechanism for it, even if not the only one (see ADR-001).
 But DNS does not fence scope. DNS answers: *is this key really lane2.ai's?*
 It does not answer: *was lane2.ai authorised to book first class?*
 
-The scope fence is in the credential fields — `intent_hash`, `action_class`,
-`not_after`, `principal_sig` — and it is enforced at the verifier at transaction
+The scope fence is in the credential fields — `intent_hash`, `action_classes`,
+`expires_at`, `principal_sig` — and it is enforced at the verifier at transaction
 time. These are two different problems:
 
 | Problem | Solved by |
 |---------|-----------|
 | Who is this operator? | DNS-anchored Ed25519 key (ADR-001) |
-| What were they authorised to do? | `intent_hash` + `action_class` in credential |
+| What were they authorised to do? | `intent_hash` + `action_classes` in credential |
 | Did a human explicitly approve this scope? | `principal_sig` in Intent Artifact (§3.4) |
 | Has anything been altered after the fact? | Merkle root + Evidence Anchor checkpoint |
 
@@ -165,7 +165,7 @@ OBO addresses all four. A certificate addresses only the first.
 The agent booked first class. Alice disputes the charge. The operator says
 Alice delegated. The bank asks for the authorisation record. The OBO credential
 shows `intent_hash = SHA-256("Book cheapest economy flight LHR→JFK")` and
-`action_class: C`. The evidence envelope shows the agent booked a different
+`action_classes: ["C"]`. The evidence envelope shows the agent booked a different
 flight at a different class. The intent hashes do not match. The credential did
 not authorise what the agent did. The bank has its answer without calling Alice,
 without calling the operator, and without an expert explaining how the system

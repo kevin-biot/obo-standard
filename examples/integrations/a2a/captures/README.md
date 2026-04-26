@@ -133,7 +133,7 @@ both artifacts fully bound. New leaves are marked `(§3.3)` or `(§3.4)`:
 # ── Regulated profile required ────────────────────────────────
 event_time:2026-04-04T11:55:07.038933+00:00
 producer_id:lane2.ai
-schema_ref:draft-obo-agentic-evidence-envelope-00
+schema_ref:draft-obo-agentic-evidence-envelope-01
 
 # ── OBO credential provenance ─────────────────────────────────
 obo_credential_id:urn:obo:cred:1d8d3842-…

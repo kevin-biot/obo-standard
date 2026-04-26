@@ -32,8 +32,8 @@ infrastructure. Treat it as a CA signing key.
 
 ### Replayed credentials
 A credential that has been used once can be replayed by anyone who intercepts
-it. OBO verifiers MUST maintain a `seen_credential_ids` set and reject any
-`credential_id` already in the set.
+it. OBO verifiers MUST maintain a `seen_obo_credential_ids` set and reject any
+`obo_credential_id` already in the set.
 
 **Requirement:** Implement replay detection. A credential is single-use by
 design — its `intent_hash` binds it to a specific intent, which prevents
@@ -51,8 +51,8 @@ authorisation and action.
 ### Scope escalation
 A credential issued for Class A (read-only) is presented at an endpoint that
 performs a Class D (regulated/high-value) action. The verifier MUST check that
-the action class of the requested operation does not exceed the `action_class`
-in the credential. Use `OBO-ERR-010` on violation.
+the action class of the requested operation is included in the `action_classes`
+array in the credential. Use `OBO-ERR-010` on violation.
 
 **Requirement:** Every endpoint must have a declared action class. Verify before
 executing.
@@ -60,8 +60,8 @@ executing.
 ### Tampered evidence
 An operator alters an evidence envelope after the fact to change `outcome` or
 `reason_code`. The `evidence_digest` pre-image is defined over all normative
-fields including `reason_code` (§4.3); any alteration invalidates
-`envelope_sig`.
+fields including `reason_code` (§4.3); any alteration invalidates both the
+recomputed digest check and `envelope_sig`.
 
 **Requirement:** Include `reason_code` in the `evidence_digest` pre-image.
 Verifiers MUST check `envelope_sig` before accepting any evidence as valid.
@@ -119,7 +119,7 @@ python examples/integrations/a2a/keygen.py
 ### Public key publication (DNS)
 
 ```
-_obo-key.<operator_id>  IN TXT  "v=obo1 ed25519=<base64url pubkey>"
+_obo-key.<operator-domain>  IN TXT  "v=obo1 ed25519=<base64url pubkey>"
 ```
 
 - The `<base64url pubkey>` is the raw 32-byte Ed25519 public key, base64url
@@ -142,7 +142,7 @@ _obo-key.<operator_id>  IN TXT  "v=obo1 ed25519=<base64url pubkey>"
 
 There is no revocation mechanism in the current spec (v0.3.0). Rotation via
 DNS is the primary mitigation. Implementers requiring hard revocation should
-track `credential_id` blocklists out-of-band.
+track `obo_credential_id` blocklists out-of-band.
 
 ---
 
@@ -152,12 +152,12 @@ track `credential_id` blocklists out-of-band.
       verification error.
 - [ ] Resolve operator key from DNS on every transaction (not cached
       indefinitely). For Class C/D: consult curated registry as primary.
-- [ ] Maintain `seen_credential_ids` set. Reject replays with `OBO-ERR-008`.
+- [ ] Maintain `seen_obo_credential_ids` set. Reject replays with `OBO-ERR-008`.
 - [ ] Recompute `SHA-256(intent_phrase)` and compare to `intent_hash`. Reject
       mismatches with `OBO-ERR-005`.
 - [ ] Enforce action class ceiling for every endpoint. Reject escalation with
       `OBO-ERR-010`.
-- [ ] Check `not_before` / `not_after` validity window. Reject expired
+- [ ] Check `issued_at` / `expires_at` validity window. Reject expired
       credentials with `OBO-ERR-003`.
 - [ ] For Class C/D: require and verify Delegation Chain Artifact (§3.3).
       Deferred verification is not permitted.
@@ -172,7 +172,7 @@ track `credential_id` blocklists out-of-band.
 
 - [ ] Store private key in HSM or secrets manager for Class C/D use.
 - [ ] Set short credential TTLs (minutes, not hours) for Class C/D.
-- [ ] Set `action_class` to the minimum required for the intended operation.
+- [ ] Set `action_classes` to the minimum required for the intended operation.
       Never over-provision.
 - [ ] Include `reason_code: none` in the `evidence_digest` pre-image even for
       allow outcomes (ensures field is always covered by the signature).

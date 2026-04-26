@@ -1,14 +1,15 @@
 {
-  "_comment": "OBO Evidence Envelope — open lane, travel booking, outcome allow",
   "evidence_id": "urn:obo:ev:2026:e9f8g7h6",
   "obo_credential_ref": "urn:obo:cred:2026:a1b2c3d4",
   "credential_digest_ref": "sha256:def456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01",
   "principal_id": "did:example:principal:alice",
   "agent_id": "urn:agent:lane2:travel-assistant:v1",
+  "operator_id": "lane2.ai",
   "intent_hash": "sha256:7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069",
   "intent_class": "urn:obo:ns:travel:accommodation-booking",
   "action_class": "B",
   "outcome": "allow",
+  "reason_code": "none",
   "policy_snapshot_ref": "urn:policy:lane2:travel:v1.2.3",
   "governance_framework_ref": "urn:pack:lane2:travel:sha256:abc123def456",
   "sealed_at": 1743552300,
@@ -17,5 +18,6 @@
   "corridor_predicate_digest": "sha256:0f1e2d3c4b5a69788796a5b4c3d2e1f00f1e2d3c4b5a69788796a5b4c3d2e1f0",
   "target_id": "urn:service:hotel-chain:booking:v1",
   "stage3_ref": "urn:payment:stripe:pi_xyz123",
-  "evidence_digest": "sha256:fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210fe"
+  "evidence_digest": "sha256:fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210fe",
+  "envelope_sig": "Ed25519:CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
 }

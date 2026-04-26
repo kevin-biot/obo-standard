@@ -1,5 +1,3 @@
-version: "3.9"
-
 # OBO + A2A Demo — three containers, one DNS TXT record
 #
 # Setup:
@@ -40,6 +38,7 @@ services:
       - "8081:8081"   # if 8081 is already in use locally, change left side: "9081:8081"
     environment:
       - TRAVEL_AGENT_PUBKEY=${TRAVEL_AGENT_PUBKEY}
+      - TRAVEL_AGENT_OPERATOR_ID=${TRAVEL_AGENT_OPERATOR_ID}
       - FLIGHT_SEARCH_PORT=8081
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8081/health')"]

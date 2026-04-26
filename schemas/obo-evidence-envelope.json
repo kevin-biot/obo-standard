@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://obo-standard.org/schemas/obo-evidence-envelope/v0.1",
   "title": "OBO Evidence Envelope",
-  "description": "Sealed per-transaction artefact recording what the agent did, within what scope, and under what governance. Defined in draft-obo-agentic-evidence-envelope-00 §4.",
+  "description": "Sealed per-transaction artefact recording what the agent did, within what scope, and under what governance. Defined in draft-obo-agentic-evidence-envelope-01 §4.",
   "type": "object",
   "required": [
     "evidence_id",
@@ -10,14 +10,17 @@
     "credential_digest_ref",
     "principal_id",
     "agent_id",
+    "operator_id",
     "intent_hash",
     "intent_class",
     "action_class",
     "outcome",
+    "reason_code",
     "policy_snapshot_ref",
     "governance_framework_ref",
     "sealed_at",
-    "evidence_digest"
+    "evidence_digest",
+    "envelope_sig"
   ],
   "properties": {
     "evidence_id": {
@@ -43,6 +46,10 @@
       "type": "string",
       "description": "Repeated from credential for standalone verifiability."
     },
+    "operator_id": {
+      "type": "string",
+      "description": "Identifier of the legal entity operating the agent. Repeated from credential for standalone accountability and signature verification."
+    },
     "intent_hash": {
       "type": "string",
       "description": "SHA-256 of the canonical normalised intent phrase. Binds the evidence to the specific intent that was admitted.",
@@ -63,6 +70,12 @@
       "description": "Transaction outcome.",
       "enum": ["allow", "deny", "escalate", "error"]
     },
+    "reason_code": {
+      "type": "string",
+      "description": "OBO-ERR-* rejection code, policy code, or none. The value MUST be included in evidence_digest so the rejection class is immutable.",
+      "pattern": "^(none|OBO-ERR-[0-9]{3}|[A-Za-z0-9_.:-]+)$",
+      "examples": ["none", "OBO-ERR-005", "policy.allow"]
+    },
     "policy_snapshot_ref": {
       "type": "string",
       "description": "Reference to the policy snapshot under which the action was evaluated.",
@@ -80,8 +93,13 @@
     },
     "evidence_digest": {
       "type": "string",
-      "description": "SHA-256 of the canonical JSON serialisation of this envelope (excluding this field). Format: sha256:<hex>.",
+      "description": "SHA-256 of the canonical JSON serialisation of this envelope with evidence_digest and envelope_sig excluded. Format: sha256:<hex>.",
       "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "envelope_sig": {
+      "type": "string",
+      "description": "Ed25519 signature by operator_id over evidence_digest, using the operator key published at _obo-key.<operator-domain>.",
+      "pattern": "^Ed25519:[A-Za-z0-9_-]{43,}$"
     },
     "corridor_ref": {
       "type": "string",
@@ -122,6 +140,15 @@
     "prior_evidence_ref": {
       "type": "string",
       "description": "Reference to a prior evidence envelope in a multi-step transaction chain."
+    },
+    "profile_id": {
+      "type": "string",
+      "description": "Optional profile identifier for profile-specific constraints layered on the base envelope."
+    },
+    "profile_evidence": {
+      "type": "object",
+      "description": "Profile-specific evidence payload. Base OBO verifiers MAY ignore this object; profile verifiers apply profile-specific schema and policy.",
+      "additionalProperties": true
     }
   },
   "additionalProperties": false

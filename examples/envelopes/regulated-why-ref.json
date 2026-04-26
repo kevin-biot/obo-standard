@@ -1,14 +1,15 @@
 {
-  "_comment": "OBO Evidence Envelope — regulated lane, payment initiation, why_ref chain, outcome allow",
   "evidence_id": "urn:obo:ev:2026:p1a2y3m4",
   "obo_credential_ref": "urn:obo:cred:2026:p9q8r7s6",
   "credential_digest_ref": "sha256:aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aa",
   "principal_id": "did:example:principal:bob",
   "agent_id": "urn:agent:fintech-co:payment-agent:v2",
+  "operator_id": "fintech-co.example",
   "intent_hash": "sha256:2c624232cdd221771294dfbb310acbc3e3bce5a07031523e39977a5cd052614",
   "intent_class": "urn:obo:ns:payments:credit-transfer",
   "action_class": "C",
   "outcome": "allow",
+  "reason_code": "none",
   "policy_snapshot_ref": "urn:policy:rtgf:psd3:v2.1.0",
   "governance_framework_ref": "urn:pack:rtgf:psd3:sha256:fed987cba654",
   "sealed_at": 1743552400,
@@ -23,5 +24,6 @@
     "derivation_digest": "sha256:aabbccddeeff00112233445566778899aabbccddeeff0011223344556677aabb"
   },
   "route_proof_ref": "urn:aarp:route-proof:sha256:9988776655443322",
-  "evidence_digest": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01"
+  "evidence_digest": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01",
+  "envelope_sig": "Ed25519:DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 }

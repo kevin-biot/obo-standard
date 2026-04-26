@@ -83,6 +83,18 @@ def _b64url_decode(s: str) -> bytes:
     return base64.urlsafe_b64decode(s + "=" * (pad % 4))
 
 
+def _strip_sig_prefix(value: str) -> str:
+    return value.split(":", 1)[1] if value.startswith("Ed25519:") else value
+
+
+def _sha256_hex(value: bytes) -> str:
+    return "sha256:" + hashlib.sha256(value).hexdigest()
+
+
+def _canonical_json(value: dict) -> bytes:
+    return json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
+
+
 def load_private_key_from_env() -> Ed25519PrivateKey:
     """Load Ed25519 private key from TRAVEL_AGENT_PRIVATE_KEY_B64 env var."""
     b64 = os.environ.get("TRAVEL_AGENT_PRIVATE_KEY_B64", "")
@@ -150,22 +162,34 @@ class OBOCredential:
     """
     OBO Credential (§3.1). Real Ed25519 signature over canonical fields.
     """
-    credential_id: str
-    operator_id: str
     principal_id: str
+    agent_id: str
+    operator_id: str
+    binding_proof_ref: str
+    intent_namespace: str
     intent_hash: str          # SHA-256 of canonical intent phrase
-    issued_at: str
-    expires_at: str
+    action_classes: list[str]
     governance_framework_ref: str
-    credential_sig: str       # base64url Ed25519 signature
+    issued_at: int
+    expires_at: int
+    issuer_id: str
+    obo_credential_id: str
+    credential_digest: str    # sha256:<hex> over canonical fields, excluding digest/signature
+    credential_sig: str       # Ed25519:<base64url signature over credential_digest>
 
     def to_dict(self) -> dict:
         return dataclasses.asdict(self)
 
-    def _canonical(self) -> bytes:
-        """Canonical payload for signing/verification — all fields except credential_sig."""
-        payload = {k: v for k, v in self.to_dict().items() if k != "credential_sig"}
-        return json.dumps(payload, sort_keys=True).encode()
+    def _digest_payload(self) -> bytes:
+        """Canonical payload for digesting — all fields except digest/signature."""
+        payload = {
+            k: v for k, v in self.to_dict().items()
+            if k not in {"credential_digest", "credential_sig"}
+        }
+        return _canonical_json(payload)
+
+    def recompute_digest(self) -> str:
+        return _sha256_hex(self._digest_payload())
 
     @classmethod
     def issue(
@@ -174,34 +198,68 @@ class OBOCredential:
         operator_id: str,
         principal_id: str,
         intent_phrase: str,
+        agent_id: str = "urn:agent:lane2:travel-agent:v1",
+        binding_proof_ref: Optional[str] = None,
+        intent_namespace: str = "urn:obo:ns:travel",
+        action_classes: Optional[list[str]] = None,
         governance_framework_ref: str = "https://example.com/obo/v1/policy",
         ttl_seconds: int = 300,
     ) -> "OBOCredential":
-        now = datetime.datetime.now(datetime.timezone.utc)
-        expires = now + datetime.timedelta(seconds=ttl_seconds)
-        intent_hash = hashlib.sha256(intent_phrase.encode()).hexdigest()
+        now = int(time.time())
+        expires = now + ttl_seconds
+        intent_hash = _sha256_hex(intent_phrase.encode())
+        if binding_proof_ref is None:
+            binding_proof_ref = f"urn:consent:demo:{uuid.uuid4()}"
 
         cred = cls(
-            credential_id=f"urn:obo:cred:{uuid.uuid4()}",
-            operator_id=operator_id,
             principal_id=principal_id,
+            agent_id=agent_id,
+            operator_id=operator_id,
+            binding_proof_ref=binding_proof_ref,
+            intent_namespace=intent_namespace,
             intent_hash=intent_hash,
-            issued_at=now.isoformat(),
-            expires_at=expires.isoformat(),
+            action_classes=action_classes or ["A"],
             governance_framework_ref=governance_framework_ref,
+            issued_at=now,
+            expires_at=expires,
+            issuer_id=operator_id,
+            obo_credential_id=f"urn:obo:cred:{uuid.uuid4()}",
+            credential_digest="",
             credential_sig="",
         )
-        sig_bytes = private_key.sign(cred._canonical())
-        cred.credential_sig = _b64url_encode(sig_bytes)
+        cred.credential_digest = cred.recompute_digest()
+        sig_bytes = private_key.sign(cred.credential_digest.encode())
+        cred.credential_sig = f"Ed25519:{_b64url_encode(sig_bytes)}"
         return cred
+
+    @classmethod
+    def from_dict(cls, raw: dict) -> "OBOCredential":
+        return cls(
+            principal_id=raw["principal_id"],
+            agent_id=raw["agent_id"],
+            operator_id=raw["operator_id"],
+            binding_proof_ref=raw["binding_proof_ref"],
+            intent_namespace=raw["intent_namespace"],
+            intent_hash=raw["intent_hash"],
+            action_classes=list(raw["action_classes"]),
+            governance_framework_ref=raw["governance_framework_ref"],
+            issued_at=int(raw["issued_at"]),
+            expires_at=int(raw["expires_at"]),
+            issuer_id=raw["issuer_id"],
+            obo_credential_id=raw["obo_credential_id"],
+            credential_digest=raw["credential_digest"],
+            credential_sig=raw["credential_sig"],
+        )
 
     def verify(self, public_key: Ed25519PublicKey) -> None:
         """Raises InvalidSignature if the credential signature is invalid."""
-        sig_bytes = _b64url_decode(self.credential_sig)
-        public_key.verify(sig_bytes, self._canonical())
+        if self.recompute_digest() != self.credential_digest:
+            raise InvalidSignature("credential_digest mismatch")
+        sig_bytes = _b64url_decode(_strip_sig_prefix(self.credential_sig))
+        public_key.verify(sig_bytes, self.credential_digest.encode())
 
 
-# ─── OBO Error Codes (§5 of draft-obo-agentic-evidence-envelope-00) ──────────
+# ─── OBO Error Codes (§5 of draft-obo-agentic-evidence-envelope-01) ──────────
 
 OBO_ERR_MISSING          = "OBO-ERR-001"   # No extensions.obo present
 OBO_ERR_INCOMPLETE       = "OBO-ERR-002"   # Required fields absent
@@ -210,7 +268,7 @@ OBO_ERR_SIG_INVALID      = "OBO-ERR-004"   # Ed25519 verification failed
 OBO_ERR_INTENT_MISMATCH  = "OBO-ERR-005"   # SHA-256(task.intent) ≠ intent_hash
 OBO_ERR_KEY_NOT_FOUND    = "OBO-ERR-006"   # DNS/DID resolution returned nothing
 OBO_ERR_KEY_CONFLICT     = "OBO-ERR-007"   # DNS key ≠ did:web key — fail closed
-OBO_ERR_REPLAYED         = "OBO-ERR-008"   # credential_id already seen
+OBO_ERR_REPLAYED         = "OBO-ERR-008"   # obo_credential_id already seen
 OBO_ERR_CLOCK_SKEW       = "OBO-ERR-009"   # issued_at is in the future
 OBO_ERR_SCOPE_DRIFT      = "OBO-ERR-010"   # Intent class exceeds credential scope
 
@@ -218,7 +276,7 @@ OBO_ERR_SCOPE_DRIFT      = "OBO-ERR-010"   # Intent class exceeds credential sco
 @dataclasses.dataclass
 class OBOEvidenceEnvelope:
     """
-    OBO Evidence Envelope (§3.2). Sealed post-task. Ed25519 over evidence_digest.
+    OBO Evidence Envelope (§4). Sealed post-task. Ed25519 over evidence_digest.
     The A2A task.id is the correlation anchor — links evidence back to the task
     and forward to Evidence Anchor / regulator API.
 
@@ -226,20 +284,37 @@ class OBOEvidenceEnvelope:
     It is included in the evidence_digest pre-image so the rejection reason
     is cryptographically bound and immutable in the Merkle tree.
     """
-    envelope_id: str
-    credential_id: str
-    operator_id: str
+    evidence_id: str
+    obo_credential_ref: str
+    credential_digest_ref: str
     principal_id: str
+    agent_id: str
+    operator_id: str
     intent_hash: str
-    outcome: str                  # "allow" | "deny" | "escalate"
-    reason_code: str              # OBO-ERR-xxx on deny; "" on allow
-    task_correlation_ref: str     # A2A task.id
-    executed_at: str
-    evidence_digest: str          # SHA-256 of binding payload (includes reason_code)
-    envelope_sig: str             # base64url Ed25519 over evidence_digest
+    intent_class: str
+    action_class: str
+    outcome: str                  # "allow" | "deny" | "escalate" | "error"
+    reason_code: str              # OBO-ERR-xxx on deny; "none" on allow
+    policy_snapshot_ref: str
+    governance_framework_ref: str
+    sealed_at: int
+    evidence_digest: str          # sha256:<hex> over canonical fields, excluding digest/signature
+    envelope_sig: str             # Ed25519:<base64url signature over evidence_digest>
+    target_id: str
+    stage3_ref: str
 
     def to_dict(self) -> dict:
         return dataclasses.asdict(self)
+
+    def _digest_payload(self) -> bytes:
+        payload = {
+            k: v for k, v in self.to_dict().items()
+            if k not in {"evidence_digest", "envelope_sig"}
+        }
+        return _canonical_json(payload)
+
+    def recompute_digest(self) -> str:
+        return _sha256_hex(self._digest_payload())
 
     @classmethod
     def seal(
@@ -249,34 +324,48 @@ class OBOEvidenceEnvelope:
         outcome: str,
         task_id: str,
         task_result_summary: str,
-        reason_code: str = "",
+        intent_class: str,
+        action_class: str = "A",
+        reason_code: str = "none",
+        target_id: str = "urn:service:flight-search-agent:demo",
+        policy_snapshot_ref: str = "urn:policy:lane2:travel:demo",
     ) -> "OBOEvidenceEnvelope":
-        executed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
-        # reason_code is in the pre-image — binds rejection class into the digest
-        digest_payload = (
-            f"{credential.credential_id}:{outcome}:{reason_code}:{task_id}:{task_result_summary}"
-        )
-        evidence_digest = hashlib.sha256(digest_payload.encode()).hexdigest()
+        sealed_at = int(time.time())
+        if not reason_code:
+            reason_code = "none"
 
         env = cls(
-            envelope_id=f"urn:obo:env:{uuid.uuid4()}",
-            credential_id=credential.credential_id,
-            operator_id=credential.operator_id,
+            evidence_id=f"urn:obo:ev:{uuid.uuid4()}",
+            obo_credential_ref=credential.obo_credential_id,
+            credential_digest_ref=credential.credential_digest,
             principal_id=credential.principal_id,
+            agent_id=credential.agent_id,
+            operator_id=credential.operator_id,
             intent_hash=credential.intent_hash,
+            intent_class=intent_class,
+            action_class=action_class,
             outcome=outcome,
             reason_code=reason_code,
-            task_correlation_ref=task_id,
-            executed_at=executed_at,
-            evidence_digest=evidence_digest,
+            policy_snapshot_ref=policy_snapshot_ref,
+            governance_framework_ref=credential.governance_framework_ref,
+            sealed_at=sealed_at,
+            evidence_digest="",
             envelope_sig="",
+            target_id=target_id,
+            stage3_ref=task_id,
         )
-        sig_bytes = private_key.sign(evidence_digest.encode())
-        env.envelope_sig = _b64url_encode(sig_bytes)
+        # task_result_summary is intentionally not a base field; the task id in stage3_ref
+        # is the portable correlation handle, and the full result can be profiled separately.
+        _ = task_result_summary
+        env.evidence_digest = env.recompute_digest()
+        sig_bytes = private_key.sign(env.evidence_digest.encode())
+        env.envelope_sig = f"Ed25519:{_b64url_encode(sig_bytes)}"
         return env
 
     def verify(self, public_key: Ed25519PublicKey) -> None:
-        sig_bytes = _b64url_decode(self.envelope_sig)
+        if self.recompute_digest() != self.evidence_digest:
+            raise InvalidSignature("evidence_digest mismatch")
+        sig_bytes = _b64url_decode(_strip_sig_prefix(self.envelope_sig))
         public_key.verify(sig_bytes, self.evidence_digest.encode())
 
 
@@ -308,10 +397,12 @@ FLIGHT_SEARCH_AGENT_CARD = {
         # Within a shared trust domain, bearer tokens would also be listed here.
         "schemes": ["obo"],
         "obo": {
-            "spec_version":     "draft-obo-agentic-evidence-envelope-00",
+            "spec_version":     "draft-obo-agentic-evidence-envelope-01",
             "required_fields":  [
-                "credential_id", "operator_id", "principal_id",
-                "intent_hash", "credential_sig", "expires_at",
+                "obo_credential_id", "principal_id", "agent_id", "operator_id",
+                "binding_proof_ref", "intent_namespace", "intent_hash",
+                "action_classes", "governance_framework_ref", "issued_at",
+                "expires_at", "issuer_id", "credential_digest", "credential_sig",
             ],
             "key_resolution":   "dns-txt",
             "dns_record_format": "_obo-key.{operator_id}  IN TXT  \"v=obo1 ed25519=<pubkey>\"",
@@ -429,6 +520,7 @@ class TravelAgent:
 
     def _post_json(self, url: str, body: dict) -> dict:
         import urllib.request
+        import urllib.error
         data = json.dumps(body).encode()
         req = urllib.request.Request(
             url,
@@ -436,8 +528,17 @@ class TravelAgent:
             headers={"Content-Type": "application/json"},
             method="POST",
         )
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            return json.loads(resp.read())
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                return json.loads(resp.read())
+        except urllib.error.HTTPError as err:
+            body_bytes = err.read()
+            if body_bytes:
+                try:
+                    return json.loads(body_bytes)
+                except json.JSONDecodeError:
+                    pass
+            raise
 
     def _get_json(self, url: str) -> dict:
         import urllib.request
@@ -466,24 +567,27 @@ class TravelAgent:
         profile_id = os.environ.get("ANCHOR_PROFILE_ID", "regulated")
 
         body: dict = {
-            "evidence_id": envelope.envelope_id,   # idempotency key — safe to replay
+            "evidence_id": envelope.evidence_id,   # idempotency key — safe to replay
             "profile_id":  profile_id,
             "leaves": [
                 # ── regulated profile required leaves ──────────────────────────
                 f"producer_id:{cred.operator_id}",
-                f"event_time:{envelope.executed_at}",
-                f"schema_ref:draft-obo-agentic-evidence-envelope-00",
+                f"event_time:{envelope.sealed_at}",
+                f"schema_ref:draft-obo-agentic-evidence-envelope-01",
                 # ── OBO credential provenance ──────────────────────────────────
-                f"obo_credential_id:{cred.credential_id}",
+                f"obo_credential_id:{cred.obo_credential_id}",
+                f"obo_credential_digest:{cred.credential_digest}",
                 f"obo_operator_id:{cred.operator_id}",
                 f"obo_principal_id:{cred.principal_id}",
+                f"obo_agent_id:{cred.agent_id}",
                 f"obo_intent_hash:{cred.intent_hash}",
+                f"obo_action_classes:{','.join(cred.action_classes)}",
                 f"obo_governance_ref:{cred.governance_framework_ref}",
                 # ── Evidence envelope binding ──────────────────────────────────
-                f"obo_envelope_id:{envelope.envelope_id}",
+                f"obo_evidence_id:{envelope.evidence_id}",
                 f"obo_outcome:{envelope.outcome}",
-                f"obo_reason_code:{envelope.reason_code or 'none'}",
-                f"obo_task_ref:{envelope.task_correlation_ref}",
+                f"obo_reason_code:{envelope.reason_code}",
+                f"obo_task_ref:{envelope.stage3_ref}",
                 f"obo_evidence_digest:{envelope.evidence_digest}",
                 f"obo_envelope_sig:{envelope.envelope_sig}",
             ],
@@ -595,7 +699,7 @@ class TravelAgent:
 
         print(f"{banner}")
         print("  DEMO COMPLETE")
-        print(f"  Inspect:  curl {self.anchor_url}/evidence/{{trace_id}}/proof | jq")
+        print(f"  Inspect:  curl {self.anchor_url}/evidence/{{evidence_id}}/proof | jq")
         print(f"{banner}\n")
 
     def _run_scenario(self, label, intent, payload, inject="none"):
@@ -605,7 +709,7 @@ class TravelAgent:
         if inject == "replay" and self._replay_cred:
             # Reuse the credential from a previously completed scenario
             cred = self._replay_cred
-            print(f"        ⚠ INJECT replay: reusing credential_id {cred.credential_id[:30]}…")
+            print(f"        ⚠ INJECT replay: reusing obo_credential_id {cred.obo_credential_id[:30]}…")
         elif inject == "expire_credential":
             # Issue with TTL already elapsed
             cred = OBOCredential.issue(
@@ -630,8 +734,10 @@ class TravelAgent:
 
         print(f"        operator_id:    {cred.operator_id}")
         print(f"        principal_id:   {cred.principal_id[:52]}…")
-        print(f"        intent_hash:    {cred.intent_hash[:20]}…")
-        print(f"        credential_sig: Ed25519 ✓  ({cred.credential_sig[:20]}…)")
+        print(f"        agent_id:       {cred.agent_id}")
+        print(f"        intent_hash:    {cred.intent_hash[:27]}…")
+        print(f"        action_classes: {','.join(cred.action_classes)}")
+        print(f"        credential_sig: Ed25519 ✓  ({cred.credential_sig[8:28]}…)")
 
         # ── Step 2: Build A2A task with injected fault ────────────────────────
         print(f"\n  [2/5] Sending A2A Task → FlightSearchAgent")
@@ -644,10 +750,10 @@ class TravelAgent:
             forged = dict(cred.to_dict())
             # Replace last 8 chars of sig with garbage — still b64url, but wrong bytes
             forged["credential_sig"] = cred.credential_sig[:-8] + "AAAAAAAA"
-            obo_ext = {"spec_version": "draft-obo-agentic-evidence-envelope-00", **forged}
+            obo_ext = {"spec_version": "draft-obo-agentic-evidence-envelope-01", **forged}
             print(f"        ⚠ INJECT forge_sig: credential_sig corrupted")
         else:
-            obo_ext = {"spec_version": "draft-obo-agentic-evidence-envelope-00", **cred.to_dict()}
+            obo_ext = {"spec_version": "draft-obo-agentic-evidence-envelope-01", **cred.to_dict()}
 
         extensions = {"obo": obo_ext} if obo_ext is not None else {}
 
@@ -666,14 +772,9 @@ class TravelAgent:
         print(f"        POST {self.flight_search_url}/tasks")
         print(f"        task_id: {task.task_id[:16]}…")
 
-        try:
-            result = self._post_json(
-                f"{self.flight_search_url}/tasks", task.to_dict()
-            )
-        except Exception as e:
-            print(f"        ✗ request failed: {e}")
-            return
-
+        result = self._post_json(
+            f"{self.flight_search_url}/tasks", task.to_dict()
+        )
         completed = A2ATask.from_dict(result)
 
         print(f"\n  [3/5] FlightSearchAgent response")
@@ -702,23 +803,30 @@ class TravelAgent:
         # ── Step 4: Seal evidence envelope ───────────────────────────────────
         print(f"\n  [4/5] Sealing OBO Evidence Envelope")
         outcome      = "allow" if completed.status == "completed" else "deny"
-        reason_code  = (completed.result or {}).get("reason_code", "")
+        reason_code  = (completed.result or {}).get("reason_code", "none")
         result_summary = json.dumps(completed.result or {}, sort_keys=True)
+        intent_class = (
+            "urn:obo:ns:travel:flight-search"
+            if "origin" in payload else
+            "urn:obo:ns:travel:accommodation-search"
+        )
         envelope = OBOEvidenceEnvelope.seal(
             private_key=self.private_key,
             credential=cred,
             outcome=outcome,
             task_id=completed.task_id,
             task_result_summary=result_summary,
+            intent_class=intent_class,
+            action_class="A",
             reason_code=reason_code,
         )
-        print(f"        envelope_id:     {envelope.envelope_id[:40]}…")
+        print(f"        evidence_id:     {envelope.evidence_id[:40]}…")
         print(f"        outcome:         {envelope.outcome}")
-        if envelope.reason_code:
+        if envelope.reason_code != "none":
             print(f"        reason_code:     {envelope.reason_code}")
-        print(f"        evidence_digest: {envelope.evidence_digest[:20]}…")
-        print(f"        envelope_sig:    Ed25519 ✓  ({envelope.envelope_sig[:20]}…)")
-        print(f"        task_ref:        {envelope.task_correlation_ref[:20]}…")
+        print(f"        evidence_digest: {envelope.evidence_digest[:27]}…")
+        print(f"        envelope_sig:    Ed25519 ✓  ({envelope.envelope_sig[8:28]}…)")
+        print(f"        task_ref:        {envelope.stage3_ref[:20]}…")
 
         # ── Step 5: Mint to Evidence Anchor ──────────────────────────────────────────────
         print(f"\n  [5/5] Minting Evidence → Evidence Anchor  POST /v1/evidence/mint")
@@ -740,7 +848,7 @@ class TravelAgent:
 
             # ── Fetch signed Merkle proof (ADR-181 E7) ────────────────────────
             print(f"\n        ── Fetching Signed Proof  GET /evidence/…/proof ──")
-            proof = self._fetch_proof(envelope.envelope_id)
+            proof = self._fetch_proof(envelope.evidence_id)
 
             if "_note" in proof:
                 print(f"        ⚠  {proof['_note']}")
@@ -752,7 +860,7 @@ class TravelAgent:
                 print(f"        JWS proof:       {str(jws)[:40]}…  ✓")
                 print(f"\n        ── Evidence Chain ────────────────────────────────")
                 print(f"        OBO credential issued  → evidence_digest bound")
-                print(f"        A2A task correlated    → task_ref: {envelope.task_correlation_ref[:16]}…")
+                print(f"        A2A task correlated    → task_ref: {envelope.stage3_ref[:16]}…")
                 print(f"        Evidence Anchor Merkle anchored   → root: {str(merkle_root)[:16]}…")
                 print(f"        Proof signed (E7)      → JWS: {str(jws)[:16]}…")
 
@@ -788,7 +896,7 @@ def run_flight_search_server():
     else:
         print(f"[FlightSearchAgent] WARNING: OBO key not resolved at startup — will retry per-request")
 
-    # Replay detection — seen credential_ids within this server lifetime
+    # Replay detection — seen obo_credential_ids within this server lifetime
     _seen_credential_ids: set = set()
 
     # Build Agent Card with runtime URL
@@ -825,50 +933,40 @@ def run_flight_search_server():
 
         # ── OBO-ERR-002  Incomplete fields ────────────────────────────────────
         required = [
-            "credential_id", "operator_id", "principal_id",
-            "intent_hash", "credential_sig", "expires_at", "issued_at",
+            "obo_credential_id", "principal_id", "agent_id", "operator_id",
+            "binding_proof_ref", "intent_namespace", "intent_hash",
+            "action_classes", "governance_framework_ref", "issued_at",
+            "expires_at", "issuer_id", "credential_digest", "credential_sig",
         ]
         missing = [f for f in required if not obo_raw.get(f)]
         if missing:
             return _reject(task, OBO_ERR_INCOMPLETE,
                            f"Required OBO fields absent: {missing}")
 
-        cred = OBOCredential(
-            credential_id=obo_raw["credential_id"],
-            operator_id=obo_raw["operator_id"],
-            principal_id=obo_raw["principal_id"],
-            intent_hash=obo_raw["intent_hash"],
-            issued_at=obo_raw["issued_at"],
-            expires_at=obo_raw["expires_at"],
-            governance_framework_ref=obo_raw.get("governance_framework_ref", ""),
-            credential_sig=obo_raw["credential_sig"],
-        )
+        cred = OBOCredential.from_dict(obo_raw)
 
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = int(time.time())
 
         # ── OBO-ERR-009  Clock skew (issued_at in the future) ─────────────────
-        try:
-            issued = datetime.datetime.fromisoformat(cred.issued_at)
-            if issued > now + datetime.timedelta(seconds=5):   # 5s grace
-                return _reject(task, OBO_ERR_CLOCK_SKEW,
-                               f"OBO issued_at is in the future: {cred.issued_at}")
-        except ValueError:
-            return _reject(task, OBO_ERR_INCOMPLETE, "issued_at is not valid ISO 8601")
+        if cred.issued_at > now + 5:
+            return _reject(task, OBO_ERR_CLOCK_SKEW,
+                           f"OBO issued_at is in the future: {cred.issued_at}")
 
         # ── OBO-ERR-003  Expired ──────────────────────────────────────────────
-        try:
-            expires = datetime.datetime.fromisoformat(cred.expires_at)
-            if now > expires:
-                return _reject(task, OBO_ERR_EXPIRED,
-                               f"OBO credential expired at {cred.expires_at}")
-        except ValueError:
-            return _reject(task, OBO_ERR_INCOMPLETE, "expires_at is not valid ISO 8601")
+        if now > cred.expires_at:
+            return _reject(task, OBO_ERR_EXPIRED,
+                           f"OBO credential expired at {cred.expires_at}")
 
         # ── OBO-ERR-005  Intent hash mismatch ────────────────────────────────
-        computed = hashlib.sha256(task.intent.encode()).hexdigest()
+        computed = _sha256_hex(task.intent.encode())
         if computed != cred.intent_hash:
             return _reject(task, OBO_ERR_INTENT_MISMATCH,
                            "SHA-256(task.intent) does not match OBO intent_hash")
+
+        # Demo endpoints are read-only search operations, so Class A is required.
+        if "A" not in cred.action_classes:
+            return _reject(task, OBO_ERR_SCOPE_DRIFT,
+                           "Requested action class A is not authorised by action_classes")
 
         # ── OBO-ERR-006 / OBO-ERR-004  DNS key resolution + Ed25519 verify ─────
         # Resolve key fresh for every transaction (spec §3.4 — no stale cache
@@ -887,10 +985,10 @@ def run_flight_search_server():
                            f"Ed25519 credential_sig verification failed (key from {key_source})")
 
         # ── OBO-ERR-008  Replay ───────────────────────────────────────────────
-        if cred.credential_id in _seen_credential_ids:
+        if cred.obo_credential_id in _seen_credential_ids:
             return _reject(task, OBO_ERR_REPLAYED,
-                           f"credential_id already seen: {cred.credential_id[:30]}…")
-        _seen_credential_ids.add(cred.credential_id)
+                           f"obo_credential_id already seen: {cred.obo_credential_id[:30]}…")
+        _seen_credential_ids.add(cred.obo_credential_id)
 
         print(f"[FlightSearchAgent] ✓ OBO credential accepted (operator: {cred.operator_id})")
 
