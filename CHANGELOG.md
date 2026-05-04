@@ -7,6 +7,34 @@ Versioning: IETF draft number (`-NN`) + semantic version (`vX.Y.Z`).
 
 ---
 
+## [draft-01 / v0.4.17] — 2026-05-04
+
+**AI identity paper mapping — delegation remains legal-entity to workload.**
+
+### Added
+- **`docs/AI-IDENTITY-2604-23280-MAPPING.md`**: maps OBO to the
+  April 2026 arXiv paper *AI Identity: Standards, Gaps, and Research
+  Directions for AI Agents*. The note positions OBO as the declaration and
+  evidence substrate inside the paper's declaration/observation/confidence
+  model.
+
+### Clarified
+- OBO's legal premise: every software service call is a delegation event from a
+  legal entity to a workload. AI agents increase autonomy and risk, but do not
+  create legal standing for the workload.
+- Courts and regulators test the legal entity's authority, controls, duty of
+  care, governance, and evidence. A workload cannot determine the legal basis of
+  its own delegation; it can only carry authority, operate within policy, and
+  emit evidence.
+- OpenID/OAuth OBO and OBO Standard are distinct: OAuth OBO is an intra-AS token
+  exchange pattern; OBO Standard is a cross-organization delegation and evidence
+  format.
+
+### Notes
+- No schema changes. This is a public positioning and research-mapping update.
+
+---
+
 ## [draft-01 / v0.4.16] — 2026-04-26
 
 **Public offering hardening — canonical wire model, conformance, and verifier path.**

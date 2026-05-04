@@ -215,6 +215,7 @@ Profiles:
 
 Useful background:
 
+- [AI Identity Paper Mapping](docs/AI-IDENTITY-2604-23280-MAPPING.md)
 - [OBO 8 Mapping](docs/OBO-8-MAPPING.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [The Scope Problem](docs/THE-SCOPE-PROBLEM.md)
