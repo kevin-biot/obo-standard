@@ -195,6 +195,8 @@ def finite_float(value: str) -> float:
 
 def main() -> int:
     parser = argparse.ArgumentParser(prog="obo")
+    parser.add_argument("--version", action="version",
+                        version="obo " + (Path(__file__).resolve().parent / "VERSION").read_text().strip())
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     verify = subparsers.add_parser("verify", help="verify an OBO credential")
@@ -206,8 +208,23 @@ def main() -> int:
     verify.add_argument("--ignore-expiry", action="store_true", help="skip expires_at check for archived examples")
     verify.set_defaults(func=verify_credential)
 
+    bundle = subparsers.add_parser("verify-bundle", help="verify experimental external-grant evidence offline")
+    bundle.add_argument("path", nargs="+", help="bundle JSON file(s); duplicate requests/grants in the set fail")
+    bundle.add_argument("--trust", required=True, help="independently trusted key, identity and status configuration")
+    bundle.add_argument("--at", required=True, type=int, help="historical decision time supplied by the verifier")
+    bundle.set_defaults(func=verify_interop)
+
     args = parser.parse_args()
     return args.func(args)
+
+
+def verify_interop(args: argparse.Namespace) -> int:
+    try:
+        from obo_interop import verify_bundle_cli
+        return verify_bundle_cli(args)
+    except ImportError as exc:
+        print(f"FAIL: interoperability dependencies missing: {exc}; install requirements-dev.txt", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":

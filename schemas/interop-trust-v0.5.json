@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://obo-standard.org/schemas/interop-trust/0.5-alpha.1",
+  "title": "Out-of-band trust configuration for OBO interoperability experiment",
+  "type": "object",
+  "required": ["profile", "issuer", "policy_authority", "service", "expected"],
+  "properties": {
+    "profile": {"const": "obo-interop/0.5-alpha.1"},
+    "issuer": {"$ref": "#/$defs/key"},
+    "policy_authority": {"$ref": "#/$defs/key"},
+    "service": {"$ref": "#/$defs/key"},
+    "expected": {
+      "type": "object",
+      "required": ["principal_id", "agent_id", "operator_id", "audience", "scope"],
+      "properties": {
+        "principal_id": {"type": "string", "minLength": 1},
+        "agent_id": {"type": "string", "minLength": 1},
+        "operator_id": {"type": "string", "minLength": 1},
+        "audience": {"type": "string", "minLength": 1},
+        "scope": {"const": "supplier:update"}
+      },
+      "additionalProperties": false
+    },
+    "status": {
+      "type": "object",
+      "required": ["as_of", "valid_until", "revoked_grant_ids"],
+      "properties": {
+        "as_of": {"type": "integer", "minimum": 0},
+        "valid_until": {"type": "integer", "minimum": 1},
+        "revoked_grant_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "key": {
+      "type": "object",
+      "required": ["iss", "kid", "public_key"],
+      "properties": {
+        "iss": {"type": "string", "minLength": 1},
+        "kid": {"type": "string", "minLength": 1},
+        "public_key": {"type": "string", "pattern": "^[A-Za-z0-9_-]{43}$"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

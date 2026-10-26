@@ -60,7 +60,9 @@ def main() -> int:
         return 1
     credential_schema = load_json(SCHEMAS / "obo-credential.json")
     envelope_schema = load_json(SCHEMAS / "obo-evidence-envelope.json")
-    for schema in (credential_schema, envelope_schema):
+    bundle_schema = load_json(SCHEMAS / "interop-bundle-v0.5.json")
+    trust_schema = load_json(SCHEMAS / "interop-trust-v0.5.json")
+    for schema in (credential_schema, envelope_schema, bundle_schema, trust_schema):
         jsonschema.Draft202012Validator.check_schema(schema)
 
     checked = 0
@@ -70,7 +72,9 @@ def main() -> int:
             instance = load_json(path)
             assert_no_draft_00(path)
 
-            if "obo_credential_id" in instance and "evidence_id" not in instance:
+            if instance.get("profile") == "obo-interop/0.5-alpha.1":
+                validate_with_schema(instance, trust_schema if "issuer" in instance else bundle_schema, path)
+            elif "obo_credential_id" in instance and "evidence_id" not in instance:
                 validate_with_schema(instance, credential_schema, path)
             elif "evidence_id" in instance and "obo_credential_ref" in instance:
                 validate_with_schema(instance, envelope_schema, path)

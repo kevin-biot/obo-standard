@@ -7,6 +7,35 @@ Versioning: IETF draft number (`-NN`) + semantic version (`vX.Y.Z`).
 
 ---
 
+## [draft-01 / v0.5.0-alpha.1] - 2026-10-26
+
+**First external-grant evidence experiment (pre-release).**
+
+### Added
+- Versioned `obo-interop/0.5-alpha.1` bundle/trust schemas and a single-hop
+  supplier-update profile retaining original external JWT bytes. The grant uses
+  a narrow RFC 9068-based profile plus a private OBO operation-binding claim.
+- Signed service policy, acceptance/refusal and execution records with exact
+  operation, original-grant, policy, decision and response digest bindings.
+- `obo verify-bundle` for offline checks using independently supplied pinned
+  role keys, expected identities and historical status. Missing status produces
+  `incomplete` (exit 2); failed checks produce exit 1. Multiple bundles check
+  repeated grant/request identifiers within the supplied set.
+- PyJWT signature verification and RFC 8785 JCS structured digests, reproducible
+  public TEST-ONLY fixtures and adversarial regression cases in CI.
+- Root `VERSION` and `obo --version` for explicit repository release identity.
+
+### Compatibility And Limits
+- Existing `draft-01` credential/envelope schemas, signatures and `verify`
+  behavior remain unchanged. New objects use a separate profile and command.
+- This alpha does not claim third-party OAuth interoperability, delegation-chain
+  support, proof of possession, live replay prevention or trusted timestamps.
+  Execution receipts are signed assertions; legal authority is not adjudicated.
+- Status and trust material are external verifier inputs, not self-authorizing
+  claims bundled by an agent. Stable reference tag `v0.4.18` remains unchanged.
+
+---
+
 ## [draft-01 / v0.4.18] - 2026-10-26
 
 **Maintenance review: explicit verification boundaries and reproducible checks.**

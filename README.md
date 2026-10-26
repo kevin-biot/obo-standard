@@ -5,6 +5,12 @@ Minimum evidence standard for agentic transactions.
 **Status:** Working Draft, `draft-obo-agentic-evidence-envelope-01`
 **Goal:** implementation feedback, independent implementations, jurisdiction profiles
 
+**Experimental release:** `v0.5.0-alpha.1`; stable reference: `v0.4.18`.
+The [external-grant experiment](examples/integrations/external-grant/) adds a
+separate operation-bound evidence profile and offline verifier. It preserves
+the base credential/envelope formats. Third-party interoperability has not yet
+been demonstrated.
+
 **Maintenance review:** 26 October 2026. This repository is a working proposal
 with a limited reference verifier, rather than a production authorization service.
 Maintenance currently focuses on correctness and reproducibility. Interoperability
@@ -183,6 +189,25 @@ chain or instance-proof fields are rejected because those verifications are not
 implemented by this CLI. Profile payloads and scope constraints require a separate
 policy verifier. See [Current Status](docs/CURRENT-STATUS.md) for coverage.
 
+## External Grant Experiment
+
+An issuer-signed JWT can be retained unchanged alongside signed service policy,
+decision and execution receipts. The supplier-update fixtures cover acceptance
+and refusal with independently supplied trust keys and historical status.
+
+```bash
+./obo --version
+./obo verify-bundle examples/integrations/external-grant/accepted.json \
+  --trust examples/integrations/external-grant/trust.json --at 1793016000
+```
+
+Install `requirements-dev.txt` first. The new command checks the experimental
+profile only, including operation/response binding and the local field-allowlist
+policy. It does not implement generic OAuth ingestion, delegation chains, proof
+of possession or live replay control. The report always includes its limits;
+missing historical status returns `incomplete` (exit 2). All bundled keys are
+public test keys. See the [profile](profiles/external-grant-evidence-v0.5.md).
+
 ## Conformance
 
 CI runs:
@@ -193,6 +218,7 @@ CI runs:
 - live DNS fixture verification
 - Python syntax checks
 - signed demo credential verification
+- reproducible external-grant fixtures and offline evidence verification
 - full Docker A2A demo
 
 Run the local checks:
@@ -241,9 +267,11 @@ Examples:
 - [examples/credentials/](examples/credentials/)
 - [examples/envelopes/](examples/envelopes/)
 - [examples/integrations/a2a/](examples/integrations/a2a/)
+- [examples/integrations/external-grant/](examples/integrations/external-grant/)
 
 Profiles:
 
+- [profiles/external-grant-evidence-v0.5.md](profiles/external-grant-evidence-v0.5.md)
 - [profiles/payments-mastercard-vi.md](profiles/payments-mastercard-vi.md)
 - [profiles/payments-swift-iso20022.md](profiles/payments-swift-iso20022.md)
 

@@ -1,0 +1,30 @@
+{
+  "profile": "obo-interop/0.5-alpha.1",
+  "issuer": {
+    "iss": "https://issuer.example",
+    "kid": "issuer-test-1",
+    "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+  },
+  "policy_authority": {
+    "iss": "https://policy-authority.example",
+    "kid": "policy_authority-test-1",
+    "public_key": "gTl3Dqh9F19Wo1Rmw0x-zMuNipG07jeiXfYPW4_Js5Q"
+  },
+  "service": {
+    "iss": "https://service.example",
+    "kid": "service-test-1",
+    "public_key": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+  },
+  "expected": {
+    "principal_id": "urn:org:buyer.example",
+    "agent_id": "urn:agent:buyer:procurement",
+    "operator_id": "urn:org:operator.example",
+    "audience": "https://supplier.example/api",
+    "scope": "supplier:update"
+  },
+  "status": {
+    "as_of": 1793015940,
+    "valid_until": 1793016060,
+    "revoked_grant_ids": []
+  }
+}

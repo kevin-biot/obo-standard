@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://obo-standard.org/schemas/interop-bundle/0.5-alpha.1",
+  "title": "OBO experimental external-grant evidence bundle",
+  "type": "object",
+  "required": ["profile", "operation", "grant_jwt", "policy_jwt", "decision_jwt"],
+  "properties": {
+    "profile": {"const": "obo-interop/0.5-alpha.1"},
+    "operation": {
+      "type": "object",
+      "required": ["request_id", "action", "resource", "parameters"],
+      "properties": {
+        "request_id": {"type": "string", "minLength": 1},
+        "action": {"const": "supplier.update"},
+        "resource": {"type": "string", "minLength": 1},
+        "parameters": {"type": "object", "minProperties": 1}
+      },
+      "additionalProperties": false
+    },
+    "grant_jwt": {"type": "string", "minLength": 1},
+    "policy_jwt": {"type": "string", "minLength": 1},
+    "decision_jwt": {"type": "string", "minLength": 1},
+    "execution_jwt": {"type": "string", "minLength": 1},
+    "response": {"type": "object"}
+  },
+  "additionalProperties": false
+}

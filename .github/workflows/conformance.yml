@@ -25,6 +25,9 @@ jobs:
           python scripts/check_draft_version.py
           python scripts/validate_examples.py
           python -m unittest discover -s tests -v
+          python examples/integrations/external-grant/demo.py --check
+          ./obo verify-bundle examples/integrations/external-grant/accepted.json \
+            --trust examples/integrations/external-grant/trust.json --at 1793016000
           python scripts/check_dns_fixture.py
           python -m py_compile \
             obo \

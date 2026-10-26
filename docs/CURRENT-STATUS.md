@@ -5,10 +5,12 @@ Reviewed: 26 October 2026. Status: working draft and limited reference implement
 The draft's original front matter gives an expiry of 4 October 2026. Repository
 maintenance does not renew that submission or establish IETF adoption.
 
-The maintenance focus is correcting verifiable claims and keeping examples
-reproducible. Interoperability remains a design question. This review does not
-select a replacement protocol or assert that another proposal satisfies OBO's
-accountability requirements.
+Stable reference: `v0.4.18`. The first interoperability experiment is released
+separately as `v0.5.0-alpha.1`, profile `obo-interop/0.5-alpha.1`. It tests a narrow
+JWT grant with an OBO private operation-binding claim and signed policy/receipts.
+It does not select a replacement protocol or demonstrate third-party deployment.
+See the [profile](../profiles/external-grant-evidence-v0.5.md) and
+[reproducible example](../examples/integrations/external-grant/).
 
 ## Implementation Coverage
 
@@ -19,7 +21,8 @@ accountability requirements.
 | Key lookup | Explicit trusted issuer key, or operator-domain DNS TXT | DNS mode requires issuer and operator equality. No DNSSEC validation or legal-entity identity proof. Key trust is a deployment responsibility. |
 | A2A example | Single-hop credential checks and allow/deny evidence flow | Demo enforcement and stub anchor receipts; not a general production verifier. |
 | Delegation chains | Draft requirements and credential metadata in the schema | CLI verification is not implemented. The multi-hop Sentinel experiment explicitly strips OBO and is not a delegation conformance demo. |
-| Evidence examples | JSON Schema validation | Placeholder digests/signatures illustrate shape. Only the signed credential demo is a cryptographic fixture. |
+| Base evidence examples | JSON Schema validation | Placeholder digests/signatures illustrate shape; the signed credential demo and experimental grant bundles are cryptographic test fixtures. |
+| Experimental `verify-bundle` | Original signed grant, JCS operation commitments, signed policy/decision/execution records, supplied historical grant status | Separate versioned profile; test fixtures only. Missing status is incomplete. No generic OAuth adapter, delegation, live authorization or independent timestamp proof. |
 
 The schema cannot compare `delegation_depth.current` with `max` or validate
 parent/child authority. A chain verifier must enforce depth, expiry, principal
@@ -30,6 +33,8 @@ the field names in JSON does not imply those checks exist.
 that an operation implements that intent. The reference JSON digest encoding is
 Python sorted-key compact JSON, not a claim of RFC 8785 JCS interoperability.
 Independent implementations need an agreed byte encoding and test vectors.
+The v0.5 experiment explicitly uses RFC 8785 JCS for structured digests, with
+PyJWT for compact JWS verification, without changing legacy v0.4 encoding.
 
 Signatures attribute statements to keys. A signed envelope alone does not prove
 that an action occurred, that observations are complete, or that the issuer had
