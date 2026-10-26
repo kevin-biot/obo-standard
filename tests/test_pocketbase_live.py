@@ -38,6 +38,14 @@ def free_port():
 
 @unittest.skipUnless(os.environ.get("POCKETBASE_BINARY"), "set POCKETBASE_BINARY to run real-service integration")
 class PocketBaseLiveTests(unittest.TestCase):
+    profile = PROFILE
+    evidence_env = "OBO_POCKETBASE_RESULTS"
+    verify_evidence = staticmethod(verify_bundle)
+
+    @classmethod
+    def configure_issuer(cls):
+        """The base experiment issues its own grant; subclasses can replace it."""
+
     @classmethod
     def setUpClass(cls):
         cls.temp = tempfile.TemporaryDirectory(prefix="obo-pocketbase-")
@@ -85,7 +93,7 @@ class PocketBaseLiveTests(unittest.TestCase):
 
         cls.keys = {role: Ed25519PrivateKey.generate() for role in ("issuer", "policy_authority", "service")}
         cls.now = int(time.time())
-        cls.trust = {"profile": PROFILE,
+        cls.trust = {"profile": cls.profile,
             **{role: {"iss": f"https://{role.replace('_', '-')}.example", "kid": role + "-live-test",
                       "public_key": base64.urlsafe_b64encode(key.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw)).decode().rstrip("=")}
                for role, key in cls.keys.items()},
@@ -93,6 +101,7 @@ class PocketBaseLiveTests(unittest.TestCase):
                          "operator_id": "urn:org:operator.example", "audience": cls.gateway_url,
                          "scope": "supplier:update"},
             "status": {"as_of": cls.now - 60, "valid_until": cls.now + 3600, "revoked_grant_ids": []}}
+        cls.configure_issuer()
         cls.trust_path = cls.work / "trust.json"
         cls.trust_path.write_text(json.dumps(cls.trust))
         cls.service_key = cls.work / "service.pem"
@@ -102,7 +111,7 @@ class PocketBaseLiveTests(unittest.TestCase):
                       "ledger_path": str(cls.work / "ledger.sqlite"), "backend_url": cls.pb_url,
                       "backend_token": cls.backend_token, "record_id": cls.record_id,
                       "policy_jwt": cls.sign("policy_authority", "obo-policy+jwt", {
-                          "sub": cls.trust["expected"]["operator_id"], "profile": PROFILE,
+                          "sub": cls.trust["expected"]["operator_id"], "profile": cls.profile,
                           "scope": "supplier:update", "action": "supplier.update",
                           "resource": "supplier:" + cls.record_id, "allowed_fields": ["contact_email"]})}
         cls.config_path = cls.work / "gateway.json"
@@ -177,10 +186,10 @@ class PocketBaseLiveTests(unittest.TestCase):
     def assert_bundle(self, result, expected_outcome):
         bundle = result["bundle"]
         at = jwt.decode(bundle["decision_jwt"], options={"verify_signature": False})["iat"]
-        report = verify_bundle(bundle, self.trust, at)
+        report = self.verify_evidence(bundle, self.trust, at)
         self.assertEqual(report["outcome"], expected_outcome)
         self.assertEqual(report["result"], "verified")
-        output = os.environ.get("OBO_POCKETBASE_RESULTS")
+        output = os.environ.get(self.evidence_env)
         if output:
             dest = Path(output)
             dest.mkdir(parents=True, exist_ok=True)

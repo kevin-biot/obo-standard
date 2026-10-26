@@ -15,6 +15,12 @@ A profile is a document that:
 
 Profiles do not modify the base OBO specification. They are additive.
 
+Experimental interoperability profiles are separate from these jurisdiction
+mappings and do not claim base credential/envelope wire compatibility:
+
+- [External-grant evidence](external-grant-evidence-v0.5.md): `obo-interop/0.5-alpha.1`.
+- [Keycloak workload and explicit mandate](keycloak-mandate-v0.5.md): `obo-keycloak/0.5-alpha.3`.
+
 ## How to contribute a profile
 
 1. Create a file `profiles/<domain>-<jurisdiction>.md`

@@ -62,25 +62,30 @@ def validate_schema(value, name):
     require(not errors, "schema: " + "; ".join(error.message for error in errors))
 
 
+def parse_jwt(token):
+    """Reject ambiguous JSON and noncanonical encodings before signature checks."""
+    parts = token.split(".")
+    require(len(parts) == 3, "expected compact signed JWT")
+    decoded = []
+    for part in parts:
+        require(part and all(c in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-" for c in part),
+                "non-base64url JWT segment")
+        raw = base64.b64decode(part + "=" * (-len(part) % 4), altchars=b"-_", validate=True)
+        require(base64.urlsafe_b64encode(raw).decode().rstrip("=") == part, "noncanonical base64url JWT segment")
+        decoded.append(raw)
+    header, claims = strict_json(decoded[0]), strict_json(decoded[1])
+    require(isinstance(header, dict) and set(header) == {"alg", "typ", "kid"}, "unsupported JOSE header")
+    require(isinstance(claims, dict), "JWT claims must be an object")
+    return header, claims
+
+
 def verify_jwt(token, anchor, typ, audience):
     """Verify original compact JWS bytes with a pinned role key and fixed algorithm."""
     import jwt
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
     try:
-        parts = token.split(".")
-        require(len(parts) == 3, "expected compact signed JWT")
-        decoded = []
-        for part in parts:
-            require(part and all(c in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-" for c in part),
-                    "non-base64url JWT segment")
-            raw = base64.b64decode(part + "=" * (-len(part) % 4), altchars=b"-_", validate=True)
-            require(base64.urlsafe_b64encode(raw).decode().rstrip("=") == part, "noncanonical base64url JWT segment")
-            decoded.append(raw)
-        header = strict_json(decoded[0])
-        claims = strict_json(decoded[1])
-        require(isinstance(header, dict) and set(header) == {"alg", "typ", "kid"}, "unsupported JOSE header")
+        header, claims = parse_jwt(token)
         require(header == {"alg": "EdDSA", "typ": typ, "kid": anchor["kid"]}, "JWT algorithm/type/key mismatch")
-        require(isinstance(claims, dict), "JWT claims must be an object")
         key = Ed25519PublicKey.from_public_bytes(base64.urlsafe_b64decode(anchor["public_key"] + "="))
         verified = jwt.decode(token, key, algorithms=["EdDSA"], issuer=anchor["iss"], audience=audience,
                               options={"verify_exp": False, "verify_iat": False, "verify_nbf": False,
@@ -122,19 +127,25 @@ def verify_request(operation, grant_jwt, policy_jwt, trust, at):
                              "operation_digest": operation_hash}, "grant operation/operator binding mismatch")
     require(grant["iat"] <= at < grant["exp"], "grant not valid at evaluation time")
 
-    policy = verify_jwt(policy_jwt, trust["policy_authority"], "obo-policy+jwt", audience)
+    policy, allowed = verify_policy(operation, grant["scope"], policy_jwt, trust, at, PROFILE)
+    return grant, policy, allowed, operation_hash
+
+
+def verify_policy(operation, scope, policy_jwt, trust, at, profile):
+    expected = trust["expected"]
+    policy = verify_jwt(policy_jwt, trust["policy_authority"], "obo-policy+jwt", expected["audience"])
     exact_claims(policy, ["profile", "action", "resource", "allowed_fields", "scope"])
-    require(policy["profile"] == PROFILE and policy["sub"] == expected["operator_id"], "policy operator/profile mismatch")
+    require(policy["profile"] == profile and policy["sub"] == expected["operator_id"], "policy operator/profile mismatch")
     require(policy["iat"] <= at < policy["exp"], "policy not valid at evaluation time")
     for name in ("action", "resource", "scope"):
         require(type(policy[name]) is str and bool(policy[name]), f"invalid policy {name}")
     fields = policy["allowed_fields"]
     require(isinstance(fields, list) and fields and all(type(f) is str and f for f in fields), "invalid policy fields")
     require(len(fields) == len(set(fields)), "duplicate policy fields")
-    allowed = (policy["scope"] == grant["scope"] and policy["action"] == operation["action"]
+    allowed = (policy["scope"] == scope and policy["action"] == operation["action"]
                and policy["resource"] == operation["resource"]
                and set(operation["parameters"]) <= set(fields))
-    return grant, policy, allowed, operation_hash
+    return policy, allowed
 
 
 def verify_bundle(bundle, trust, at):
@@ -143,13 +154,22 @@ def verify_bundle(bundle, trust, at):
     operation = bundle["operation"]
     grant, policy, allowed, operation_hash = verify_request(
         operation, bundle["grant_jwt"], bundle["policy_jwt"], trust, at)
+    return verify_receipts(bundle, trust, at, grant, policy, allowed, operation_hash, PROFILE)
+
+
+def verify_receipts(bundle, trust, at, grant, policy, allowed, operation_hash, profile, bindings=None):
+    """Common receipt checks after a profile has verified its authority inputs."""
+    bindings = bindings or {}
+    operation = bundle["operation"]
     expected = trust["expected"]
     audience = expected["audience"]
 
     decision = verify_jwt(bundle["decision_jwt"], trust["service"], "obo-decision+jwt", audience)
     exact_claims(decision, ["profile", "grant_digest", "policy_digest", "operation_digest",
-                            "request_id", "client_id", "operator_id", "outcome", "reason_code"])
-    require(decision["profile"] == PROFILE, "decision profile mismatch")
+                            "request_id", "client_id", "operator_id", "outcome", "reason_code", *bindings])
+    require(decision["profile"] == profile, "decision profile mismatch")
+    for name, value in bindings.items():
+        require(decision[name] == value, f"decision {name} mismatch")
     require(decision["sub"] == grant["sub"] and decision["client_id"] == grant["client_id"]
             and decision["operator_id"] == expected["operator_id"], "decision identity mismatch")
     require(decision["iat"] == at, "decision time must equal independently supplied evaluation time")
@@ -164,7 +184,7 @@ def verify_bundle(bundle, trust, at):
         require("execution_jwt" in bundle and "response" in bundle, "accepted operation lacks execution evidence")
         execution = verify_jwt(bundle["execution_jwt"], trust["service"], "obo-execution+jwt", audience)
         exact_claims(execution, ["profile", "decision_digest", "operation_digest", "response_digest", "request_id", "outcome"])
-        require(execution["profile"] == PROFILE and execution["sub"] == grant["sub"], "execution identity/profile mismatch")
+        require(execution["profile"] == profile and execution["sub"] == grant["sub"], "execution identity/profile mismatch")
         require(execution["decision_digest"] == digest_token(bundle["decision_jwt"]), "execution decision mismatch")
         require(execution["operation_digest"] == operation_hash and execution["request_id"] == operation["request_id"],
                 "execution operation mismatch")
@@ -183,27 +203,35 @@ def verify_bundle(bundle, trust, at):
         require(status["as_of"] <= at <= last_event < status["valid_until"], "stale or future status snapshot")
         require(grant["jti"] not in status["revoked_grant_ids"], "grant revoked in supplied status snapshot")
         status_result = "verified"
-    return {"profile": PROFILE, "result": "verified" if status else "incomplete", "outcome": outcome,
+    return {"profile": profile, "result": "verified" if status else "incomplete", "outcome": outcome,
             "checks": {"signatures": "verified", "identity_bindings": "verified", "operation_binding": "verified",
                        "policy_decision": "verified", "receipts": "verified", "archived_status": status_result},
             "evaluation_time": at, "limitations": LIMITATIONS}
 
 
 def verify_bundle_cli(args):
+    profile = None
     try:
         trust = read_json(args.trust)
         reports = []
         seen = set()
         for path in args.path:
             bundle = read_json(path)
-            report = verify_bundle(bundle, trust, args.at)
-            grant = verify_jwt(bundle["grant_jwt"], trust["issuer"], "at+jwt", trust["expected"]["audience"])
+            profile = bundle.get("profile")
+            if bundle.get("profile") == PROFILE:
+                report = verify_bundle(bundle, trust, args.at)
+            else:
+                from obo_keycloak import PROFILE as KEYCLOAK_PROFILE, verify_bundle as verify_keycloak_bundle
+                require(profile == KEYCLOAK_PROFILE, "unsupported bundle profile")
+                report = verify_keycloak_bundle(bundle, trust, args.at)
+            # The selected verifier already authenticated these exact bytes.
+            _, grant = parse_jwt(bundle["grant_jwt"])
             identifiers = {("request", bundle["operation"]["request_id"]), ("grant", grant["iss"], grant["jti"])}
             require(not (identifiers & seen), "duplicate request or grant in supplied bundle set")
             seen.update(identifiers)
             reports.append(report)
     except Exception as exc:
-        print(json.dumps({"profile": PROFILE, "result": "failed", "error": str(exc)}))
+        print(json.dumps({"profile": profile, "result": "failed", "error": str(exc)}))
         return 1
     print(json.dumps(reports[0] if len(reports) == 1 else reports, indent=2))
     return 0 if all(report["result"] == "verified" for report in reports) else 2

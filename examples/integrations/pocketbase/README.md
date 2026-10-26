@@ -4,6 +4,10 @@ Repository release: `v0.5.0-alpha.2`.
 Wire profile retained: `obo-interop/0.5-alpha.1`.
 Pinned third-party service: PocketBase `v0.40.6` (MIT).
 
+Release `v0.5.0-alpha.3` also uses this gateway with the separately versioned
+[Keycloak issuer profile](../keycloak/). The original experiment below still
+uses the alpha.1 wire profile and its test-harness issuer.
+
 This integration replaces the in-memory supplier store with an unmodified
 PocketBase process, its authenticated HTTP record API, and its persistent SQLite
 database. OBO verification runs in a separate gateway before the API write.

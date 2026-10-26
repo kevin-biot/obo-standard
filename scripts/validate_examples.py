@@ -62,8 +62,10 @@ def main() -> int:
     envelope_schema = load_json(SCHEMAS / "obo-evidence-envelope.json")
     bundle_schema = load_json(SCHEMAS / "interop-bundle-v0.5.json")
     trust_schema = load_json(SCHEMAS / "interop-trust-v0.5.json")
-    for schema in (credential_schema, envelope_schema, bundle_schema, trust_schema):
-        jsonschema.Draft202012Validator.check_schema(schema)
+    keycloak_bundle_schema = load_json(SCHEMAS / "keycloak-bundle-v0.5.json")
+    keycloak_trust_schema = load_json(SCHEMAS / "keycloak-trust-v0.5.json")
+    for path in sorted(SCHEMAS.glob("*.json")):
+        jsonschema.Draft202012Validator.check_schema(load_json(path))
 
     checked = 0
     failures: list[str] = []
@@ -72,7 +74,9 @@ def main() -> int:
             instance = load_json(path)
             assert_no_draft_00(path)
 
-            if instance.get("profile") == "obo-interop/0.5-alpha.1":
+            if instance.get("profile") == "obo-keycloak/0.5-alpha.3":
+                validate_with_schema(instance, keycloak_trust_schema if "issuer" in instance else keycloak_bundle_schema, path)
+            elif instance.get("profile") == "obo-interop/0.5-alpha.1":
                 validate_with_schema(instance, trust_schema if "issuer" in instance else bundle_schema, path)
             elif "obo_credential_id" in instance and "evidence_id" not in instance:
                 validate_with_schema(instance, credential_schema, path)

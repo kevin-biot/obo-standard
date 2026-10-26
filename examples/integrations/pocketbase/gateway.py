@@ -51,6 +51,15 @@ def http_json(url, method="GET", body=None, token=None):
 def create_app(config_path):
     config = read_json(config_path)
     trust = read_json(config["trust_path"])
+    profile = trust["profile"]
+    if profile == PROFILE:
+        check_request, check_bundle = verify_request, verify_bundle
+        extra_fields = set()
+    else:
+        import obo_keycloak
+        require(profile == obo_keycloak.PROFILE, "unsupported gateway profile")
+        check_request, check_bundle = obo_keycloak.verify_request, obo_keycloak.verify_bundle
+        extra_fields = {"delegation_jwt"}
     policy_jwt = config["policy_jwt"]
     key = load_pem_private_key(Path(config["service_key_path"]).read_bytes(), password=None)
     public_key = base64.urlsafe_b64encode(key.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw)).decode().rstrip("=")
@@ -67,7 +76,7 @@ def create_app(config_path):
     def sign(typ, claims, issued, expires):
         payload = {"iss": trust["service"]["iss"], "aud": trust["expected"]["audience"],
                    "sub": trust["expected"]["principal_id"], "iat": issued, "exp": expires,
-                   "jti": str(uuid.uuid4()), "profile": PROFILE, **claims}
+                   "jti": str(uuid.uuid4()), "profile": profile, **claims}
         return jwt.encode(payload, key, algorithm="EdDSA",
                           headers={"typ": typ, "kid": trust["service"]["kid"]})
 
@@ -84,10 +93,11 @@ def create_app(config_path):
     def operate():
         try:
             incoming = strict_json(request.get_data())
-            require(isinstance(incoming, dict) and set(incoming) == {"operation", "grant_jwt"}, "invalid request shape")
+            require(isinstance(incoming, dict) and set(incoming) == {"operation", "grant_jwt"} | extra_fields, "invalid request shape")
             operation, token = incoming["operation"], incoming["grant_jwt"]
             now = int(time.time())
-            grant, policy, allowed, op_hash = verify_request(operation, token, policy_jwt, trust, now)
+            grant, policy, allowed, op_hash = check_request(operation, token, policy_jwt, trust, now,
+                                                           **{name: incoming[name] for name in extra_fields})
             status = trust.get("status")
             require(status is not None and status["as_of"] <= now < status["valid_until"], "live admission needs fresh status")
             require(grant["jti"] not in status["revoked_grant_ids"], "grant revoked")
@@ -112,14 +122,17 @@ def create_app(config_path):
                        (operation["request_id"], grant["iss"], grant["jti"], fingerprint))
 
         expiry = min(grant["exp"], policy["exp"], status["valid_until"])
+        bindings = {"delegation_digest": digest_token(incoming["delegation_jwt"])} if extra_fields else {}
         decision = sign("obo-decision+jwt", {
+            **bindings,
             "grant_digest": digest_token(token), "policy_digest": digest_token(policy_jwt),
             "operation_digest": op_hash, "request_id": operation["request_id"],
             "client_id": grant["client_id"], "operator_id": trust["expected"]["operator_id"],
             "outcome": "allow" if allowed else "deny", "reason_code": "policy.allow" if allowed else "policy.deny"
         }, now, expiry)
-        bundle = {"profile": PROFILE, "operation": operation, "grant_jwt": token,
-                  "policy_jwt": policy_jwt, "decision_jwt": decision}
+        bundle = {"profile": profile, "operation": operation, "grant_jwt": token,
+                  "policy_jwt": policy_jwt, "decision_jwt": decision,
+                  **{name: incoming[name] for name in extra_fields}}
         if not allowed:
             store(operation["request_id"], "finished", bundle, 403)
             return jsonify({"cached": False, "bundle": bundle}), 403
@@ -151,7 +164,7 @@ def create_app(config_path):
             "decision_digest": digest_token(decision), "operation_digest": op_hash,
             "response_digest": digest_json(response_body), "request_id": operation["request_id"], "outcome": outcome
         }, ended, expiry))
-        verify_bundle(bundle, trust, now)
+        check_bundle(bundle, trust, now)
         store(operation["request_id"], "finished", bundle, response_status)
         return jsonify({"cached": False, "bundle": bundle}), response_status
 

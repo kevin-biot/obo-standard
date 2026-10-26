@@ -9,6 +9,10 @@ Runtime implementation update: repository `v0.5.0-alpha.2` adds a
 without changing this alpha.1 wire profile or its archived fixtures. The issuer
 and verifier are still maintained in this repository.
 
+The subsequent [Keycloak mandate experiment](keycloak-mandate-v0.5.md) in
+`v0.5.0-alpha.3` uses a separate wire profile for a native service-account token
+plus explicit mandate. It does not change the claim semantics defined here.
+
 This profile tests whether OBO can preserve an external grant, a receiving
 service's policy decision and its execution assertion in one independently
 verifiable bundle. Authority remains attributable to people and organizations;

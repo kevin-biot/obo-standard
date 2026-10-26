@@ -208,7 +208,7 @@ def main() -> int:
     verify.add_argument("--ignore-expiry", action="store_true", help="skip expires_at check for archived examples")
     verify.set_defaults(func=verify_credential)
 
-    bundle = subparsers.add_parser("verify-bundle", help="verify experimental external-grant evidence offline")
+    bundle = subparsers.add_parser("verify-bundle", help="verify supported experimental grant/mandate evidence offline")
     bundle.add_argument("path", nargs="+", help="bundle JSON file(s); duplicate requests/grants in the set fail")
     bundle.add_argument("--trust", required=True, help="independently trusted key, identity and status configuration")
     bundle.add_argument("--at", required=True, type=int, help="historical decision time supplied by the verifier")

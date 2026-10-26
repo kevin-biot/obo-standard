@@ -5,13 +5,15 @@ Minimum evidence standard for agentic transactions.
 **Status:** Working Draft, `draft-obo-agentic-evidence-envelope-01`
 **Goal:** implementation feedback, independent implementations, jurisdiction profiles
 
-**Experimental release:** `v0.5.0-alpha.2`; stable reference: `v0.4.18`.
+**Experimental release:** `v0.5.0-alpha.3`; stable reference: `v0.4.18`.
 The [external-grant experiment](examples/integrations/external-grant/) adds a
 separate operation-bound evidence profile and offline verifier. It preserves
 the base credential/envelope formats. A [PocketBase integration](examples/integrations/pocketbase/)
-now exercises a real receiving service with persisted writes and restart tests.
-Interoperability with an independently maintained grant issuer or evidence
-verifier has not yet been demonstrated.
+exercises a real receiving service with persisted writes and restart tests.
+The [Keycloak integration](examples/integrations/keycloak/) adds an independently
+maintained issuer in one explicit service-account configuration, with a separate
+signed operation mandate. An independent OBO evidence verifier, generic OAuth
+interoperability and multi-hop delegation remain unproven.
 
 **Maintenance review:** 26 October 2026. This repository is a working proposal
 with a limited reference verifier, rather than a production authorization service.
@@ -203,8 +205,8 @@ and refusal with independently supplied trust keys and historical status.
   --trust examples/integrations/external-grant/trust.json --at 1793016000
 ```
 
-Install `requirements-dev.txt` first. The new command checks the experimental
-profile only, including operation/response binding and the local field-allowlist
+Install `requirements-dev.txt` first. This command selects an explicitly supported
+experimental profile, including operation/response binding and the local field-allowlist
 policy. It does not implement generic OAuth ingestion, delegation chains, proof
 of possession or live replay control. The report always includes its limits;
 missing historical status returns `incomplete` (exit 2). All bundled keys are
@@ -215,6 +217,12 @@ adds live admission, native API writes/readback, durable request reservations
 and idempotent retries. It uses the same experimental wire profile. Run its
 documented live tests to exercise a pinned third-party backend rather than
 only generated fixtures.
+
+The [Keycloak issuer harness](examples/integrations/keycloak/) additionally uses
+real native RS256 service-account tokens and a separate signed mandate in
+`obo-keycloak/0.5-alpha.3`. This keeps workload authentication distinct from the
+principal's declaration of delegated authority. It is one tested configuration,
+not a claim of generic OAuth compatibility or lawful delegation.
 
 ## Conformance
 
@@ -228,6 +236,7 @@ CI runs:
 - signed demo credential verification
 - reproducible external-grant fixtures and offline evidence verification
 - a pinned real PocketBase receiving service, including persistence and restart tests
+- a digest-pinned Keycloak issuer, explicit mandates and the same receiving-service workflow
 - full Docker A2A demo
 
 Run the local checks:
@@ -278,10 +287,12 @@ Examples:
 - [examples/integrations/a2a/](examples/integrations/a2a/)
 - [examples/integrations/external-grant/](examples/integrations/external-grant/)
 - [examples/integrations/pocketbase/](examples/integrations/pocketbase/)
+- [examples/integrations/keycloak/](examples/integrations/keycloak/)
 
 Profiles:
 
 - [profiles/external-grant-evidence-v0.5.md](profiles/external-grant-evidence-v0.5.md)
+- [profiles/keycloak-mandate-v0.5.md](profiles/keycloak-mandate-v0.5.md)
 - [profiles/payments-mastercard-vi.md](profiles/payments-mastercard-vi.md)
 - [profiles/payments-swift-iso20022.md](profiles/payments-swift-iso20022.md)
 

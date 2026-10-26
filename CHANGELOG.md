@@ -7,6 +7,41 @@ Versioning: IETF draft number (`-NN`) + semantic version (`vX.Y.Z`).
 
 ---
 
+## [draft-01 / v0.5.0-alpha.3] - 2026-10-26
+
+**Independent issuer experiment: Keycloak workload token plus explicit mandate.**
+
+### Added
+- Selected unmodified Keycloak 26.8.1, pinned by official container digest,
+  as the independently maintained issuer for the PocketBase receiving workflow.
+- Separate `obo-keycloak/0.5-alpha.3` schemas and adapter preserve the original
+  RS256 client-credentials token and its service-account subject. An Ed25519
+  mandate explicitly binds the accountable principal, workload, operator, exact
+  token and exact operation; it is not inferred from client credentials.
+- Decision receipts bind the mandate as well as the grant, policy and operation.
+  `obo verify-bundle` dispatches by exact profile and fails on unsupported inputs.
+- Adversarial offline checks and a mandatory CI live integration cover actual
+  issuer tokens, persisted writes, policy denial, backend rejection, restarts,
+  missing mandates, token swapping, native controls and unresolved outcomes.
+- Reproduction instructions, claim semantics and explicit authority/status limits.
+  CI retains public test evidence separately from private runtime credentials.
+
+### Changed
+- Shared policy and receipt checks serve both experimental profiles; the
+  alpha.1 schemas, token format and reproducible fixtures remain unchanged.
+- Example validation now checks every public JSON schema for schema validity.
+
+### Compatibility And Limits
+- This is one configured RS256 service-account flow, not generic OAuth/OIDC,
+  token exchange, multi-hop delegation or proof-of-possession interoperability.
+- The mandate authority, policy and OBO verifier remain our test harness/code.
+  Keycloak does not natively issue OBO mandates or establish legal authority.
+- Status is a supplied local snapshot, not live Keycloak introspection. Mandate
+  revocation and issuer key-history distribution are not implemented.
+- Stable `v0.4.18` and earlier alpha tags are unchanged. No IETF draft renewal.
+
+---
+
 ## [draft-01 / v0.5.0-alpha.2] - 2026-10-26
 
 **Real receiving-service experiment: PocketBase persisted updates.**

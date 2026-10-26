@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://obo-standard.org/schemas/keycloak-trust/0.5-alpha.3",
+  "title": "Pinned out-of-band trust for the narrow Keycloak OBO experiment",
+  "type": "object",
+  "required": ["profile", "workload_issuer", "issuer", "policy_authority", "service", "expected"],
+  "properties": {
+    "profile": {"const": "obo-keycloak/0.5-alpha.3"},
+    "workload_issuer": {
+      "type": "object",
+      "required": ["iss", "jwk"],
+      "properties": {
+        "iss": {"type": "string", "minLength": 1},
+        "jwk": {
+          "type": "object",
+          "required": ["kty", "kid", "alg", "use", "n", "e"],
+          "properties": {
+            "kty": {"const": "RSA"}, "alg": {"const": "RS256"}, "use": {"const": "sig"},
+            "kid": {"type": "string", "minLength": 1},
+            "n": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"},
+            "e": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "issuer": {"$ref": "#/$defs/key"},
+    "policy_authority": {"$ref": "#/$defs/key"},
+    "service": {"$ref": "#/$defs/key"},
+    "expected": {
+      "type": "object",
+      "required": ["principal_id", "agent_id", "workload_subject", "operator_id", "audience", "scope"],
+      "properties": {
+        "principal_id": {"type": "string", "minLength": 1},
+        "agent_id": {"type": "string", "minLength": 1},
+        "workload_subject": {"type": "string", "minLength": 1},
+        "operator_id": {"type": "string", "minLength": 1},
+        "audience": {"type": "string", "minLength": 1},
+        "scope": {"const": "supplier:update"}
+      },
+      "additionalProperties": false
+    },
+    "status": {
+      "type": "object",
+      "required": ["as_of", "valid_until", "revoked_grant_ids"],
+      "properties": {
+        "as_of": {"type": "integer", "minimum": 0},
+        "valid_until": {"type": "integer", "minimum": 1},
+        "revoked_grant_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "key": {
+      "type": "object",
+      "required": ["iss", "kid", "public_key"],
+      "properties": {
+        "iss": {"type": "string", "minLength": 1},
+        "kid": {"type": "string", "minLength": 1},
+        "public_key": {"type": "string", "pattern": "^[A-Za-z0-9_-]{43}$"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
