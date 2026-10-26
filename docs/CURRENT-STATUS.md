@@ -21,6 +21,10 @@ Release `v0.5.0-alpha.3` adds a separately versioned
 binds the principal's declared delegation to that token and the exact operation.
 The mandate authority and OBO verifier remain our harness/code; this is not
 generic OAuth interoperability or proof of lawful delegation.
+Release `v0.5.0-alpha.4` adds a [separate Node verifier](../implementations/node/)
+for the unchanged alpha.3 wire profile. It uses a different JOSE/JCS/schema
+stack and agrees on shared synthetic cases and live receiving-service evidence.
+It is still maintained in this repository, not independent third-party validation.
 
 ## Implementation Coverage
 
@@ -34,7 +38,8 @@ generic OAuth interoperability or proof of lawful delegation.
 | Base evidence examples | JSON Schema validation | Placeholder digests/signatures illustrate shape; the signed credential demo and experimental grant bundles are cryptographic test fixtures. |
 | Experimental `verify-bundle` | Original signed grant, JCS operation commitments, signed policy/decision/execution records, supplied historical grant status | Separate versioned profile; test fixtures only. Missing status is incomplete. No generic OAuth adapter, delegation, live authorization or independent timestamp proof. |
 | PocketBase live integration | Gateway admission, real authenticated PATCH/readback, persisted reservations and restart tests against PocketBase v0.40.6 | Local trusted-host harness; backend token holders/admins can bypass OBO within native permissions. Uncertain writes require reconciliation; no distributed exactly-once claim. |
-| Keycloak live integration | Actual client-credentials token, pinned RSA key and service-account subject, separate operation-bound mandate, signed decision/execution evidence | One Keycloak 26.8.1 configuration. No token exchange, live introspection, mandate revocation, independent OBO verifier, or proof of possession. |
+| Keycloak live integration | Actual client-credentials token, pinned RSA key and service-account subject, separate operation-bound mandate, signed decision/execution evidence | One Keycloak 26.8.1 configuration. No token exchange, live introspection, mandate revocation, externally maintained OBO verifier, or proof of possession. |
+| Separate Node verifier | Original Keycloak-profile tokens, pinned trust, JCS bindings, policy and receipt checks; shared corpus and live evidence checked by both implementations | Same project maintainership, not independent third-party assurance. Keycloak alpha.3 only; no live issuer status or holder binding. |
 
 The schema cannot compare `delegation_depth.current` with `max` or validate
 parent/child authority. A chain verifier must enforce depth, expiry, principal

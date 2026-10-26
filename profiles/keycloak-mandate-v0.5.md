@@ -4,6 +4,11 @@ Profile: `obo-keycloak/0.5-alpha.3`.
 Repository release: `v0.5.0-alpha.3`, 26 October 2026.
 Status: experimental, one configured client-credentials flow, single hop.
 
+Implementation update: repository `v0.5.0-alpha.4` adds a
+[separate Node verifier](../implementations/node/) and shared test vectors
+without changing this profile or its schemas. This is second-implementation
+testing within one project, not independent third-party validation.
+
 ## Authority Boundary
 
 The independently maintained issuer is Keycloak 26.8.1. Its native token proves
@@ -115,7 +120,7 @@ cached completed results for identical retries while authorization remains
 valid. It does not implement distributed exactly-once execution. The bearer
 token and mandate can still be stolen and presented together: there is no DPoP
 or other holder binding. No multi-hop attenuation, token exchange, trusted
-timestamp, complete audit coverage, independently implemented OBO verifier,
+timestamp, complete audit coverage, externally maintained OBO verifier,
 or production authorization service is claimed.
 
 Next evidence needed: a verifier maintained outside this repository, explicit

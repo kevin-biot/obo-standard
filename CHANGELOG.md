@@ -7,6 +7,36 @@ Versioning: IETF draft number (`-NN`) + semantic version (`vX.Y.Z`).
 
 ---
 
+## [draft-01 / v0.5.0-alpha.4] - 2026-10-26
+
+**Second implementation: Node.js verification of the existing Keycloak profile.**
+
+### Added
+- Separate Node.js verifier using `jose`, Ajv and a different RFC 8785 library,
+  without importing or invoking the Python verifier. Dependencies are pinned
+  with a committed npm lockfile; installation runs no package scripts.
+- Reproducible public corpus of 71 cases with explicit expected results,
+  including signed duplicate/decimal-time JWTs and Unicode/numeric JCS cases.
+  Both implementations consume the same original JSON/token bytes.
+- Node CLI shares the supported `verified`/`failed`/`incomplete` exit meanings
+  and checks duplicate request/grant IDs across a supplied bundle set.
+- Mandatory Node CI checks and dual verification of live Keycloak/PocketBase
+  completed, denied and failed evidence, with separate exported Node reports.
+
+### Compatibility And Limits
+- Repository/package version advances; wire profile and schemas remain
+  `obo-keycloak/0.5-alpha.3`. Existing stable and alpha tags are unchanged.
+- This is a second implementation maintained by the same project, not
+  independently maintained third-party validation or a security audit.
+- Node supports only the Keycloak profile, not alpha.1 or base v0.4 artifacts.
+  It additionally fails on unsafe integer JSON lexemes before rounding.
+- Synthetic vectors use an intentionally public TEST-ONLY RSA key and Ed25519
+  seeds; they are not evidence of real issuer activity or lawful delegation.
+- Holder binding, live issuer status, mandate revocation and key-history
+  distribution remain unresolved and are not implied by matching test results.
+
+---
+
 ## [draft-01 / v0.5.0-alpha.3] - 2026-10-26
 
 **Independent issuer experiment: Keycloak workload token plus explicit mandate.**

@@ -2,6 +2,10 @@
 
 Release `v0.5.0-alpha.3`. Profile `obo-keycloak/0.5-alpha.3`.
 
+Repository `v0.5.0-alpha.4` adds a [separate Node verifier](../../../../implementations/node/)
+for this unchanged profile. It is maintained in the same project, not by an
+independent third party.
+
 This experiment joins an unmodified Keycloak issuer to the real
 [PocketBase receiving service](../pocketbase/) through an OBO admission gateway.
 It selects a working integration rather than requiring every other project to
@@ -48,8 +52,10 @@ repository root:
 
 ```bash
 python -m pip install -r requirements-dev.txt
+npm ci --prefix implementations/node --ignore-scripts --no-fund --no-audit
 python examples/integrations/pocketbase/download.py --output-dir /tmp/obo-pocketbase
 OBO_KEYCLOAK_LIVE=1 \
+  OBO_NODE_VERIFY=1 \
   POCKETBASE_BINARY=/tmp/obo-pocketbase/pocketbase \
   OBO_KEYCLOAK_RESULTS=/tmp/obo-keycloak-evidence \
   python -m unittest discover -s tests -p test_keycloak_live.py -v
@@ -83,6 +89,11 @@ AT=$(python -c 'import json, jwt; b=json.load(open("/tmp/obo-keycloak-evidence/c
 This extracts a reference time for reproducing a test, not independent proof
 that a service actually executed before revocation. Real verification must
 establish reference-time and historical trust independently.
+
+`OBO_NODE_VERIFY=1` requires Node.js 22+ and the installed Node dependencies.
+The harness additionally verifies the same live bundles in a Node CLI process
+and exports `*-node-report.json`. Without this flag the original Python-only
+harness remains available. CI requires both verifiers.
 
 ## Acceptance Gates
 

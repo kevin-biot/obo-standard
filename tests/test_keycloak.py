@@ -9,8 +9,8 @@ import tempfile
 import unittest
 
 import jwt
-from cryptography.hazmat.primitives.asymmetric import ed25519, rsa
-from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+from cryptography.hazmat.primitives.asymmetric import ed25519
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat, load_pem_private_key
 
 from obo_interop import digest_json, digest_token
 from obo_keycloak import PROFILE, verify_bundle
@@ -22,7 +22,7 @@ AT = 1793016000
 class KeycloakAdapterTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.rsa_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        cls.rsa_key = load_pem_private_key((ROOT / "tests/vectors/keycloak/TEST-ONLY-RSA.pem").read_bytes(), password=None)
         cls.keys = {role: ed25519.Ed25519PrivateKey.from_private_bytes(bytes([i]) * 32)
                     for i, role in enumerate(("issuer", "policy_authority", "service"), 1)}
 

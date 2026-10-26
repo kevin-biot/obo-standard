@@ -1,7 +1,11 @@
 """Real Keycloak -> explicit mandate -> OBO gateway -> real PocketBase."""
 
 import copy
+import json
 import os
+from pathlib import Path
+import subprocess
+import tempfile
 import time
 import unittest
 import uuid
@@ -20,6 +24,30 @@ class KeycloakLiveTests(pocketbase.PocketBaseLiveTests):
     profile = obo_keycloak.PROFILE
     evidence_env = "OBO_KEYCLOAK_RESULTS"
     verify_evidence = staticmethod(obo_keycloak.verify_bundle)
+
+    def node_check(self, bundle, trust, at, expected_code):
+        with tempfile.TemporaryDirectory(prefix="obo-node-live-") as directory:
+            bundle_path, trust_path = (Path(directory) / name for name in ("bundle.json", "trust.json"))
+            bundle_path.write_text(json.dumps(bundle))
+            trust_path.write_text(json.dumps(trust))
+            checked = subprocess.run(["node", str(pocketbase.ROOT / "implementations/node/verify.mjs"), str(bundle_path),
+                                      "--trust", str(trust_path), "--at", str(at)],
+                                     capture_output=True, text=True, timeout=30)
+            self.assertEqual(checked.returncode, expected_code, checked.stdout + checked.stderr)
+            return json.loads(checked.stdout)
+
+    def assert_bundle(self, result, expected_outcome):
+        bundle = super().assert_bundle(result, expected_outcome)
+        if os.environ.get("OBO_NODE_VERIFY") == "1":
+            at = jwt.decode(bundle["decision_jwt"], options={"verify_signature": False})["iat"]
+            report = self.node_check(bundle, self.trust, at, 0)
+            primary = self.verify_evidence(bundle, self.trust, at)
+            for field in ("profile", "result", "outcome", "evaluation_time", "checks"):
+                self.assertEqual(report[field], primary[field])
+            output = os.environ.get(self.evidence_env)
+            if output:
+                (Path(output) / (expected_outcome + "-node-report.json")).write_text(json.dumps(report, indent=2))
+        return bundle
 
     @classmethod
     def configure_issuer(cls):
@@ -83,3 +111,5 @@ class KeycloakLiveTests(pocketbase.PocketBaseLiveTests):
         trust["expected"]["workload_subject"] = "another-service-account"
         with self.assertRaisesRegex(ValueError, "workload subject mismatch"):
             self.verify_evidence(bundle, trust, at)
+        if os.environ.get("OBO_NODE_VERIFY") == "1":
+            self.assertEqual(self.node_check(bundle, trust, at, 1)["result"], "failed")

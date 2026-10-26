@@ -15,6 +15,18 @@ jobs:
         with:
           python-version: "3.11"
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install separate Node verifier dependencies
+        working-directory: implementations/node
+        run: npm ci --ignore-scripts --no-fund --no-audit
+
+      - name: Node verifier and shared cross-language vectors
+        working-directory: implementations/node
+        run: npm test
+
       - name: Install validation dependencies
         run: |
           python -m pip install --upgrade pip
@@ -56,6 +68,7 @@ jobs:
       - name: Run real Keycloak issuer to PocketBase integration
         env:
           OBO_KEYCLOAK_LIVE: "1"
+          OBO_NODE_VERIFY: "1"
           POCKETBASE_BINARY: ${{ runner.temp }}/obo-pocketbase/pocketbase
           OBO_KEYCLOAK_RESULTS: ${{ runner.temp }}/obo-keycloak-evidence
         run: python -m unittest discover -s tests -p test_keycloak_live.py -v

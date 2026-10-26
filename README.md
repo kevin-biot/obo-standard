@@ -5,14 +5,16 @@ Minimum evidence standard for agentic transactions.
 **Status:** Working Draft, `draft-obo-agentic-evidence-envelope-01`
 **Goal:** implementation feedback, independent implementations, jurisdiction profiles
 
-**Experimental release:** `v0.5.0-alpha.3`; stable reference: `v0.4.18`.
+**Experimental release:** `v0.5.0-alpha.4`; stable reference: `v0.4.18`.
 The [external-grant experiment](examples/integrations/external-grant/) adds a
 separate operation-bound evidence profile and offline verifier. It preserves
 the base credential/envelope formats. A [PocketBase integration](examples/integrations/pocketbase/)
 exercises a real receiving service with persisted writes and restart tests.
 The [Keycloak integration](examples/integrations/keycloak/) adds an independently
 maintained issuer in one explicit service-account configuration, with a separate
-signed operation mandate. An independent OBO evidence verifier, generic OAuth
+signed operation mandate. A [separate Node verifier](implementations/node/)
+checks the same profile and shared vectors without the Python implementation.
+An externally maintained OBO evidence verifier, generic OAuth
 interoperability and multi-hop delegation remain unproven.
 
 **Maintenance review:** 26 October 2026. This repository is a working proposal
@@ -224,6 +226,10 @@ real native RS256 service-account tokens and a separate signed mandate in
 principal's declaration of delegated authority. It is one tested configuration,
 not a claim of generic OAuth compatibility or lawful delegation.
 
+The [Node verifier](implementations/node/) is a second implementation, not a
+third-party assurance claim. It checks the same retained live evidence and
+[shared public vectors](tests/vectors/keycloak/) with a separate JOSE stack.
+
 ## Conformance
 
 CI runs:
@@ -237,6 +243,7 @@ CI runs:
 - reproducible external-grant fixtures and offline evidence verification
 - a pinned real PocketBase receiving service, including persistence and restart tests
 - a digest-pinned Keycloak issuer, explicit mandates and the same receiving-service workflow
+- separate Python/Node verification of shared vectors and live Keycloak evidence
 - full Docker A2A demo
 
 Run the local checks:
