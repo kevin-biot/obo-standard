@@ -7,6 +7,43 @@ Versioning: IETF draft number (`-NN`) + semantic version (`vX.Y.Z`).
 
 ---
 
+## [draft-01 / v0.5.0-alpha.2] - 2026-10-26
+
+**Real receiving-service experiment: PocketBase persisted updates.**
+
+### Added
+- Selected unmodified MIT-licensed PocketBase v0.40.6 as a real independently
+  maintained record service; pinned official archive hashes for macOS arm64
+  and Linux amd64 with a checksum-verifying downloader.
+- OBO admission gateway verifies the exact operation and signed grant/policy
+  before a native authenticated PATCH, then reads back the persisted record
+  and issues decision/execution evidence using the existing alpha.1 profile.
+- SQLite reservations prevent automatic redispatch of reused or unresolved
+  requests. Completed identical retries return the original signed bundle,
+  including after gateway restart. Uncertain backend outcomes require explicit
+  reconciliation instead of a fabricated success/failure receipt.
+- Real-service integration tests cover record persistence after backend restart,
+  idempotent retry, refusal, backend validation failure, forged grants, replay
+  conflicts and native access controls. Fault injection also covers failed
+  readback after PATCH and unresolved reservations.
+- CI downloads the pinned receiving service, runs live tests and exports
+  public test evidence artifacts separately from private runtime credentials.
+
+### Changed
+- Extracted reusable request-time grant/policy verification from the offline
+  verifier. Historical fixtures and offline verification semantics are retained.
+
+### Compatibility And Limits
+- Repository version advances; wire profile remains `obo-interop/0.5-alpha.1`.
+  Earlier v0.4 and alpha.1 tags and fixtures remain unchanged.
+- PocketBase does not natively implement OBO. The issuer is still a test-harness
+  issuer, not an independently integrated OAuth server. The local gateway and
+  native backend require an enforced credential/network boundary in deployment.
+- Backend and ledger transactions are not atomic together; ambiguous outcomes
+  stay unresolved. This does not claim distributed exactly-once execution.
+
+---
+
 ## [draft-01 / v0.5.0-alpha.1] - 2026-10-26
 
 **First external-grant evidence experiment (pre-release).**

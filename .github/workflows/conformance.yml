@@ -38,6 +38,21 @@ jobs:
             --intent "search flights from LHR to JFK on 2026-06-15" \
             --public-key m2OHbJ8-t7ch8YxL5vFU7K7ysDQfi8SJ58PDHxcc2qw
 
+      - name: Run real PocketBase receiving-service integration
+        env:
+          POCKETBASE_BINARY: ${{ runner.temp }}/obo-pocketbase/pocketbase
+          OBO_POCKETBASE_RESULTS: ${{ runner.temp }}/obo-pocketbase-evidence
+        run: |
+          python examples/integrations/pocketbase/download.py --output-dir "$RUNNER_TEMP/obo-pocketbase"
+          python -m unittest discover -s tests -p test_pocketbase_live.py -v
+
+      - name: Upload real-service test evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: pocketbase-test-evidence
+          path: ${{ runner.temp }}/obo-pocketbase-evidence
+          retention-days: 7
+
       - name: Run A2A reference demo
         working-directory: examples/integrations/a2a
         run: |

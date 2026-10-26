@@ -103,17 +103,17 @@ def exact_claims(claims, extra):
             "unsupported or missing JWT claims (delegation, cnf and critical constraints are not ignored)")
 
 
-def verify_bundle(bundle, trust, at):
-    """Return supported evidence checks, preserving unknown status as incomplete."""
-    validate_schema(bundle, "interop-bundle-v0.5.json")
+def verify_request(operation, grant_jwt, policy_jwt, trust, at):
+    """Verify the authority and policy before dispatching an operation."""
+    validate_schema({"profile": PROFILE, "operation": operation, "grant_jwt": grant_jwt,
+                     "policy_jwt": policy_jwt, "decision_jwt": "not-yet-issued"}, "interop-bundle-v0.5.json")
     validate_schema(trust, "interop-trust-v0.5.json")
     require(type(at) is int and 0 <= at <= 2**53 - 1, "invalid independently supplied evaluation time")
     expected = trust["expected"]
     audience = expected["audience"]
-    operation = bundle["operation"]
     operation_hash = digest_json(operation)
 
-    grant = verify_jwt(bundle["grant_jwt"], trust["issuer"], "at+jwt", audience)
+    grant = verify_jwt(grant_jwt, trust["issuer"], "at+jwt", audience)
     exact_claims(grant, ["client_id", "scope", "obo"])
     require(grant["sub"] == expected["principal_id"], "principal mismatch")
     require(grant["client_id"] == expected["agent_id"], "agent mismatch")
@@ -122,7 +122,7 @@ def verify_bundle(bundle, trust, at):
                              "operation_digest": operation_hash}, "grant operation/operator binding mismatch")
     require(grant["iat"] <= at < grant["exp"], "grant not valid at evaluation time")
 
-    policy = verify_jwt(bundle["policy_jwt"], trust["policy_authority"], "obo-policy+jwt", audience)
+    policy = verify_jwt(policy_jwt, trust["policy_authority"], "obo-policy+jwt", audience)
     exact_claims(policy, ["profile", "action", "resource", "allowed_fields", "scope"])
     require(policy["profile"] == PROFILE and policy["sub"] == expected["operator_id"], "policy operator/profile mismatch")
     require(policy["iat"] <= at < policy["exp"], "policy not valid at evaluation time")
@@ -134,6 +134,17 @@ def verify_bundle(bundle, trust, at):
     allowed = (policy["scope"] == grant["scope"] and policy["action"] == operation["action"]
                and policy["resource"] == operation["resource"]
                and set(operation["parameters"]) <= set(fields))
+    return grant, policy, allowed, operation_hash
+
+
+def verify_bundle(bundle, trust, at):
+    """Return supported evidence checks, preserving unknown status as incomplete."""
+    validate_schema(bundle, "interop-bundle-v0.5.json")
+    operation = bundle["operation"]
+    grant, policy, allowed, operation_hash = verify_request(
+        operation, bundle["grant_jwt"], bundle["policy_jwt"], trust, at)
+    expected = trust["expected"]
+    audience = expected["audience"]
 
     decision = verify_jwt(bundle["decision_jwt"], trust["service"], "obo-decision+jwt", audience)
     exact_claims(decision, ["profile", "grant_digest", "policy_digest", "operation_digest",

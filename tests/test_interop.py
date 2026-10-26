@@ -198,7 +198,7 @@ class InteropTests(unittest.TestCase):
 
     def test_release_identity_is_explicit(self):
         version = (ROOT / "VERSION").read_text().strip()
-        self.assertEqual(version, "0.5.0-alpha.1")
+        self.assertEqual(version, "0.5.0-alpha.2")
         result = subprocess.run([sys.executable, str(ROOT / "obo"), "--version"], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.strip(), "obo " + version)

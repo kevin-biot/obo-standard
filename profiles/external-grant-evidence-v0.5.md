@@ -4,6 +4,11 @@ Version: `obo-interop/0.5-alpha.1`.
 Repository release: `v0.5.0-alpha.1` (26 October 2026).
 Status: experimental, single-hop, offline evidence verification.
 
+Runtime implementation update: repository `v0.5.0-alpha.2` adds a
+[real PocketBase receiving-service test](../examples/integrations/pocketbase/)
+without changing this alpha.1 wire profile or its archived fixtures. The issuer
+and verifier are still maintained in this repository.
+
 This profile tests whether OBO can preserve an external grant, a receiving
 service's policy decision and its execution assertion in one independently
 verifiable bundle. Authority remains attributable to people and organizations;

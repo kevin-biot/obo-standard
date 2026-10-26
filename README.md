@@ -5,11 +5,13 @@ Minimum evidence standard for agentic transactions.
 **Status:** Working Draft, `draft-obo-agentic-evidence-envelope-01`
 **Goal:** implementation feedback, independent implementations, jurisdiction profiles
 
-**Experimental release:** `v0.5.0-alpha.1`; stable reference: `v0.4.18`.
+**Experimental release:** `v0.5.0-alpha.2`; stable reference: `v0.4.18`.
 The [external-grant experiment](examples/integrations/external-grant/) adds a
 separate operation-bound evidence profile and offline verifier. It preserves
-the base credential/envelope formats. Third-party interoperability has not yet
-been demonstrated.
+the base credential/envelope formats. A [PocketBase integration](examples/integrations/pocketbase/)
+now exercises a real receiving service with persisted writes and restart tests.
+Interoperability with an independently maintained grant issuer or evidence
+verifier has not yet been demonstrated.
 
 **Maintenance review:** 26 October 2026. This repository is a working proposal
 with a limited reference verifier, rather than a production authorization service.
@@ -208,6 +210,12 @@ of possession or live replay control. The report always includes its limits;
 missing historical status returns `incomplete` (exit 2). All bundled keys are
 public test keys. See the [profile](profiles/external-grant-evidence-v0.5.md).
 
+The [PocketBase receiving-service harness](examples/integrations/pocketbase/)
+adds live admission, native API writes/readback, durable request reservations
+and idempotent retries. It uses the same experimental wire profile. Run its
+documented live tests to exercise a pinned third-party backend rather than
+only generated fixtures.
+
 ## Conformance
 
 CI runs:
@@ -219,6 +227,7 @@ CI runs:
 - Python syntax checks
 - signed demo credential verification
 - reproducible external-grant fixtures and offline evidence verification
+- a pinned real PocketBase receiving service, including persistence and restart tests
 - full Docker A2A demo
 
 Run the local checks:
@@ -268,6 +277,7 @@ Examples:
 - [examples/envelopes/](examples/envelopes/)
 - [examples/integrations/a2a/](examples/integrations/a2a/)
 - [examples/integrations/external-grant/](examples/integrations/external-grant/)
+- [examples/integrations/pocketbase/](examples/integrations/pocketbase/)
 
 Profiles:
 
