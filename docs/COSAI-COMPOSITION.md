@@ -5,6 +5,13 @@
 
 ---
 
+Maintenance clarification (26 October 2026): this note compares the cited CoSAI
+document as read in April 2026. It is not a current survey of OAuth or WIMSE.
+OAuth identity chaining supports separate authorization servers across trust
+domains, and AIMS is now a WIMSE working-group draft. DNS key publication alone
+does not establish a legal identity or confer authority. See
+[Current Status](CURRENT-STATUS.md) for dated references and implementation limits.
+
 ## The one-line framing
 
 **CoSAI AIAM describes how an operator runs its own authorization
@@ -114,8 +121,8 @@ Both are correct uses of the term. They refer to different artefacts
 at different layers. When both are present in a deployment,
 disambiguate:
 
-- **OBO-JWT** — intra-operator, OAuth 2.0 Token Exchange, CoSAI AIAM
-  Appendix D profile.
+- **OBO-JWT** — the OAuth token-exchange profile discussed in CoSAI AIAM
+  Appendix D; this comparison does not limit OAuth to one operator.
 - **OBO Credential** / **OBO Evidence Envelope** — peer-to-peer
   across operator boundaries, this specification.
 

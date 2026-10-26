@@ -19,7 +19,7 @@ SCHEMAS = ROOT / "schemas"
 
 try:
     import jsonschema
-except ImportError:  # pragma: no cover - CI installs jsonschema.
+except ImportError:
     jsonschema = None
 
 
@@ -31,21 +31,7 @@ def load_json(path: Path) -> Any:
 
 
 def validate_with_schema(instance: dict[str, Any], schema: dict[str, Any], path: Path) -> None:
-    if jsonschema is not None:
-        jsonschema.Draft202012Validator(schema).validate(instance)
-        return
-
-    required = set(schema.get("required", []))
-    properties = set(schema.get("properties", {}))
-    missing = sorted(required - set(instance))
-    extra = sorted(set(instance) - properties)
-    if missing or extra:
-        detail = []
-        if missing:
-            detail.append(f"missing={missing}")
-        if extra:
-            detail.append(f"extra={extra}")
-        raise AssertionError(f"{path}: schema mismatch ({', '.join(detail)})")
+    jsonschema.Draft202012Validator(schema).validate(instance)
 
 
 def validate_capture(instance: dict[str, Any], path: Path) -> None:
@@ -69,8 +55,13 @@ def assert_no_draft_00(path: Path) -> None:
 
 
 def main() -> int:
+    if jsonschema is None:
+        print("FAIL: jsonschema is required; install requirements-dev.txt", file=sys.stderr)
+        return 1
     credential_schema = load_json(SCHEMAS / "obo-credential.json")
     envelope_schema = load_json(SCHEMAS / "obo-evidence-envelope.json")
+    for schema in (credential_schema, envelope_schema):
+        jsonschema.Draft202012Validator.check_schema(schema)
 
     checked = 0
     failures: list[str] = []
@@ -87,7 +78,7 @@ def main() -> int:
                 validate_capture(instance, path)
             checked += 1
         except Exception as exc:
-            failures.append(str(exc))
+            failures.append(f"{path.relative_to(ROOT)}: {exc}")
 
     if failures:
         for failure in failures:

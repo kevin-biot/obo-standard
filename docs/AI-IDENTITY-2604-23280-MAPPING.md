@@ -11,10 +11,16 @@ workload, and delegated identity, then frames identity as the relationship
 between what an agent declares and what observers can verify from behavior.
 OBO fits inside that frame as the portable delegation and evidence layer.
 
+This note was written on 4 May 2026. Maintenance clarification: 26 October 2026.
+The paper's gap analysis describes its publication period; see
+[Current Status](CURRENT-STATUS.md) for subsequent standards work and the limits
+of this repository's implementation.
+
 ## OBO's Legal Premise
 
-OBO starts from a simple premise: every software service call, past or present,
-is a delegation event from a legal entity to a workload.
+OBO models software service activity as the exercise of authority delegated by
+accountable people or organizations to workloads. This is an accountability
+model; an unauthorized call does not acquire lawful authority by being recorded.
 
 AI agents make that delegation more dynamic, autonomous, and risky. They do not
 change the legal fact that the workload has no independent legal standing. An
@@ -82,8 +88,11 @@ and replayable later in a dispute.
 The paper discusses OpenID and OAuth On-Behalf-Of flows. That is a different
 thing from the OBO standard in this repository.
 
-OpenID/OAuth OBO is an intra-authorization-server token exchange pattern. It is
-useful where the parties share an identity provider or authorization server.
+OAuth OBO commonly uses token exchange to preserve subject and actor context.
+OAuth identity chaining also supports separate authorization servers across trust
+domains. It does not require all parties to share one server. OBO Standard is a
+separate proposed credential and evidence format; this naming distinction does
+not establish a limitation of OAuth as a whole.
 
 OBO Standard is a cross-organization delegation and evidence format. It is for
 the boundary case where the counterparty has no prior relationship with the

@@ -11,10 +11,19 @@ Lane2 Architecture                                             4 April 2026
 
 **draft-lane2-obo-agentic-evidence-envelope-01**
 
-*Status:* Working Draft — v0.3.0
+*Status:* Working Draft — repository maintenance revision v0.4.18
 *Editors:* K. Brown (Lane2 Architecture)
 *Date:* 2026-04-04
 *Replaces:* draft-lane2-obo-agentic-evidence-envelope-01
+
+Repository maintenance review: 26 October 2026. The original draft header and
+4 October expiry above are retained as historical metadata. This repository
+update does not renew an IETF submission or assert working-group adoption.
+Earlier landscape comparisons describe their publication period. See
+[Current Status](docs/CURRENT-STATUS.md) for current implementation coverage
+and dated external references. In particular, domain-key discovery does not
+establish legal identity or authorization, and OAuth can chain authorization
+across separate trust domains.
 
 ---
 
@@ -683,6 +692,12 @@ OBO-REQ-001: An OBO Credential MUST contain the following fields:
 
 ### 3.2 Optional Fields
 
+Implementation status (26 October 2026): the JSON Schema represents the
+delegation metadata below, including `delegation_chain_digest` from Section 3.3.4.
+It checks structure only. The reference CLI rejects delegation-chain and
+instance-proof fields because their verification is not implemented. The CLI's
+integrity result is not an authorization decision; see `docs/CURRENT-STATUS.md`.
+
 OBO-REQ-002: An OBO Credential MAY contain the following fields:
 
 | Field | Type | Description |
@@ -693,6 +708,7 @@ OBO-REQ-002: An OBO Credential MAY contain the following fields:
 | `corridor_binding` | string | Identifier of the corridor this credential is bound to, when corridor-specific issuance applies. |
 | `delegation_depth` | object | Present only in explicit multi-hop delegation chains. Contains `current` (integer, this credential's depth from the origin, starting at 0) and `max` (integer, the chain ceiling set by the originating credential). A credential with `current == max` MUST NOT be used to issue sub-credentials. Each derived credential MUST carry the same `max` and `current` incremented by one. `scope_constraints` MUST NOT widen relative to the parent credential at any hop. |
 | `parent_credential_ref` | string | The `obo_credential_id` of the credential from which this credential was derived. Required when `delegation_depth.current > 0`. Enables verifiers to walk the chain and detect scope widening or revocation of any ancestor. |
+| `delegation_chain_digest` | string | SHA-256 of the Delegation Chain Artifact when present; see Section 3.3.4. |
 
 ### 3.3 Delegation Chain Artifact
 

@@ -19,6 +19,14 @@ OBO operates at the intersection of three threat surfaces:
 
 OBO's cryptographic guarantees are only as strong as the weakest of these three.
 
+The bundled `obo verify` command checks credential structure, signature integrity
+and validity times, with optional intent-phrase comparison. It requires a key
+source and rejects chain or instance-proof fields it cannot verify. It does not
+validate consent, legal identity, binding proofs, revocation, replay state or
+resource policy. See [Current Status](CURRENT-STATUS.md) for implementation limits.
+DNS key discovery requires an authenticated resolution strategy in deployment;
+the CLI does not itself validate DNSSEC.
+
 ---
 
 ## What OBO protects against
@@ -53,6 +61,10 @@ A credential issued for Class A (read-only) is presented at an endpoint that
 performs a Class D (regulated/high-value) action. The verifier MUST check that
 the action class of the requested operation is included in the `action_classes`
 array in the credential. Use `OBO-ERR-010` on violation.
+
+An intent-hash match proves equality of the supplied phrase bytes. Endpoints
+must independently bind and evaluate the actual operation and parameters; a
+matching description does not constrain execution on its own.
 
 **Requirement:** Every endpoint must have a declared action class. Verify before
 executing.

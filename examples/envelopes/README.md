@@ -3,6 +3,10 @@
 Concrete JSON examples of OBO Evidence Envelopes. Each example
 conforms to one or more [profiles](../../profiles/).
 
+These JSON files illustrate envelope structure and use placeholder cryptographic
+values. Schema validation does not verify their signatures, digest contents or
+the profile-specific policy. They are not proof of real transactions.
+
 ## Index
 
 | File / Directory | Profile | Scenario | Corridor tier |

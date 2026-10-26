@@ -1,0 +1,4 @@
+cryptography>=42
+dnspython>=2.6
+flask>=3
+jsonschema>=4.21

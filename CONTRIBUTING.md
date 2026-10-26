@@ -111,6 +111,22 @@ See [CHARTER.md](CHARTER.md) for the full governance model.
 
 ---
 
+## Publishing releases
+
+Release snapshots use annotated `vX.Y.Z` Git tags and a matching dated changelog
+entry. Keep the specification draft identifier separate from repository release
+versioning. These are pre-1.0 working drafts; record compatibility changes
+explicitly rather than assuming all releases are interchangeable.
+
+Before tagging, run the documented conformance checks, record any unavailable
+external checks, and review the intended changes. Push the release commit to
+`main`, then publish its annotated tag. Published tags must not be moved or reused;
+corrections receive a new version. A tag freezes repository contents, not live
+DNS values or third-party services. A release does not imply IETF adoption,
+production certification, or a new wire format.
+
+---
+
 ## Code of conduct
 
 Be direct. Be specific. Argue about specifications, not people. Implementation

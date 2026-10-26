@@ -7,6 +7,50 @@ Versioning: IETF draft number (`-NN`) + semantic version (`vX.Y.Z`).
 
 ---
 
+## [draft-01 / v0.4.18] - 2026-10-26
+
+**Maintenance review: explicit verification boundaries and reproducible checks.**
+
+### Fixed
+- Example validation now requires `jsonschema` and reports failing file paths;
+  it no longer silently substitutes field-name checks for full validation.
+- Corrected malformed placeholder digests in four credential/envelope examples
+  and labelled structural examples separately from the signed demo fixture.
+- `obo verify` requires exactly one signature key source, validates the schema,
+  rejects duplicate JSON members and non-finite constants, and checks issuance,
+  positive expiry, window ordering and the exclusive expiry boundary.
+- Unsupported delegation-chain and instance-proof credentials are rejected.
+  DNS mode requires issuer/operator equality rather than assuming an issuer
+  mapping. Success output explicitly identifies integrity and unchecked policy.
+- Credential schema now represents draft delegation depth, parent references
+  and chain digest; child metadata requires a parent reference. Chain signature,
+  attenuation and cross-field depth checks remain outside schema validation.
+
+### Added
+- Verifier regression tests, a shared development requirements file and CI test
+  execution, including tests for missing validation dependencies.
+- Documented immutable annotated release tags and their relationship to draft
+  identifiers, repository snapshots and compatibility notes.
+- `docs/CURRENT-STATUS.md` records implementation coverage and dated references
+  to AIMS, OAuth identity chaining, delegation proposals, AP2, SCITT and AuthZEN.
+
+### Clarified
+- Public maintenance status and historical scope of April/May comparisons.
+  Cross-domain OAuth does not require a shared authorization server. External
+  work remains subject to assessment; no interoperability path is selected.
+- DNS/key attribution, legal identity, authorization and evidence of execution
+  require distinct verification. An intent hash commits to bytes, not semantic
+  correctness. The accountability premise remains legal-person authority
+  exercised through workloads.
+
+### Compatibility
+- CLI callers must now supply exactly one of `--dns` or `--public-key`. Earlier
+  successful exits without signature verification are intentionally rejected.
+- Credentials with chain or instance-proof fields require a verifier that
+  implements those proofs; the bundled CLI now fails explicitly for them.
+
+---
+
 ## [draft-01 / v0.4.17] — 2026-05-04
 
 **AI identity paper mapping — delegation remains legal-entity to workload.**

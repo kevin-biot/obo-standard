@@ -1,7 +1,7 @@
 {
   "evidence_id": "urn:obo:ev:2026:e9f8g7h6",
   "obo_credential_ref": "urn:obo:cred:2026:a1b2c3d4",
-  "credential_digest_ref": "sha256:def456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01",
+  "credential_digest_ref": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
   "principal_id": "did:example:principal:alice",
   "agent_id": "urn:agent:lane2:travel-assistant:v1",
   "operator_id": "lane2.ai",
@@ -18,6 +18,6 @@
   "corridor_predicate_digest": "sha256:0f1e2d3c4b5a69788796a5b4c3d2e1f00f1e2d3c4b5a69788796a5b4c3d2e1f0",
   "target_id": "urn:service:hotel-chain:booking:v1",
   "stage3_ref": "urn:payment:stripe:pi_xyz123",
-  "evidence_digest": "sha256:fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210fe",
+  "evidence_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
   "envelope_sig": "Ed25519:CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
 }

@@ -5,6 +5,11 @@ pre-transaction artefact carried by an agent. The post-transaction
 evidence envelopes that these credentials authorise are in
 [../envelopes/](../envelopes/).
 
+`open-lane.json` and `regulated-lane.json` are structural illustrations with
+placeholder digests and signatures, not cryptographically verifiable grants.
+`signed-demo.json` is the signed CLI fixture. Schema validation checks shape;
+the CLI separately checks the digest and signature.
+
 ## Index
 
 | File | Profile | Scenario | Action classes | Corridor tier |

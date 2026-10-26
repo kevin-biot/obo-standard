@@ -5,6 +5,20 @@ Minimum evidence standard for agentic transactions.
 **Status:** Working Draft, `draft-obo-agentic-evidence-envelope-01`
 **Goal:** implementation feedback, independent implementations, jurisdiction profiles
 
+**Maintenance review:** 26 October 2026. This repository is a working proposal
+with a limited reference verifier, rather than a production authorization service.
+Maintenance currently focuses on correctness and reproducibility. Interoperability
+options remain under evaluation; see [Current Status](docs/CURRENT-STATUS.md).
+
+## Releases
+
+Repository releases use annotated Git tags such as `v0.4.18`, with changes and
+compatibility notes in [CHANGELOG.md](CHANGELOG.md). A tag identifies a fixed
+snapshot of the specification, schemas, examples and tools. The `draft-01`
+identifier is tracked separately; a repository release does not renew an IETF
+submission or change an artifact's wire version automatically. Published tags
+are not moved. Use a tagged release when reproducing results or citing this work.
+
 OBO defines the evidence an autonomous agent must carry and produce when it acts
 on behalf of a human, organisation, or another machine across organisational
 boundaries.
@@ -20,8 +34,9 @@ answer:
 
 ## Why This Exists
 
-Inside one organisation, OAuth, mTLS, WIMSE, SPIFFE, and platform workload
-identity already work. OBO is for the boundary case they do not solve:
+OAuth, mTLS, WIMSE, SPIFFE, and platform workload identity provide established
+building blocks. OAuth also has work for chaining across trust domains. OBO
+examines portable transaction authority and evidence in settings with:
 
 - no shared authorisation server
 - no prior counterparty relationship
@@ -101,6 +116,10 @@ _obo-key.<operator-domain>  TXT  "v=obo1 ed25519=<base64url-public-key>"
 Any counterparty that can resolve DNS can verify the operator key. No central
 OBO registry, approved network, or co-signature service is required.
 
+DNS publishes a key under a domain. Authenticating the lookup, identifying the
+legal entity behind that domain, and accepting its authority are separate trust
+decisions. The reference CLI does not establish legal identity or validate DNSSEC.
+
 The live demo fixture is:
 
 ```bash
@@ -113,6 +132,7 @@ dig +short TXT _obo-key.lane2.ai @8.8.8.8
 Run the A2A reference demo:
 
 ```bash
+python3 -m pip install -r requirements-dev.txt
 cd examples/integrations/a2a
 python3 keygen.py --operator-id your-domain.com
 cp .env.example .env
@@ -148,16 +168,27 @@ For deployed operators, use DNS:
 
 The verifier checks:
 
+- credential structure against the JSON Schema (requires `jsonschema`)
 - credential digest
-- intent hash
-- expiry unless `--ignore-expiry` is passed
-- Ed25519 signature when `--dns` or `--public-key` is supplied
+- intent hash when `--intent` is supplied
+- issuance time, a valid time window, and expiry (exclusive expiry boundary)
+- Ed25519 signature using exactly one required source: `--dns` or `--public-key`
+
+`--ignore-expiry` is for archived credentials and skips only the current expiry
+check. DNS mode currently requires `issuer_id` to equal `operator_id`; otherwise
+supply an independently trusted issuer key. Success means credential integrity
+was verified. It does not verify consent, legal authority, binding proofs,
+revocation, replay state, or execution policy. Credentials carrying delegation
+chain or instance-proof fields are rejected because those verifications are not
+implemented by this CLI. Profile payloads and scope constraints require a separate
+policy verifier. See [Current Status](docs/CURRENT-STATUS.md) for coverage.
 
 ## Conformance
 
 CI runs:
 
 - schema validation for every JSON example
+- verifier regression tests, including rejection cases and missing dependencies
 - stale draft-version checks
 - live DNS fixture verification
 - Python syntax checks
@@ -167,8 +198,10 @@ CI runs:
 Run the local checks:
 
 ```bash
+python3 -m pip install -r requirements-dev.txt
 python3 scripts/check_draft_version.py
 python3 scripts/validate_examples.py
+python3 -m unittest discover -s tests -v
 python3 scripts/check_dns_fixture.py
 python3 -m py_compile obo examples/integrations/a2a/agents.py
 ```
@@ -186,9 +219,10 @@ python3 -m py_compile obo examples/integrations/a2a/agents.py
 
 ## What OBO Is Not
 
-OBO does not replace OAuth inside a trust domain. If both parties already share
-an authorisation server, use OAuth, OAuth Token Exchange, GNAP, mTLS, WIMSE, or
-SPIFFE as appropriate.
+OAuth and OAuth Token Exchange remain useful within trust domains, and OAuth
+identity chaining addresses interaction between domains with separate trusted
+authorization servers. OBO's proposed evidence objects can be evaluated alongside
+those mechanisms. An interoperability mapping has not yet been implemented.
 
 OBO does not replace Verifiable Credentials. VCs are useful for portable
 identity claims. OBO adds transaction-scoped delegation and post-transaction
@@ -215,6 +249,7 @@ Profiles:
 
 Useful background:
 
+- [Current Status and External Work](docs/CURRENT-STATUS.md)
 - [AI Identity Paper Mapping](docs/AI-IDENTITY-2604-23280-MAPPING.md)
 - [OBO 8 Mapping](docs/OBO-8-MAPPING.md)
 - [Architecture](docs/ARCHITECTURE.md)

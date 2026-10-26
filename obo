@@ -11,6 +11,7 @@ import argparse
 import base64
 import hashlib
 import json
+import math
 import subprocess
 import sys
 import time
@@ -20,7 +21,7 @@ from typing import Any
 
 def b64url_decode(value: str) -> bytes:
     padding = "=" * ((4 - len(value) % 4) % 4)
-    return base64.urlsafe_b64decode(value + padding)
+    return base64.b64decode(value + padding, altchars=b"-_", validate=True)
 
 
 def strip_sig_prefix(value: str) -> str:
@@ -58,6 +59,7 @@ def resolve_obo_key(operator_id: str) -> str:
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            timeout=15,
         )
         values = [line.strip().strip('"') for line in proc.stdout.splitlines() if line.strip()]
 
@@ -79,8 +81,38 @@ def verify_ed25519(public_key_b64: str, signature: str, message: bytes) -> None:
 
 
 def verify_credential(args: argparse.Namespace) -> int:
-    credential = json.loads(Path(args.path).read_text())
+    try:
+        from jsonschema import Draft202012Validator
+    except ImportError:
+        print("FAIL: jsonschema is required; install requirements-dev.txt", file=sys.stderr)
+        return 1
+
+    try:
+        credential = json.loads(
+            Path(args.path).read_text(encoding="utf-8"),
+            object_pairs_hook=unique_members,
+            parse_constant=reject_constant,
+            parse_float=finite_float,
+        )
+        schema_path = Path(__file__).resolve().parent / "schemas" / "obo-credential.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        errors = sorted(Draft202012Validator(schema).iter_errors(credential), key=str)
+        if errors:
+            for error in errors:
+                print(f"FAIL: schema: {error.message}", file=sys.stderr)
+            return 1
+    except (OSError, ValueError) as exc:
+        print(f"FAIL: cannot read credential: {exc}", file=sys.stderr)
+        return 1
+
     failures: list[str] = []
+    unsupported = {
+        "delegation_depth", "parent_credential_ref", "delegation_chain_digest",
+        "agent_instance_id", "agent_instance_pubkey",
+    } & credential.keys()
+    if unsupported:
+        failures.append("requires chain or presentation verification not implemented by this CLI: "
+                        + ", ".join(sorted(unsupported)))
 
     actual_digest = credential_digest(credential)
     expected_digest = credential.get("credential_digest")
@@ -94,15 +126,24 @@ def verify_credential(args: argparse.Namespace) -> int:
                 f"intent_hash mismatch: expected {credential.get('intent_hash')}, got {actual_intent_hash}"
             )
 
-    if not args.ignore_expiry:
-        now = int(time.time())
-        expires_at = int(credential.get("expires_at", 0))
-        if expires_at and now > expires_at:
-            failures.append(f"credential expired at {expires_at}")
+    now = int(time.time())
+    issued_at = credential["issued_at"]
+    expires_at = credential["expires_at"]
+    if expires_at <= issued_at:
+        failures.append("expires_at must be later than issued_at")
+    if issued_at > now:
+        failures.append(f"credential issued in the future at {issued_at}")
+    if not args.ignore_expiry and now >= expires_at:
+        failures.append(f"credential expired at {expires_at}")
 
     public_key_b64 = args.public_key
+    if not args.dns and not public_key_b64:
+        failures.append("signature verification requires --dns or --public-key")
     if args.dns:
         try:
+            if credential["issuer_id"] != credential["operator_id"]:
+                raise ValueError("DNS mode supports issuer_id equal to operator_id only; "
+                                 "supply a trusted issuer key with --public-key")
             public_key_b64 = resolve_obo_key(credential["operator_id"])
         except Exception as exc:
             failures.append(f"DNS key resolution failed: {exc}")
@@ -111,23 +152,45 @@ def verify_credential(args: argparse.Namespace) -> int:
         try:
             verify_ed25519(public_key_b64, credential["credential_sig"], actual_digest.encode())
         except Exception as exc:
-            failures.append(f"credential_sig verification failed: {exc}")
+            failures.append(f"credential_sig verification failed: {type(exc).__name__}: {exc}")
 
     if failures:
         for failure in failures:
             print(f"FAIL: {failure}", file=sys.stderr)
         return 1
 
-    print("credential OK")
+    print("credential integrity verified")
     print(f"  obo_credential_id: {credential['obo_credential_id']}")
     print(f"  operator_id:       {credential['operator_id']}")
     print(f"  principal_id:      {credential['principal_id']}")
     print(f"  intent_hash:       {credential['intent_hash']}")
-    if public_key_b64:
-        print("  credential_sig:    verified")
-    else:
-        print("  credential_sig:    not checked (pass --dns or --public-key)")
+    print("  credential_sig:    verified")
+    if args.ignore_expiry:
+        print("  expiry:            skipped (archived credential)")
+    if args.intent is None:
+        print("  intent phrase:     not supplied; commitment not compared")
+    print("  scope:             integrity only; authority, policy, replay, and binding proof not checked")
     return 0
+
+
+def unique_members(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate JSON member: {key}")
+        result[key] = value
+    return result
+
+
+def reject_constant(value: str) -> None:
+    raise ValueError(f"invalid JSON constant: {value}")
+
+
+def finite_float(value: str) -> float:
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f"non-finite JSON number: {value}")
+    return number
 
 
 def main() -> int:
@@ -137,8 +200,9 @@ def main() -> int:
     verify = subparsers.add_parser("verify", help="verify an OBO credential")
     verify.add_argument("path", help="path to an OBO Credential JSON file")
     verify.add_argument("--intent", help="canonical intent phrase to hash and compare")
-    verify.add_argument("--dns", action="store_true", help="resolve _obo-key.<operator_id> and verify signature")
-    verify.add_argument("--public-key", help="base64url raw Ed25519 public key for signature verification")
+    key_source = verify.add_mutually_exclusive_group(required=True)
+    key_source.add_argument("--dns", action="store_true", help="resolve _obo-key.<operator_id> and verify signature")
+    key_source.add_argument("--public-key", help="trusted base64url raw Ed25519 issuer public key")
     verify.add_argument("--ignore-expiry", action="store_true", help="skip expires_at check for archived examples")
     verify.set_defaults(func=verify_credential)
 

@@ -18,12 +18,13 @@ jobs:
       - name: Install validation dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install cryptography dnspython flask jsonschema
+          python -m pip install -r requirements-dev.txt
 
       - name: Static conformance
         run: |
           python scripts/check_draft_version.py
           python scripts/validate_examples.py
+          python -m unittest discover -s tests -v
           python scripts/check_dns_fixture.py
           python -m py_compile \
             obo \
